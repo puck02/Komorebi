@@ -1,7 +1,9 @@
 # Dependencies
 node_modules/
+.venv/
 .pnp/
 .pnp.*
+*.egg-info/
 
 # Build outputs
 dist/
@@ -10,8 +12,11 @@ build/
 .nuxt/
 .svelte-kit/
 coverage/
+*.tsbuildinfo
 
 # Runtime and cache
+__pycache__/
+*.py[cod]
 .cache/
 .parcel-cache/
 .turbo/
@@ -41,6 +46,8 @@ generated/
 .worktrees/
 .DS_Store
 Thumbs.db
+frontend/vite.config.js
+frontend/vite.config.d.ts
 
 # IDE
 .idea/
