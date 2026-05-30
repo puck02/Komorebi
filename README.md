@@ -24,11 +24,12 @@ Komorebi 是一个 AI 日记手帐 Web 应用。用户上传 1-9 张生活照片
 
 ## 技术栈
 
-- 前端：React、Vite、TypeScript。
+- 前端：React、Vite、TypeScript、Tailwind CSS、shadcn/ui、Radix UI、lucide-react、TanStack Query。
 - 后端：FastAPI、Python、SQLAlchemy、Alembic。
 - 数据库：PostgreSQL。
 - 文件存储：服务器本地目录。
 - AI：OpenAI API。
+- 素材：Rough.js 生成统一风格 SVG，外部免费素材人工审核后再引入。
 - 部署：Docker Compose + Caddy。
 
 ## 本地开发
@@ -54,6 +55,7 @@ cd backend
 ```bash
 cd frontend
 npm install
+npm run generate:assets
 npm run build
 ```
 

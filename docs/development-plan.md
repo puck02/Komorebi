@@ -6,7 +6,7 @@
 
 **Architecture:** The app is a single-server Docker Compose deployment with a React/Vite frontend, FastAPI backend, PostgreSQL database, and local file storage. The backend owns auth, uploads, OpenAI calls, asset matching, journal persistence, and access control; the frontend owns the 1080 x 1440 journal renderer, lightweight editing, asset preview, history, and PNG export.
 
-**Tech Stack:** React, Vite, TypeScript, FastAPI, Python, SQLAlchemy, Alembic, PostgreSQL, Pillow, OpenAI API, Docker Compose, Caddy.
+**Tech Stack:** React, Vite, TypeScript, Tailwind CSS, shadcn/ui, Radix UI, lucide-react, React Router, TanStack Query, react-hook-form, Zod, Rough.js, FastAPI, Python, SQLAlchemy, Alembic, PostgreSQL, Pillow, OpenAI API, Docker Compose, Caddy.
 
 ---
 
@@ -107,11 +107,18 @@ frontend/
       journals.ts
       assets.ts
     components/
+      ui/
+        button.tsx
+        card.tsx
+        input.tsx
+        tabs.tsx
       AppShell.tsx
       JournalCanvas.tsx
       JournalEditor.tsx
       ImageUploader.tsx
       AssetCard.tsx
+    lib/
+      utils.ts
     pages/
       LoginPage.tsx
       RegisterPage.tsx
@@ -126,6 +133,8 @@ frontend/
       exportPng.ts
     styles/
       globals.css
+tools/
+  generate-assets.mjs
 docker-compose.yml
 .env.example
 docs/
@@ -438,6 +447,7 @@ Use these names consistently across backend and frontend.
 **Files:**
 - Create: `backend/app/assets/manifest.json`
 - Create: `backend/app/assets/stickers/*.svg`
+- Create: `tools/generate-assets.mjs`
 - Create: `backend/app/services/assets.py`
 - Create: `backend/app/schemas/asset.py`
 - Create: `backend/app/api/routes/assets.py`
@@ -450,7 +460,9 @@ Use these names consistently across backend and frontend.
 
 - [ ] **Step 1: Create initial asset manifest**
 
-  Start with at least 50 hand-drawn SVG assets across tape, paper, sticker, and texture categories. Every asset must include `qualityStatus`.
+  Start with at least 50 SVG assets across tape, paper, sticker, and texture categories. Prefer deterministic SVGs generated with Rough.js and project templates so the style is unified and reproducible. Every asset must include `qualityStatus`, `license`, and `source`.
+
+  External free assets are allowed only after manual review. They must include source and license metadata and should default to `draft` until checked in the website preview page.
 
 - [ ] **Step 2: Add asset tests**
 
@@ -669,6 +681,8 @@ Use these names consistently across backend and frontend.
   - Date, optional.
   - Location, optional.
   - Mood tags, optional comma-separated input.
+
+  Use shadcn/ui form controls, react-hook-form, and Zod validation. Use TanStack Query for API mutation state.
 
 - [ ] **Step 2: Add validation states**
 

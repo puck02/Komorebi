@@ -9,23 +9,31 @@
 ## 2. 总体选型
 
 - 前端：React + Vite + TypeScript。
+- 前端 UI 与状态：Tailwind CSS、shadcn/ui、Radix UI、lucide-react、React Router、TanStack Query、react-hook-form、Zod。
 - 后端：FastAPI + Python。
 - 数据库：PostgreSQL。
 - 文件存储：服务器本地文件目录，通过 Docker volume 挂载。
 - AI 能力：OpenAI API。
+- 素材生成与管理：Rough.js 生成统一手绘质感 SVG，人工审核少量免费外部素材。
 - 认证方式：账号密码。
 - PNG 导出：前端浏览器导出。
 - 部署：Docker Compose + Nginx 或 Caddy 反向代理 HTTPS。
 
 ## 3. 前端
 
-前端使用 React、Vite 和 TypeScript。
+前端使用 React、Vite 和 TypeScript，并基于成熟组件库搭建界面。
 
 选择原因：
 
 - 手帐画布、轻量编辑、历史列表和生成状态都需要较强交互，React 更合适。
 - Vite 启动和构建速度快，适合小型单页应用。
 - TypeScript 能约束结构化手帐 JSON，降低前后端字段不一致的风险。
+- shadcn/ui 基于 Radix UI 和 Tailwind CSS，组件源码可放进项目内维护，适合小型自用项目长期控制。
+- Radix UI 提供弹窗、菜单、Tabs、Select 等无样式基础交互，减少自行处理键盘和可访问性细节。
+- lucide-react 用作界面图标，不作为手帐内容素材，避免 UI 图标感进入手帐画面。
+- TanStack Query 负责接口请求缓存、加载状态和错误状态。
+- react-hook-form 和 Zod 负责表单状态与输入校验。
+- React Router 负责登录、创建、历史、详情和素材预览页面路由。
 
 前端主要职责：
 
@@ -37,6 +45,13 @@
 - 素材库预览页。
 - 调用后端生成、保存、读取历史手帐。
 - 使用浏览器能力导出 PNG。
+
+前端组件原则：
+
+- 常规按钮、输入框、弹窗、Tabs、Select、Toast、Tooltip、卡片和表单控件优先使用 shadcn/ui。
+- 图标按钮优先使用 lucide-react。
+- 页面级视觉风格由 Tailwind CSS 和项目 CSS 变量控制，不直接依赖大而全的商业模板。
+- 画布渲染、照片拼贴、素材摆放和 PNG 导出属于业务核心，使用项目内自定义组件实现。
 
 ## 4. 后端
 
@@ -124,7 +139,7 @@
 
 ## 9. 素材库
 
-第一版使用免费内置素材库，优先使用项目自绘 SVG，外部免费素材只作为补充。
+第一版使用免费内置素材库，优先使用 Rough.js 和项目模板生成统一风格 SVG，外部免费素材只作为人工审核后的补充。
 
 要求：
 
@@ -133,6 +148,7 @@
 - 元数据包含分类、标签、授权、来源和质量状态。
 - 只有 approved 素材可以参与 AI 自动选择。
 - 网站提供素材库预览页，方便人工检查素材质量。
+- 免费不等于可随意使用。即使项目不做商业用途，也只引入授权清晰、来源可追溯、质量通过预览页检查的素材。
 
 素材库预览页由前端实现，素材元数据由后端或静态 JSON 提供。第一版不要求在网页内编辑素材。
 
