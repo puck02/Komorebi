@@ -106,3 +106,53 @@ h1 {
   color: #a33b30;
   font-size: 14px;
 }
+
+.image-uploader {
+  display: grid;
+  gap: 16px;
+}
+
+.upload-zone {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  border: 1px dashed #bca99a;
+  border-radius: 8px;
+  color: #7f5945;
+  background: #fffaf5;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.upload-zone input {
+  display: none;
+}
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.upload-grid figure {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.upload-grid img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.upload-grid button {
+  min-height: 32px;
+  border: 1px solid #d5c9bd;
+  border-radius: 6px;
+  color: #5f534a;
+  background: #fffaf5;
+  font: inherit;
+  cursor: pointer;
+}
