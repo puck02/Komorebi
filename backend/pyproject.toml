@@ -5,6 +5,7 @@ description = "FastAPI backend for the Komorebi AI journal scrapbook app."
 requires-python = ">=3.11"
 dependencies = [
   "alembic>=1.13,<2.0",
+  "bcrypt>=3.1,<4.1",
   "email-validator>=2.0,<3.0",
   "fastapi>=0.115,<0.136",
   "openai>=1.0,<3.0",
@@ -28,3 +29,9 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+filterwarnings = [
+  "ignore:'crypt' is deprecated and slated for removal in Python 3.13:DeprecationWarning:passlib.utils"
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]

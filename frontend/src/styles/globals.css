@@ -55,3 +55,54 @@ h1 {
   font-size: clamp(40px, 7vw, 82px);
   line-height: 1.02;
 }
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+  max-width: 360px;
+  margin: 80px auto;
+}
+
+.auth-form h1 {
+  font-size: 32px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 8px;
+  color: #5f534a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.auth-form input {
+  min-height: 44px;
+  border: 1px solid #d5c9bd;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #2f2924;
+  background: #fffaf5;
+  font: inherit;
+}
+
+.auth-form button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  color: #fffaf5;
+  background: #7f5945;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.auth-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.form-error {
+  margin: 0;
+  color: #a33b30;
+  font-size: 14px;
+}
