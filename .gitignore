@@ -38,6 +38,7 @@ generated/
 
 # Tooling
 .superpowers/
+.worktrees/
 .DS_Store
 Thumbs.db
 
