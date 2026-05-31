@@ -275,6 +275,69 @@ body {
   gap: 12px;
 }
 
+.mood-field {
+  position: relative;
+}
+
+.mood-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--color-ink);
+  background: var(--color-paper-strong);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mood-picker-trigger:hover,
+.mood-picker-trigger[aria-expanded="true"] {
+  border-color: var(--color-mauve);
+  box-shadow: 0 8px 22px rgb(245 130 174 / 14%);
+}
+
+.mood-picker {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  border: 1px solid rgb(243 210 193 / 80%);
+  border-radius: 8px;
+  padding: 10px;
+  background:
+    linear-gradient(135deg, rgb(254 246 228 / 92%), rgb(243 210 193 / 54%)),
+    var(--color-paper);
+  box-shadow: 0 18px 44px rgb(0 24 88 / 16%);
+}
+
+.mood-picker button {
+  min-height: 34px;
+  border: 1px solid rgb(0 24 88 / 8%);
+  border-radius: 8px;
+  color: var(--color-ink);
+  background: rgb(254 246 228 / 72%);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mood-picker button:hover,
+.mood-picker button.is-selected {
+  border-color: var(--color-button);
+  background: var(--color-button);
+  box-shadow: 0 8px 18px rgb(245 130 174 / 22%);
+}
+
 .create-submit {
   width: 100%;
 }

@@ -14,16 +14,19 @@ import { Input } from "../components/ui/input";
 const createJournalSchema = z.object({
   description: z.string().trim().min(1, "请写一点今天的内容。"),
   journalDate: z.string().optional(),
-  location: z.string().optional(),
-  moodTags: z.string().optional()
+  location: z.string().optional()
 });
 
 type CreateJournalValues = z.infer<typeof createJournalSchema>;
+
+const MOOD_OPTIONS = ["开心", "温柔", "放松", "期待", "感动", "平静", "治愈", "热闹", "浪漫", "疲惫", "想念", "珍贵"];
 
 export default function CreateJournalPage() {
   const navigate = useNavigate();
   const [images, setImages] = useState<UploadedImage[]>([]);
   const [imageError, setImageError] = useState("");
+  const [isMoodPickerOpen, setIsMoodPickerOpen] = useState(false);
+  const [selectedMood, setSelectedMood] = useState("");
   const [submitError, setSubmitError] = useState("");
   const {
     formState: { errors, isSubmitting },
@@ -33,8 +36,7 @@ export default function CreateJournalPage() {
     defaultValues: {
       description: "",
       journalDate: "",
-      location: "",
-      moodTags: ""
+      location: ""
     },
     resolver: zodResolver(createJournalSchema)
   });
@@ -54,7 +56,7 @@ export default function CreateJournalPage() {
         imageIds: images.map((image) => image.id),
         journalDate: values.journalDate || null,
         location: values.location?.trim() || null,
-        moodTags: parseMoodTags(values.moodTags)
+        moodTags: selectedMood ? [selectedMood] : []
       });
       navigate(`/journals/${journal.id}`);
     } catch (error) {
@@ -99,13 +101,39 @@ export default function CreateJournalPage() {
             </label>
           </div>
 
-          <label className="field-label">
+          <div className="field-label mood-field">
             <span>
               <Tags size={15} />
-              心情标签
+              心情
             </span>
-            <Input placeholder="温柔, 开心, 慢下来" {...register("moodTags")} />
-          </label>
+            <button
+              aria-expanded={isMoodPickerOpen}
+              className="mood-picker-trigger"
+              onClick={() => setIsMoodPickerOpen((isOpen) => !isOpen)}
+              type="button"
+            >
+              <span>{selectedMood || "选择一个心情"}</span>
+            </button>
+            {isMoodPickerOpen ? (
+              <div className="mood-picker" role="listbox" aria-label="选择心情">
+                {MOOD_OPTIONS.map((mood) => (
+                  <button
+                    aria-selected={selectedMood === mood}
+                    className={selectedMood === mood ? "is-selected" : ""}
+                    key={mood}
+                    onClick={() => {
+                      setSelectedMood(mood);
+                      setIsMoodPickerOpen(false);
+                    }}
+                    role="option"
+                    type="button"
+                  >
+                    {mood}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           {submitError ? <p className="form-error">{submitError}</p> : null}
           <Button className="create-submit" disabled={isSubmitting} type="submit">
@@ -116,11 +144,4 @@ export default function CreateJournalPage() {
       </form>
     </section>
   );
-}
-
-function parseMoodTags(value?: string) {
-  return (value ?? "")
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
 }
