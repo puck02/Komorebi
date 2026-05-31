@@ -6,13 +6,13 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 class JournalCanvas(BaseModel):
     width: int
-    height: int
+    height: int = Field(gt=0)
     background: str
 
     @model_validator(mode="after")
     def validate_canvas_size(self) -> "JournalCanvas":
-        if self.width != 1080 or self.height != 1440:
-            raise ValueError("Journal canvas must be 1080 x 1440")
+        if self.width != 1080:
+            raise ValueError("Journal canvas width must be 1080")
         return self
 
 

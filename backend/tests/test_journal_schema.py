@@ -4,7 +4,20 @@ from pydantic import ValidationError
 from app.schemas.journal import JournalLayout
 
 
-def test_valid_journal_layout_accepts_fixed_canvas_size():
+def test_valid_journal_layout_accepts_dynamic_canvas_height():
+    payload = valid_layout()
+    payload["canvas"]["height"] = 2200
+
+    layout = JournalLayout.model_validate(payload)
+
+    assert layout.canvas.width == 1080
+    assert layout.canvas.height == 2200
+    assert layout.content.title == "周末小记"
+    assert layout.layout.images[0].image_id == "img_1"
+    assert layout.layout.decorations[0].asset_id == "tape_warm_grid_01"
+
+
+def test_valid_journal_layout_accepts_legacy_canvas_height():
     layout = JournalLayout.model_validate(valid_layout())
 
     assert layout.canvas.width == 1080
@@ -14,7 +27,7 @@ def test_valid_journal_layout_accepts_fixed_canvas_size():
     assert layout.layout.decorations[0].asset_id == "tape_warm_grid_01"
 
 
-def test_journal_layout_rejects_unsupported_canvas_size():
+def test_journal_layout_rejects_unsupported_canvas_width():
     payload = valid_layout()
     payload["canvas"]["width"] = 1200
 

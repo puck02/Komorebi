@@ -17,8 +17,28 @@ def test_generator_returns_valid_journal_layout():
 
     assert isinstance(layout, JournalLayout)
     assert layout.canvas.width == 1080
-    assert layout.canvas.height == 1440
+    assert layout.canvas.height == 1600
     assert layout.content.title == "慢下来的周末"
+
+
+def test_generator_expands_canvas_to_fit_long_placements():
+    payload = valid_model_json()
+    payload["canvas"]["height"] = 1500
+    payload["layout"]["images"].append(
+        {
+            "imageId": "img_1",
+            "x": 110,
+            "y": 1720,
+            "width": 760,
+            "height": 520,
+            "rotation": 2,
+        }
+    )
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    assert layout.canvas.height >= 2320
 
 
 def test_generator_keeps_only_provided_image_ids():

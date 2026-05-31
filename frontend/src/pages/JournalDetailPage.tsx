@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, Image as ImageIcon, MapPin, Tags } from "lucide-react";
+import { ArrowLeft, NotebookPen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -68,61 +68,31 @@ export default function JournalDetailPage() {
 
   return (
     <section className="journal-detail-page">
-      <header className="journal-detail-header">
-        <div className="grid gap-3">
-          <Button asChild variant="ghost">
-            <Link to="/">
-              <ArrowLeft size={16} />
-              继续创建
-            </Link>
-          </Button>
-          <div>
-            <p className="eyebrow">Generated Journal</p>
-            <h1>{journal.title}</h1>
-          </div>
-        </div>
-        <div className="journal-detail-meta">
-          <MetaItem icon={ImageIcon} text={`${journal.imageIds.length} 张图片`} />
-          {journal.journalDate ? <MetaItem icon={CalendarDays} text={journal.journalDate} /> : null}
-          {journal.location ? <MetaItem icon={MapPin} text={journal.location} /> : null}
-          {journal.moodTags.length > 0 ? <MetaItem icon={Tags} text={journal.moodTags.join(" / ")} /> : null}
-        </div>
+      <header className="journal-detail-toolbar">
+        <Button asChild variant="ghost">
+          <Link to="/history">
+            <ArrowLeft size={16} />
+            返回历史
+          </Link>
+        </Button>
+        <Button asChild variant="ghost">
+          <Link to="/">
+            <NotebookPen size={16} />
+            继续创建
+          </Link>
+        </Button>
       </header>
 
-      <div className="journal-detail-layout">
+      <div className="journal-detail-single">
         <div className="journal-preview-panel">
-          <JournalCanvas assets={assetsQuery.data ?? []} images={imagesQuery.data ?? []} layout={journal.layout} scale={0.54} />
+          <JournalCanvas
+            assets={assetsQuery.data ?? []}
+            images={imagesQuery.data ?? []}
+            layout={journal.layout}
+            scale={0.64}
+          />
         </div>
-        <aside className="journal-copy-panel">
-          <p className="eyebrow">Story</p>
-          <div className="journal-copy-body">
-            {journal.layout.content.body.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))}
-          </div>
-          {journal.layout.content.captions.length > 0 ? (
-            <div className="journal-caption-list">
-              {journal.layout.content.captions.map((caption) => (
-                <p key={`${caption.imageId}-${caption.text}`}>{caption.text}</p>
-              ))}
-            </div>
-          ) : null}
-        </aside>
       </div>
     </section>
-  );
-}
-
-type MetaItemProps = {
-  icon: typeof ImageIcon;
-  text: string;
-};
-
-function MetaItem({ icon: Icon, text }: MetaItemProps) {
-  return (
-    <span>
-      <Icon size={15} />
-      {text}
-    </span>
   );
 }

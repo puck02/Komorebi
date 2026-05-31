@@ -1,6 +1,6 @@
 export type JournalCanvasConfig = {
   width: 1080;
-  height: 1440;
+  height: number;
   background: string;
 };
 

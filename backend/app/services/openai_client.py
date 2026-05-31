@@ -63,7 +63,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         for asset in request.assets
     ]
     schema_example = {
-        "canvas": {"width": 1080, "height": 1440, "background": "#f8f1e8"},
+        "canvas": {"width": 1080, "height": 2400, "background": "#f8f1e8"},
         "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["温柔"]},
         "content": {
             "title": "慢下来的周末",
@@ -71,7 +71,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
             "captions": [{"imageId": images[0]["id"] if images else "image_id", "text": "照片说明"}],
         },
         "layout": {
-            "variant": "collage_a",
+            "variant": "long_collage",
             "images": [
                 {
                     "imageId": images[0]["id"] if images else "image_id",
@@ -103,7 +103,9 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "content.body 必须是字符串数组。content.captions 必须使用 imageId 和 text。"
         "layout.images 必须使用 imageId。layout.decorations 必须使用 assetId。"
         "layout.texts.role 只能是 title、body 或 caption。"
-        "画布必须是 1080 x 1440。只能使用给定 image id 和 asset id。"
+        "画布宽度必须是 1080，高度必须按内容多少生成竖向长图，不能固定为 1440。"
+        "所有图片、文字和装饰都必须落在 0 到 canvas.height 范围内，内容多时让 canvas.height 继续向下延伸。"
+        "最终效果是一张可纵向滚动的完整手帐长图，而不是右侧附加正文。只能使用给定 image id 和 asset id。"
         f"\n返回 JSON 示例：{json.dumps(schema_example, ensure_ascii=False)}"
         f"\n用户描述：{request.description}"
         f"\n图片：{json.dumps(images, ensure_ascii=False)}"
