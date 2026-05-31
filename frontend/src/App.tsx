@@ -2,6 +2,7 @@ import { Images, Library, NotebookPen } from "lucide-react";
 import { NavLink, Route, Routes } from "react-router-dom";
 
 import AssetLibraryPage from "./pages/AssetLibraryPage";
+import CreateJournalPage from "./pages/CreateJournalPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
@@ -29,23 +30,14 @@ export default function App() {
       </nav>
 
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<CreateJournalPage />} />
         <Route path="/history" element={<PlaceholderPage title="历史手帐" description="历史列表会在手帐保存接口完成后接入。" />} />
+        <Route path="/journals/:journalId" element={<PlaceholderPage title="手帐详情" description="详情预览和轻量编辑会在下一步接入。" />} />
         <Route path="/assets" element={<AssetLibraryPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Routes>
     </main>
-  );
-}
-
-function HomePage() {
-  return (
-    <section className="hero-panel">
-      <p className="eyebrow">AI Journal Scrapbook</p>
-      <h1>把照片和几句话整理成温柔拼贴手帐。</h1>
-      <p className="hero-copy">生活照片、零碎心情和一点纸感装饰，会被整理成一页可以保存的日记手帐。</p>
-    </section>
   );
 }
 
