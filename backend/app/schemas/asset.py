@@ -13,3 +13,11 @@ class AssetRead(BaseModel):
     license: str
     source: str
     quality_status: str
+
+
+class AssetPermissionsRead(BaseModel):
+    can_manage_assets: bool
+
+
+class AssetQualityStatusUpdate(BaseModel):
+    quality_status: str

@@ -6,6 +6,7 @@ from pathlib import Path
 
 ASSET_ROOT = Path(__file__).resolve().parents[1] / "assets"
 MANIFEST_PATH = ASSET_ROOT / "manifest.json"
+QUALITY_STATUSES = {"approved", "draft", "rejected"}
 
 
 @dataclass(frozen=True)
@@ -58,3 +59,18 @@ def get_approved_assets(tags: list[str] | None = None, category: str | None = No
     if required_tags:
         assets = [asset for asset in assets if required_tags.intersection(asset.tags)]
     return assets
+
+
+def update_asset_quality_status(asset_id: str, quality_status: str) -> AssetItem | None:
+    if quality_status not in QUALITY_STATUSES:
+        raise ValueError("Unsupported asset quality status")
+
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    for item in manifest:
+        if item["id"] == asset_id:
+            item["qualityStatus"] = quality_status
+            MANIFEST_PATH.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            load_assets.cache_clear()
+            return get_asset(asset_id)
+
+    return None

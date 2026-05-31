@@ -1,18 +1,28 @@
 import { useMemo, useState } from "react";
 import { Filter } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getAssets } from "../api/assets";
+import { getAssetPermissions, getAssets, updateAssetQualityStatus } from "../api/assets";
 import AssetCard from "../components/AssetCard";
 import { Button } from "../components/ui/button";
+import type { AssetQualityStatus } from "../types/asset";
 
 const allValue = "all";
 
 export default function AssetLibraryPage() {
+  const queryClient = useQueryClient();
   const [category, setCategory] = useState(allValue);
   const [status, setStatus] = useState(allValue);
   const [tag, setTag] = useState(allValue);
   const { data: assets = [], error, isLoading } = useQuery({ queryFn: getAssets, queryKey: ["assets"] });
+  const permissionsQuery = useQuery({ queryFn: getAssetPermissions, queryKey: ["asset-permissions"] });
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ assetId, qualityStatus }: { assetId: string; qualityStatus: AssetQualityStatus }) =>
+      updateAssetQualityStatus(assetId, qualityStatus),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+    }
+  });
 
   const categories = useMemo(() => [allValue, ...unique(assets.map((asset) => asset.category))], [assets]);
   const statuses = useMemo(() => [allValue, ...unique(assets.map((asset) => asset.quality_status))], [assets]);
@@ -60,7 +70,13 @@ export default function AssetLibraryPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredAssets.map((asset) => (
-          <AssetCard key={asset.id} asset={asset} />
+          <AssetCard
+            key={asset.id}
+            asset={asset}
+            canManage={permissionsQuery.data?.can_manage_assets ?? false}
+            isUpdating={updateStatusMutation.isPending && updateStatusMutation.variables?.assetId === asset.id}
+            onStatusChange={(qualityStatus) => updateStatusMutation.mutate({ assetId: asset.id, qualityStatus })}
+          />
         ))}
       </div>
     </section>
