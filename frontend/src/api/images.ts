@@ -38,9 +38,30 @@ export async function getImage(imageId: string) {
   return apiRequest<UploadedImage>(`/images/${imageId}`, { auth: true });
 }
 
+export async function getImageFileBlob(imageId: string) {
+  return fetchAuthenticatedImage(`/images/${imageId}/file`);
+}
+
+async function fetchAuthenticatedImage(path: string) {
+  const token = getAccessToken();
+  if (!token) {
+    throw new Error("请先登录后再查看图片。");
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (!response.ok) {
+    throw new Error(await readUploadError(response));
+  }
+
+  return response.blob();
+}
+
 async function readUploadError(response: Response) {
   if (response.status === 401) {
-    return "请先登录后再上传图片。";
+    return "请先登录后再操作图片。";
   }
 
   try {

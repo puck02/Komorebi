@@ -1,9 +1,10 @@
 import { ArrowLeft, CalendarDays, Image as ImageIcon, MapPin, Tags } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { getAssets } from "../api/assets";
-import { getImage } from "../api/images";
+import { getImage, getImageFileBlob } from "../api/images";
 import { getJournal } from "../api/journals";
 import JournalCanvas from "../components/JournalCanvas";
 import { Button } from "../components/ui/button";
@@ -18,9 +19,26 @@ export default function JournalDetailPage() {
   const assetsQuery = useQuery({ queryFn: getAssets, queryKey: ["assets"] });
   const imagesQuery = useQuery({
     enabled: Boolean(journalQuery.data),
-    queryFn: () => Promise.all((journalQuery.data?.imageIds ?? []).map((imageId) => getImage(imageId))),
+    queryFn: () =>
+      Promise.all(
+        (journalQuery.data?.imageIds ?? []).map(async (imageId) => {
+          const [image, blob] = await Promise.all([getImage(imageId), getImageFileBlob(imageId)]);
+          return {
+            alt: journalQuery.data?.title ?? "",
+            id: image.id,
+            src: URL.createObjectURL(blob)
+          };
+        })
+      ),
     queryKey: ["journal-images", journalQuery.data?.imageIds]
   });
+
+  useEffect(() => {
+    const images = imagesQuery.data ?? [];
+    return () => {
+      images.forEach((image) => URL.revokeObjectURL(image.src));
+    };
+  }, [imagesQuery.data]);
 
   const journal = journalQuery.data;
   const isLoading = journalQuery.isLoading || assetsQuery.isLoading || imagesQuery.isLoading;
@@ -48,12 +66,6 @@ export default function JournalDetailPage() {
     );
   }
 
-  const images = (imagesQuery.data ?? []).map((image) => ({
-    alt: journal.title,
-    id: image.id,
-    src: image.file_url
-  }));
-
   return (
     <section className="journal-detail-page">
       <header className="journal-detail-header">
@@ -79,7 +91,7 @@ export default function JournalDetailPage() {
 
       <div className="journal-detail-layout">
         <div className="journal-preview-panel">
-          <JournalCanvas assets={assetsQuery.data ?? []} images={images} layout={journal.layout} scale={0.54} />
+          <JournalCanvas assets={assetsQuery.data ?? []} images={imagesQuery.data ?? []} layout={journal.layout} scale={0.54} />
         </div>
         <aside className="journal-copy-panel">
           <p className="eyebrow">Story</p>
