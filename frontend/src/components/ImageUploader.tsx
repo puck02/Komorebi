@@ -1,4 +1,4 @@
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 
 import { UploadedImage, uploadImage } from "../api/images";
 
@@ -7,9 +7,17 @@ type Props = {
 };
 
 export default function ImageUploader({ onUploaded }: Props) {
-  const [images, setImages] = useState<UploadedImage[]>([]);
+  const [images, setImages] = useState<UploadedImagePreview[]>([]);
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const previewUrls = useRef(new Set<string>());
+
+  useEffect(() => {
+    return () => {
+      previewUrls.current.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
+      previewUrls.current.clear();
+    };
+  }, []);
 
   async function handleFilesChange(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? []);
@@ -24,13 +32,28 @@ export default function ImageUploader({ onUploaded }: Props) {
       return;
     }
 
+    const selectedPreviews = selectedFiles.map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file)
+    }));
+    selectedPreviews.forEach(({ previewUrl }) => previewUrls.current.add(previewUrl));
+
     setIsUploading(true);
     try {
-      const uploadedImages = await Promise.all(selectedFiles.map((file) => uploadImage(file)));
+      const uploadedImages = await Promise.all(
+        selectedPreviews.map(async ({ file, previewUrl }) => ({
+          ...(await uploadImage(file)),
+          preview_url: previewUrl
+        }))
+      );
       const nextImages = [...images, ...uploadedImages];
       setImages(nextImages);
       onUploaded?.(nextImages);
     } catch (caughtError) {
+      selectedPreviews.forEach(({ previewUrl }) => {
+        URL.revokeObjectURL(previewUrl);
+        previewUrls.current.delete(previewUrl);
+      });
       setError(caughtError instanceof Error ? caughtError.message : "图片上传失败");
     } finally {
       setIsUploading(false);
@@ -39,6 +62,11 @@ export default function ImageUploader({ onUploaded }: Props) {
   }
 
   function removeImage(imageId: string) {
+    const removedImage = images.find((image) => image.id === imageId);
+    if (removedImage) {
+      URL.revokeObjectURL(removedImage.preview_url);
+      previewUrls.current.delete(removedImage.preview_url);
+    }
     const nextImages = images.filter((image) => image.id !== imageId);
     setImages(nextImages);
     onUploaded?.(nextImages);
@@ -60,7 +88,7 @@ export default function ImageUploader({ onUploaded }: Props) {
       <div className="upload-grid">
         {images.map((image) => (
           <figure key={image.id}>
-            <img alt="" src={image.thumbnail_url} />
+            <img alt="" src={image.preview_url} />
             <button type="button" onClick={() => removeImage(image.id)}>
               删除
             </button>
@@ -70,3 +98,7 @@ export default function ImageUploader({ onUploaded }: Props) {
     </section>
   );
 }
+
+type UploadedImagePreview = UploadedImage & {
+  preview_url: string;
+};

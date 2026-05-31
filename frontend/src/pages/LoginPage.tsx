@@ -1,8 +1,10 @@
 import { FormEvent, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { login } from "../api/auth";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -14,6 +16,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await login({ email, password });
+      navigate("/");
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "登录失败");
     } finally {

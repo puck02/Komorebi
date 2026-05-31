@@ -1,4 +1,4 @@
-import { Images, Library, NotebookPen } from "lucide-react";
+import { Images, Library, LogIn, NotebookPen, UserPlus } from "lucide-react";
 import { NavLink, Route, Routes } from "react-router-dom";
 
 import AssetLibraryPage from "./pages/AssetLibraryPage";
@@ -9,7 +9,9 @@ import RegisterPage from "./pages/RegisterPage";
 const navItems = [
   { icon: NotebookPen, label: "创建", to: "/" },
   { icon: Images, label: "历史", to: "/history" },
-  { icon: Library, label: "素材", to: "/assets" }
+  { icon: Library, label: "素材", to: "/assets" },
+  { icon: LogIn, label: "登录", to: "/login" },
+  { icon: UserPlus, label: "注册", to: "/register" }
 ];
 
 export default function App() {
