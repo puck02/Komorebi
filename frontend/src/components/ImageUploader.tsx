@@ -138,15 +138,11 @@ export default function ImageUploader({ onUploaded }: Props) {
       return;
     }
 
-    if (event.pointerType !== "mouse") {
-      event.preventDefault();
-      lockPageScroll();
-    }
-
     const pressedElement = event.currentTarget;
     const initialRect = pressedElement.getBoundingClientRect();
     pressedElement.setPointerCapture(event.pointerId);
     const delay = event.pointerType === "mouse" ? 180 : 200;
+    const scrollLockDelay = event.pointerType === "mouse" ? delay : 180;
     const session: DragSession = {
       activeId: imageId,
       initialRect,
@@ -162,6 +158,7 @@ export default function ImageUploader({ onUploaded }: Props) {
       lastTargetId: imageId,
       visualTargetId: imageId,
       frameId: null,
+      scrollLockTimerId: window.setTimeout(lockPageScroll, scrollLockDelay),
       timerId: window.setTimeout(() => {
         lockPageScroll();
         session.isDragging = true;
@@ -188,8 +185,10 @@ export default function ImageUploader({ onUploaded }: Props) {
 
     if (!session.isDragging) {
       const moved = Math.hypot(event.clientX - session.startX, event.clientY - session.startY);
-      if (moved > 10) {
+      if (moved > 8) {
         cancelPress(event);
+      } else if (scrollLock.current) {
+        event.preventDefault();
       }
       return;
     }
@@ -282,6 +281,10 @@ export default function ImageUploader({ onUploaded }: Props) {
       window.clearTimeout(dragSession.current.timerId);
       dragSession.current.timerId = null;
     }
+    if (dragSession.current?.scrollLockTimerId) {
+      window.clearTimeout(dragSession.current.scrollLockTimerId);
+      dragSession.current.scrollLockTimerId = null;
+    }
   }
 
   function clearDragFrame() {
@@ -317,8 +320,10 @@ export default function ImageUploader({ onUploaded }: Props) {
       bodyOverflow: document.body.style.overflow,
       bodyTouchAction: document.body.style.touchAction,
       bodyOverscroll: document.body.style.overscrollBehavior,
-      htmlOverscroll: document.documentElement.style.overscrollBehavior
+      htmlOverscroll: document.documentElement.style.overscrollBehavior,
+      touchMoveHandler: (event) => event.preventDefault()
     };
+    window.addEventListener("touchmove", scrollLock.current.touchMoveHandler, { passive: false });
     document.body.style.overflow = "hidden";
     document.body.style.touchAction = "none";
     document.body.style.overscrollBehavior = "none";
@@ -330,6 +335,7 @@ export default function ImageUploader({ onUploaded }: Props) {
       return;
     }
 
+    window.removeEventListener("touchmove", scrollLock.current.touchMoveHandler);
     document.body.style.overflow = scrollLock.current.bodyOverflow;
     document.body.style.touchAction = scrollLock.current.bodyTouchAction;
     document.body.style.overscrollBehavior = scrollLock.current.bodyOverscroll;
@@ -403,6 +409,7 @@ type DragSession = {
   lastTargetId: string;
   visualTargetId: string;
   frameId: number | null;
+  scrollLockTimerId: number | null;
   timerId: number | null;
 };
 
@@ -411,6 +418,7 @@ type ScrollLockSnapshot = {
   bodyTouchAction: string;
   bodyOverscroll: string;
   htmlOverscroll: string;
+  touchMoveHandler: (event: TouchEvent) => void;
 };
 
 type DragVisual = {
