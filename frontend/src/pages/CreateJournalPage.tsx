@@ -64,11 +64,6 @@ export default function CreateJournalPage() {
 
   return (
     <section className="create-page">
-      <div className="create-header">
-        <p className="eyebrow">Create Journal</p>
-        <h1>生成一页新的手帐</h1>
-      </div>
-
       <form className="create-layout" onSubmit={handleSubmit(onSubmit)}>
         <div className="create-panel">
           <ImageUploader onUploaded={setImages} />
