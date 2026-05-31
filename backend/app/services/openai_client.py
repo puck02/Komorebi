@@ -1,10 +1,13 @@
 import json
 from typing import Any
 
-from openai import APIStatusError, OpenAI, OpenAIError
+import httpx
 
 from app.core.config import get_settings
 from app.services.journal_generator import GenerationError, JournalGenerationRequest
+
+DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
+OPENAI_TIMEOUT_SECONDS = 120
 
 
 class OpenAIConfigurationError(RuntimeError):
@@ -15,27 +18,36 @@ class OpenAIJournalClient:
     def __init__(self, api_key: str | None = None, base_url: str | None = None, model: str | None = None):
         settings = get_settings()
         self.api_key = api_key if api_key is not None else settings.openai_api_key
-        self.base_url = base_url if base_url is not None else settings.openai_base_url
+        self.base_url = (base_url if base_url is not None else settings.openai_base_url) or DEFAULT_OPENAI_BASE_URL
         self.model = model or settings.openai_model
         if not self.api_key:
             raise OpenAIConfigurationError("OPENAI_API_KEY is required to generate journals")
-        client_kwargs = {"api_key": self.api_key}
-        if self.base_url:
-            client_kwargs["base_url"] = self.base_url
-        self.client = OpenAI(**client_kwargs)
 
     def generate_layout(self, request: JournalGenerationRequest) -> dict[str, Any]:
         try:
-            response = self.client.responses.create(
-                model=self.model,
-                input=build_generation_prompt(request),
-                text={"format": {"type": "json_object"}},
+            response = httpx.post(
+                f"{self.base_url.rstrip('/')}/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": build_generation_prompt(request)}],
+                    "response_format": {"type": "json_object"},
+                },
+                timeout=OPENAI_TIMEOUT_SECONDS,
+                trust_env=True,
             )
-        except APIStatusError as exc:
-            raise GenerationError(f"AI 服务返回 {exc.status_code}，请检查模型、Key 或第三方渠道配置") from exc
-        except OpenAIError as exc:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise GenerationError(f"AI 服务返回 {exc.response.status_code}，请检查模型、Key 或第三方渠道配置") from exc
+        except httpx.RequestError as exc:
             raise GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置") from exc
-        return json.loads(response.output_text)
+
+        payload = response.json()
+        content = payload["choices"][0]["message"]["content"]
+        return json.loads(content)
 
 
 def build_generation_prompt(request: JournalGenerationRequest) -> str:
@@ -50,12 +62,49 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         }
         for asset in request.assets
     ]
+    schema_example = {
+        "canvas": {"width": 1080, "height": 1440, "background": "#f8f1e8"},
+        "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["温柔"]},
+        "content": {
+            "title": "慢下来的周末",
+            "body": ["一段温柔的正文。"],
+            "captions": [{"imageId": images[0]["id"] if images else "image_id", "text": "照片说明"}],
+        },
+        "layout": {
+            "variant": "collage_a",
+            "images": [
+                {
+                    "imageId": images[0]["id"] if images else "image_id",
+                    "x": 92,
+                    "y": 210,
+                    "width": 420,
+                    "height": 320,
+                    "rotation": -3,
+                }
+            ],
+            "texts": [{"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56}],
+            "decorations": [
+                {
+                    "assetId": assets[0]["id"] if assets else "asset_id",
+                    "x": 60,
+                    "y": 180,
+                    "width": 220,
+                    "height": 54,
+                    "rotation": -8,
+                }
+            ],
+        },
+    }
     return (
         "你是一个温柔拼贴风格的日记手帐排版助手。"
-        "请只返回 JSON，不要返回 Markdown。"
-        "画布必须是 1080 x 1440。"
-        "只能使用给定 image id 和 asset id。"
-        "返回结构必须包含 canvas、theme、content、layout。"
+        "请只返回一个严格 JSON 对象，不要返回 Markdown。"
+        "必须完全使用下面的字段结构和 camelCase 字段名，不要增加 subtitle、notes、safe_margin、typography、content.images 等额外结构。"
+        "canvas.background 必须是颜色字符串，不能是对象。"
+        "content.body 必须是字符串数组。content.captions 必须使用 imageId 和 text。"
+        "layout.images 必须使用 imageId。layout.decorations 必须使用 assetId。"
+        "layout.texts.role 只能是 title、body 或 caption。"
+        "画布必须是 1080 x 1440。只能使用给定 image id 和 asset id。"
+        f"\n返回 JSON 示例：{json.dumps(schema_example, ensure_ascii=False)}"
         f"\n用户描述：{request.description}"
         f"\n图片：{json.dumps(images, ensure_ascii=False)}"
         f"\n可用素材：{json.dumps(assets, ensure_ascii=False)}"
