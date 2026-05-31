@@ -1,4 +1,5 @@
 from io import BytesIO
+import random
 
 import pytest
 from fastapi.testclient import TestClient
@@ -62,6 +63,29 @@ def test_authenticated_user_uploads_image_and_thumbnail_is_created(client, tmp_p
     assert list((tmp_path / "storage").glob("users/*/images/*/thumb.webp"))
 
 
+def test_large_upload_creates_display_image_under_one_mb(client):
+    token = register_and_login(client, "owner@example.com")
+
+    response = client.post(
+        "/api/images",
+        files={"file": ("large-photo.jpg", make_large_image_bytes(), "image/jpeg")},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["display_url"] == f"/api/images/{body['id']}/display"
+
+    display_response = client.get(
+        body["display_url"],
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert display_response.status_code == 200
+    assert display_response.headers["content-type"] == "image/webp"
+    assert len(display_response.content) <= 1024 * 1024
+
+
 def test_upload_rejects_unsupported_content_type(client):
     token = register_and_login(client, "owner@example.com")
 
@@ -103,4 +127,12 @@ def make_image_bytes() -> bytes:
     buffer = BytesIO()
     image = PillowImage.new("RGB", (64, 48), color=(210, 170, 140))
     image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def make_large_image_bytes() -> bytes:
+    random_bytes = random.Random(42).randbytes(1400 * 1000 * 3)
+    image = PillowImage.frombytes("RGB", (1400, 1000), random_bytes)
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", quality=95)
     return buffer.getvalue()

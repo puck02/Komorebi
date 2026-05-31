@@ -6,6 +6,7 @@ export type UploadedImage = {
   width: number;
   height: number;
   file_url: string;
+  display_url: string;
   thumbnail_url: string;
   created_at: string;
 };
@@ -40,6 +41,10 @@ export async function getImage(imageId: string) {
 
 export async function getImageFileBlob(imageId: string) {
   return fetchAuthenticatedImage(`/images/${imageId}/file`);
+}
+
+export async function getImageDisplayBlob(imageId: string) {
+  return fetchAuthenticatedImage(`/images/${imageId}/display`);
 }
 
 export async function getImageThumbnailBlob(imageId: string) {

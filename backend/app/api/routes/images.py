@@ -14,7 +14,7 @@ from app.models.image import Image as ImageModel
 from app.models.user import User
 from app.schemas.image import ImageRead
 from app.services.storage import build_image_paths, extension_for_content_type, save_upload_file
-from app.services.thumbnails import generate_thumbnail
+from app.services.thumbnails import generate_display_image, generate_thumbnail
 
 router = APIRouter(prefix="/api/images", tags=["images"])
 
@@ -35,6 +35,7 @@ def upload_image(
 
     try:
         width, height = generate_thumbnail(paths.original, paths.thumbnail)
+        generate_display_image(paths.original, paths.display)
     except UnidentifiedImageError as exc:
         rmtree(paths.directory, ignore_errors=True)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid image file") from exc
@@ -74,6 +75,19 @@ def get_image_file(
     return FileResponse(Path(image.original_path), media_type=image.content_type)
 
 
+@router.get("/{image_id}/display")
+def get_image_display(
+    image_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> FileResponse:
+    image = get_owned_image(db, current_user.id, image_id)
+    display_path = display_path_for_image(image)
+    if not display_path.exists():
+        generate_display_image(Path(image.original_path), display_path)
+    return FileResponse(display_path, media_type="image/webp")
+
+
 @router.get("/{image_id}/thumbnail")
 def get_image_thumbnail(
     image_id: str,
@@ -98,6 +112,11 @@ def image_to_read(image: ImageModel) -> ImageRead:
         width=image.width,
         height=image.height,
         file_url=f"/api/images/{image.id}/file",
+        display_url=f"/api/images/{image.id}/display",
         thumbnail_url=f"/api/images/{image.id}/thumbnail",
         created_at=image.created_at,
     )
+
+
+def display_path_for_image(image: ImageModel) -> Path:
+    return Path(image.original_path).parent / "display.webp"

@@ -9,5 +9,6 @@ class ImageRead(BaseModel):
     width: int
     height: int
     file_url: str
+    display_url: str
     thumbnail_url: str
     created_at: datetime

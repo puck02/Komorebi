@@ -11,10 +11,11 @@ type Props = {
   layout: JournalLayout;
   images: JournalCanvasImage[];
   assets: Asset[];
+  onImageClick?: (imageId: string) => void;
   scale?: number;
 };
 
-export default function JournalCanvas({ assets, images, layout, scale = 0.42 }: Props) {
+export default function JournalCanvas({ assets, images, layout, onImageClick, scale = 0.42 }: Props) {
   const imageMap = new Map(images.map((image) => [image.id, image]));
   const assetMap = new Map(assets.map((asset) => [asset.id, asset]));
   const titlePlacement = layout.layout.texts.find((text) => text.role === "title");
@@ -45,6 +46,14 @@ export default function JournalCanvas({ assets, images, layout, scale = 0.42 }: 
             <figure
               className="journal-photo"
               key={placement.imageId}
+              onClick={() => onImageClick?.(placement.imageId)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onImageClick?.(placement.imageId);
+                }
+              }}
+              role={onImageClick ? "button" : undefined}
               style={{
                 height: placement.height,
                 left: placement.x,
@@ -52,6 +61,7 @@ export default function JournalCanvas({ assets, images, layout, scale = 0.42 }: 
                 transform: `rotate(${placement.rotation}deg)`,
                 width: placement.width
               }}
+              tabIndex={onImageClick ? 0 : undefined}
             >
               <img alt={image.alt ?? ""} src={image.src} />
             </figure>

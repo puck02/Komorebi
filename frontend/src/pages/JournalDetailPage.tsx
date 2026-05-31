@@ -1,16 +1,19 @@
 import { ArrowLeft, NotebookPen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { getAssets } from "../api/assets";
-import { getImage, getImageFileBlob } from "../api/images";
+import { getImageDisplayBlob, getImageFileBlob } from "../api/images";
 import { getJournal } from "../api/journals";
 import JournalCanvas from "../components/JournalCanvas";
 import { Button } from "../components/ui/button";
 
 export default function JournalDetailPage() {
   const { journalId } = useParams<{ journalId: string }>();
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
+  const [isOriginalImageLoading, setIsOriginalImageLoading] = useState(false);
   const journalQuery = useQuery({
     enabled: Boolean(journalId),
     queryFn: () => getJournal(journalId as string),
@@ -22,14 +25,15 @@ export default function JournalDetailPage() {
     queryFn: () =>
       Promise.all(
         (journalQuery.data?.imageIds ?? []).map(async (imageId) => {
-          const [image, blob] = await Promise.all([getImage(imageId), getImageFileBlob(imageId)]);
+          const blob = await getImageDisplayBlob(imageId);
           return {
             alt: journalQuery.data?.title ?? "",
-            id: image.id,
+            id: imageId,
             src: URL.createObjectURL(blob)
           };
         })
       ),
+    gcTime: 0,
     queryKey: ["journal-images", journalQuery.data?.imageIds]
   });
 
@@ -39,6 +43,49 @@ export default function JournalDetailPage() {
       images.forEach((image) => URL.revokeObjectURL(image.src));
     };
   }, [imagesQuery.data]);
+
+  const selectedDisplayImage = useMemo(
+    () => imagesQuery.data?.find((image) => image.id === selectedImageId),
+    [imagesQuery.data, selectedImageId]
+  );
+
+  useEffect(() => {
+    if (!selectedImageId) {
+      setOriginalImageUrl(null);
+      setIsOriginalImageLoading(false);
+      return;
+    }
+
+    let shouldIgnore = false;
+    let objectUrl: string | null = null;
+    setOriginalImageUrl(null);
+    setIsOriginalImageLoading(true);
+
+    getImageFileBlob(selectedImageId)
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        if (!shouldIgnore) {
+          setOriginalImageUrl(objectUrl);
+        }
+      })
+      .catch(() => {
+        if (!shouldIgnore) {
+          setOriginalImageUrl(null);
+        }
+      })
+      .finally(() => {
+        if (!shouldIgnore) {
+          setIsOriginalImageLoading(false);
+        }
+      });
+
+    return () => {
+      shouldIgnore = true;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [selectedImageId]);
 
   const journal = journalQuery.data;
   const isLoading = journalQuery.isLoading || assetsQuery.isLoading || imagesQuery.isLoading;
@@ -89,10 +136,21 @@ export default function JournalDetailPage() {
             assets={assetsQuery.data ?? []}
             images={imagesQuery.data ?? []}
             layout={journal.layout}
+            onImageClick={setSelectedImageId}
             scale={0.64}
           />
         </div>
       </div>
+
+      {selectedImageId ? (
+        <button className="image-lightbox" type="button" onClick={() => setSelectedImageId(null)}>
+          {isOriginalImageLoading ? <span>正在加载原图...</span> : null}
+          <img
+            alt={selectedDisplayImage?.alt ?? journal.title}
+            src={originalImageUrl ?? selectedDisplayImage?.src}
+          />
+        </button>
+      ) : null}
     </section>
   );
 }

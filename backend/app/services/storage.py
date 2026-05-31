@@ -15,6 +15,7 @@ SUPPORTED_IMAGE_TYPES = {
 class ImagePaths:
     directory: Path
     original: Path
+    display: Path
     thumbnail: Path
 
 
@@ -29,6 +30,7 @@ def build_image_paths(storage_root: str, user_id: str, image_id: str, extension:
     return ImagePaths(
         directory=directory,
         original=directory / f"original.{extension}",
+        display=directory / "display.webp",
         thumbnail=directory / "thumb.webp",
     )
 
