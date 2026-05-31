@@ -38,22 +38,20 @@ export default function JournalCanvas({ assets, images, layout, onImageClick, sc
 
         {layout.layout.images.map((placement) => {
           const image = imageMap.get(placement.imageId);
-          if (!image) {
-            return null;
-          }
 
           return (
             <figure
-              className="journal-photo"
+              aria-hidden={image ? undefined : "true"}
+              className={`journal-photo ${image ? "" : "journal-photo-placeholder"}`}
               key={placement.imageId}
-              onClick={() => onImageClick?.(placement.imageId)}
+              onClick={image ? () => onImageClick?.(placement.imageId) : undefined}
               onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
+                if (image && (event.key === "Enter" || event.key === " ")) {
                   event.preventDefault();
                   onImageClick?.(placement.imageId);
                 }
               }}
-              role={onImageClick ? "button" : undefined}
+              role={image && onImageClick ? "button" : undefined}
               style={{
                 height: placement.height,
                 left: placement.x,
@@ -61,9 +59,9 @@ export default function JournalCanvas({ assets, images, layout, onImageClick, sc
                 transform: `rotate(${placement.rotation}deg)`,
                 width: placement.width
               }}
-              tabIndex={onImageClick ? 0 : undefined}
+              tabIndex={image && onImageClick ? 0 : undefined}
             >
-              <img alt={image.alt ?? ""} src={image.src} />
+              {image ? <img alt={image.alt ?? ""} src={image.src} /> : <span>加载中</span>}
             </figure>
           );
         })}

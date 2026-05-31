@@ -9,8 +9,16 @@ import { getJournal } from "../api/journals";
 import JournalCanvas from "../components/JournalCanvas";
 import { Button } from "../components/ui/button";
 
+type CanvasImage = {
+  id: string;
+  src: string;
+  alt: string;
+};
+
 export default function JournalDetailPage() {
   const { journalId } = useParams<{ journalId: string }>();
+  const [displayImages, setDisplayImages] = useState<CanvasImage[]>([]);
+  const [isDisplayImagesLoading, setIsDisplayImagesLoading] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [isOriginalImageLoading, setIsOriginalImageLoading] = useState(false);
@@ -20,33 +28,62 @@ export default function JournalDetailPage() {
     queryKey: ["journal", journalId]
   });
   const assetsQuery = useQuery({ queryFn: getAssets, queryKey: ["assets"] });
-  const imagesQuery = useQuery({
-    enabled: Boolean(journalQuery.data),
-    queryFn: () =>
-      Promise.all(
-        (journalQuery.data?.imageIds ?? []).map(async (imageId) => {
-          const blob = await getImageDisplayBlob(imageId);
-          return {
-            alt: journalQuery.data?.title ?? "",
-            id: imageId,
-            src: URL.createObjectURL(blob)
-          };
-        })
-      ),
-    gcTime: 0,
-    queryKey: ["journal-images", journalQuery.data?.imageIds]
-  });
 
   useEffect(() => {
-    const images = imagesQuery.data ?? [];
+    const journal = journalQuery.data;
+    if (!journal) {
+      setDisplayImages([]);
+      setIsDisplayImagesLoading(false);
+      return;
+    }
+
+    let shouldIgnore = false;
+    const objectUrls: string[] = [];
+    const imageIds = journal.imageIds;
+    const title = journal.title;
+    setDisplayImages([]);
+    setIsDisplayImagesLoading(true);
+
+    async function loadDisplayImages() {
+      for (const imageId of imageIds) {
+        try {
+          const blob = await getImageDisplayBlob(imageId);
+          if (shouldIgnore) {
+            return;
+          }
+          const src = URL.createObjectURL(blob);
+          objectUrls.push(src);
+          setDisplayImages((currentImages) => [
+            ...currentImages,
+            {
+              alt: title,
+              id: imageId,
+              src
+            }
+          ]);
+        } catch {
+          if (shouldIgnore) {
+            return;
+          }
+        }
+      }
+
+      if (!shouldIgnore) {
+        setIsDisplayImagesLoading(false);
+      }
+    }
+
+    void loadDisplayImages();
+
     return () => {
-      images.forEach((image) => URL.revokeObjectURL(image.src));
+      shouldIgnore = true;
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [imagesQuery.data]);
+  }, [journalQuery.data]);
 
   const selectedDisplayImage = useMemo(
-    () => imagesQuery.data?.find((image) => image.id === selectedImageId),
-    [imagesQuery.data, selectedImageId]
+    () => displayImages.find((image) => image.id === selectedImageId),
+    [displayImages, selectedImageId]
   );
 
   useEffect(() => {
@@ -88,8 +125,8 @@ export default function JournalDetailPage() {
   }, [selectedImageId]);
 
   const journal = journalQuery.data;
-  const isLoading = journalQuery.isLoading || assetsQuery.isLoading || imagesQuery.isLoading;
-  const error = journalQuery.error ?? assetsQuery.error ?? imagesQuery.error;
+  const isLoading = journalQuery.isLoading || assetsQuery.isLoading;
+  const error = journalQuery.error ?? assetsQuery.error;
 
   if (isLoading) {
     return (
@@ -134,13 +171,15 @@ export default function JournalDetailPage() {
         <div className="journal-preview-panel">
           <JournalCanvas
             assets={assetsQuery.data ?? []}
-            images={imagesQuery.data ?? []}
+            images={displayImages}
             layout={journal.layout}
             onImageClick={setSelectedImageId}
             scale={0.64}
           />
         </div>
       </div>
+
+      {isDisplayImagesLoading ? <p className="journal-image-loading">图片正在逐张加载...</p> : null}
 
       {selectedImageId ? (
         <button className="image-lightbox" type="button" onClick={() => setSelectedImageId(null)}>

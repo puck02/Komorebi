@@ -625,6 +625,19 @@ body {
   outline-offset: 6px;
 }
 
+.journal-photo-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--color-paragraph);
+  cursor: default;
+}
+
+.journal-photo-placeholder span {
+  color: var(--color-paragraph);
+  font-size: 24px;
+  font-weight: 800;
+}
+
 .journal-decoration {
   object-fit: contain;
   transform-origin: center;
@@ -679,6 +692,14 @@ body {
   padding: 22px;
   background: var(--color-paper-strong);
   box-shadow: var(--shadow-soft);
+}
+
+.journal-image-loading {
+  margin: 12px 0 0;
+  color: var(--color-paragraph);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
 }
 
 .image-lightbox {
