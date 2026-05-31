@@ -105,6 +105,8 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "layout.texts.role 只能是 title、body 或 caption。"
         "画布宽度必须是 1080，高度必须按内容多少生成竖向长图，不能固定为 1440。"
         "所有图片、文字和装饰都必须落在 0 到 canvas.height 范围内，内容多时让 canvas.height 继续向下延伸。"
+        "素材使用必须符合语义：tape 只能作为胶带贴在照片边缘或四角；paper 只能作为底纸或文字背景，不能盖住照片主体；"
+        "sticker 只能放在照片外侧空白区或轻微压住照片边缘，不能遮挡照片中心；texture 只能作为背景纹理。"
         "最终效果是一张可纵向滚动的完整手帐长图，而不是右侧附加正文。只能使用给定 image id 和 asset id。"
         f"\n返回 JSON 示例：{json.dumps(schema_example, ensure_ascii=False)}"
         f"\n用户描述：{request.description}"

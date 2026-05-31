@@ -11,6 +11,11 @@ from app.services.assets import AssetItem
 CANVAS_WIDTH = 1080
 DEFAULT_CANVAS_HEIGHT = 1440
 CANVAS_BOTTOM_PADDING = 80
+PHOTO_SAFE_INSET_RATIO = 0.18
+TAPE_MAX_WIDTH = 260
+TAPE_MAX_HEIGHT = 70
+TAPE_MIN_WIDTH = 150
+TAPE_MIN_HEIGHT = 38
 
 
 class GenerationError(RuntimeError):
@@ -88,12 +93,19 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
         normalize_id_alias(caption, "imageId")
     layout["content"]["captions"] = [caption for caption in captions if caption.get("imageId") in image_ids]
 
+    asset_by_id = {asset.id: asset for asset in request.assets}
+
     if approved_asset_ids:
         fallback_asset_id = approved_asset_ids[0]
-        layout["layout"]["decorations"] = [
+        normalized_decorations = [
             normalize_decoration_asset(decoration, approved_asset_set, fallback_asset_id)
             for decoration in layout["layout"].get("decorations", [])
         ]
+        layout["layout"]["decorations"] = normalize_decorations(
+            normalized_decorations,
+            layout["layout"].get("images", []),
+            asset_by_id,
+        )
     else:
         layout["layout"]["decorations"] = []
 
@@ -172,3 +184,108 @@ def normalize_decoration_asset(decoration: dict[str, Any], approved_asset_ids: s
     if next_decoration.get("assetId") not in approved_asset_ids:
         next_decoration["assetId"] = fallback_asset_id
     return next_decoration
+
+
+def normalize_decorations(
+    decorations: list[dict[str, Any]],
+    image_placements: list[dict[str, Any]],
+    asset_by_id: dict[str, AssetItem],
+) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for decoration in decorations:
+        asset = asset_by_id.get(str(decoration.get("assetId")))
+        category = asset.category if asset is not None else ""
+        if category == "tape":
+            normalized.append(snap_tape_to_photo_edge(decoration, image_placements))
+            continue
+        if category == "sticker" and overlaps_any_photo_safe_area(decoration, image_placements):
+            continue
+        normalized.append(clamp_decoration_to_canvas(decoration))
+    return normalized
+
+
+def snap_tape_to_photo_edge(decoration: dict[str, Any], image_placements: list[dict[str, Any]]) -> dict[str, Any]:
+    if not image_placements:
+        return clamp_decoration_to_canvas(decoration)
+
+    target = nearest_image_placement(decoration, image_placements)
+    tape_width = min(max(positive_number(decoration.get("width"), 210), TAPE_MIN_WIDTH), TAPE_MAX_WIDTH)
+    tape_height = min(max(positive_number(decoration.get("height"), 52), TAPE_MIN_HEIGHT), TAPE_MAX_HEIGHT)
+    image_x = positive_number(target.get("x"), 0)
+    image_y = positive_number(target.get("y"), 0)
+    image_width = positive_number(target.get("width"), 1)
+    image_height = positive_number(target.get("height"), 1)
+    decoration_center_x = positive_number(decoration.get("x"), image_x) + tape_width / 2
+    decoration_center_y = positive_number(decoration.get("y"), image_y) + tape_height / 2
+    image_center_x = image_x + image_width / 2
+    image_center_y = image_y + image_height / 2
+    use_left_anchor = decoration_center_x <= image_center_x
+    use_top_anchor = decoration_center_y <= image_center_y
+
+    next_decoration = dict(decoration)
+    next_decoration["width"] = tape_width
+    next_decoration["height"] = tape_height
+    next_decoration["x"] = image_x + (image_width * 0.12 if use_left_anchor else image_width * 0.68 - tape_width)
+    next_decoration["y"] = image_y - tape_height * 0.45 if use_top_anchor else image_y + image_height - tape_height * 0.55
+    fallback_rotation = -8 if use_left_anchor else 8
+    next_decoration["rotation"] = clamp_number(positive_number(decoration.get("rotation"), fallback_rotation), -12, 12)
+    return clamp_decoration_to_canvas(next_decoration)
+
+
+def nearest_image_placement(decoration: dict[str, Any], image_placements: list[dict[str, Any]]) -> dict[str, Any]:
+    decoration_center_x = positive_number(decoration.get("x"), 0) + positive_number(decoration.get("width"), 0) / 2
+    decoration_center_y = positive_number(decoration.get("y"), 0) + positive_number(decoration.get("height"), 0) / 2
+
+    def distance_squared(image: dict[str, Any]) -> float:
+        image_center_x = positive_number(image.get("x"), 0) + positive_number(image.get("width"), 0) / 2
+        image_center_y = positive_number(image.get("y"), 0) + positive_number(image.get("height"), 0) / 2
+        return (decoration_center_x - image_center_x) ** 2 + (decoration_center_y - image_center_y) ** 2
+
+    return min(image_placements, key=distance_squared)
+
+
+def overlaps_any_photo_safe_area(decoration: dict[str, Any], image_placements: list[dict[str, Any]]) -> bool:
+    decoration_rect = rect_from_item(decoration)
+    return any(rects_overlap(decoration_rect, photo_safe_rect(image)) for image in image_placements)
+
+
+def photo_safe_rect(image: dict[str, Any]) -> tuple[float, float, float, float]:
+    x = positive_number(image.get("x"), 0)
+    y = positive_number(image.get("y"), 0)
+    width = positive_number(image.get("width"), 0)
+    height = positive_number(image.get("height"), 0)
+    inset_x = width * PHOTO_SAFE_INSET_RATIO
+    inset_y = height * PHOTO_SAFE_INSET_RATIO
+    return (x + inset_x, y + inset_y, width - inset_x * 2, height - inset_y * 2)
+
+
+def rect_from_item(item: dict[str, Any]) -> tuple[float, float, float, float]:
+    return (
+        positive_number(item.get("x"), 0),
+        positive_number(item.get("y"), 0),
+        positive_number(item.get("width"), 0),
+        positive_number(item.get("height"), 0),
+    )
+
+
+def rects_overlap(first: tuple[float, float, float, float], second: tuple[float, float, float, float]) -> bool:
+    first_x, first_y, first_width, first_height = first
+    second_x, second_y, second_width, second_height = second
+    return (
+        first_x < second_x + second_width
+        and first_x + first_width > second_x
+        and first_y < second_y + second_height
+        and first_y + first_height > second_y
+    )
+
+
+def clamp_decoration_to_canvas(decoration: dict[str, Any]) -> dict[str, Any]:
+    next_decoration = dict(decoration)
+    width = positive_number(next_decoration.get("width"), 1)
+    next_decoration["x"] = clamp_number(positive_number(next_decoration.get("x"), 0), 0, max(CANVAS_WIDTH - width, 0))
+    next_decoration["y"] = max(positive_number(next_decoration.get("y"), 0), 0)
+    return next_decoration
+
+
+def clamp_number(value: float, minimum: float, maximum: float) -> float:
+    return min(max(value, minimum), maximum)

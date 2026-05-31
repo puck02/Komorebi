@@ -92,6 +92,59 @@ def test_generator_replaces_decorations_with_approved_asset_ids():
     assert all(decoration.asset_id in approved_ids for decoration in layout.layout.decorations)
 
 
+def test_generator_snaps_tape_to_photo_edge():
+    payload = valid_model_json()
+    payload["layout"]["decorations"] = [
+        {
+            "assetId": "tape_warm_grid_01",
+            "x": 760,
+            "y": 980,
+            "width": 320,
+            "height": 120,
+            "rotation": 28,
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(assets=load_assets()))
+
+    image = layout.layout.images[0]
+    tape = layout.layout.decorations[0]
+    assert tape.asset_id == "tape_warm_grid_01"
+    assert tape.width <= 260
+    assert tape.height <= 70
+    assert image.x - tape.width <= tape.x <= image.x + image.width
+    assert image.y - tape.height <= tape.y <= image.y + image.height
+    assert -12 <= tape.rotation <= 12
+
+
+def test_generator_removes_stickers_covering_photo_center():
+    payload = valid_model_json()
+    payload["layout"]["decorations"] = [
+        {
+            "assetId": "sticker_sun_01",
+            "x": 220,
+            "y": 300,
+            "width": 180,
+            "height": 180,
+            "rotation": 0,
+        },
+        {
+            "assetId": "sticker_cloud_02",
+            "x": 760,
+            "y": 240,
+            "width": 120,
+            "height": 90,
+            "rotation": 0,
+        },
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(assets=load_assets()))
+
+    assert [decoration.asset_id for decoration in layout.layout.decorations] == ["sticker_cloud_02"]
+
+
 def test_generator_normalizes_common_model_field_variants():
     payload = valid_model_json()
     payload["canvas"]["background"] = {"type": "solid", "color": "#fff7ef"}

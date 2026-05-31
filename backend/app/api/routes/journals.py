@@ -16,6 +16,7 @@ from app.services.journal_generator import (
     JournalGenerationRequest,
     JournalGenerator,
     JournalImageInput,
+    sanitize_model_layout,
 )
 from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient
 
@@ -156,6 +157,7 @@ def delete_image_files(image: ImageModel) -> None:
 
 
 def journal_to_read(journal: Journal) -> JournalRead:
+    layout = normalized_journal_layout(journal)
     return JournalRead(
         id=journal.id,
         title=journal.title,
@@ -163,8 +165,22 @@ def journal_to_read(journal: Journal) -> JournalRead:
         journalDate=journal.journal_date,
         location=journal.location,
         moodTags=journal.mood_tags,
-        layout=journal.layout_json,
+        layout=layout,
         imageIds=[image.id for image in journal.images],
         createdAt=journal.created_at,
         updatedAt=journal.updated_at,
     )
+
+
+def normalized_journal_layout(journal: Journal) -> dict:
+    try:
+        return sanitize_model_layout(
+            journal.layout_json,
+            JournalGenerationRequest(
+                description=journal.input_text,
+                images=[JournalImageInput(id=image.id, width=image.width, height=image.height) for image in journal.images],
+                assets=get_approved_assets(),
+            ),
+        )
+    except (KeyError, TypeError, ValueError):
+        return journal.layout_json

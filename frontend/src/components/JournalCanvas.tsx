@@ -22,6 +22,12 @@ export default function JournalCanvas({ assets, images, layout, onImageClick, sc
   const bodyPlacement = layout.layout.texts.find((text) => text.role === "body");
   const scaledWidth = layout.canvas.width * scale;
   const scaledHeight = layout.canvas.height * scale;
+  const backgroundDecorations = layout.layout.decorations.filter((decoration) =>
+    isBackgroundDecoration(assetMap.get(decoration.assetId)?.category)
+  );
+  const foregroundDecorations = layout.layout.decorations.filter(
+    (decoration) => !isBackgroundDecoration(assetMap.get(decoration.assetId)?.category)
+  );
 
   return (
     <div className="journal-canvas-frame" style={{ height: scaledHeight, width: scaledWidth }}>
@@ -35,6 +41,13 @@ export default function JournalCanvas({ assets, images, layout, onImageClick, sc
         }}
       >
         <PaperTexture height={layout.canvas.height} />
+        {backgroundDecorations.map((decoration) => (
+          <JournalDecorationImage
+            asset={assetMap.get(decoration.assetId)}
+            decoration={decoration}
+            key={`${decoration.assetId}-${decoration.x}-${decoration.y}`}
+          />
+        ))}
 
         {layout.layout.images.map((placement) => {
           const image = imageMap.get(placement.imageId);
@@ -66,28 +79,13 @@ export default function JournalCanvas({ assets, images, layout, onImageClick, sc
           );
         })}
 
-        {layout.layout.decorations.map((decoration) => {
-          const asset = assetMap.get(decoration.assetId);
-          if (!asset) {
-            return null;
-          }
-
-          return (
-            <img
-              alt=""
-              className="journal-decoration"
-              key={`${decoration.assetId}-${decoration.x}-${decoration.y}`}
-              src={asset.file_url}
-              style={{
-                height: decoration.height,
-                left: decoration.x,
-                top: decoration.y,
-                transform: `rotate(${decoration.rotation}deg)`,
-                width: decoration.width
-              }}
-            />
-          );
-        })}
+        {foregroundDecorations.map((decoration) => (
+          <JournalDecorationImage
+            asset={assetMap.get(decoration.assetId)}
+            decoration={decoration}
+            key={`${decoration.assetId}-${decoration.x}-${decoration.y}`}
+          />
+        ))}
 
         <section
           className="journal-title"
@@ -117,6 +115,36 @@ export default function JournalCanvas({ assets, images, layout, onImageClick, sc
       </div>
     </div>
   );
+}
+
+type JournalDecorationImageProps = {
+  asset?: Asset;
+  decoration: JournalLayout["layout"]["decorations"][number];
+};
+
+function JournalDecorationImage({ asset, decoration }: JournalDecorationImageProps) {
+  if (!asset) {
+    return null;
+  }
+
+  return (
+    <img
+      alt=""
+      className={`journal-decoration journal-decoration-${asset.category}`}
+      src={asset.file_url}
+      style={{
+        height: decoration.height,
+        left: decoration.x,
+        top: decoration.y,
+        transform: `rotate(${decoration.rotation}deg)`,
+        width: decoration.width
+      }}
+    />
+  );
+}
+
+function isBackgroundDecoration(category?: string) {
+  return category === "paper" || category === "texture";
 }
 
 type PaperTextureProps = {
