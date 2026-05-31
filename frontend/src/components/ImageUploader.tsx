@@ -10,6 +10,7 @@ export default function ImageUploader({ onUploaded }: Props) {
   const [images, setImages] = useState<UploadedImagePreview[]>([]);
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrls = useRef(new Set<string>());
 
   useEffect(() => {
@@ -21,18 +22,30 @@ export default function ImageUploader({ onUploaded }: Props) {
 
   async function handleFilesChange(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? []);
+    const uploadableFiles = selectedFiles.filter(isSupportedImageFile);
     setError("");
 
     if (selectedFiles.length === 0) {
       return;
     }
 
-    if (images.length + selectedFiles.length > 9) {
-      setError("最多上传 9 张图片。");
+    if (uploadableFiles.length === 0) {
+      setError("暂支持 JPG、PNG、WebP 图片。");
+      event.target.value = "";
       return;
     }
 
-    const selectedPreviews = selectedFiles.map((file) => ({
+    if (images.length + uploadableFiles.length > 9) {
+      setError("最多上传 9 张图片。");
+      event.target.value = "";
+      return;
+    }
+
+    if (uploadableFiles.length < selectedFiles.length) {
+      setError("已跳过暂不支持的图片格式，仅上传 JPG、PNG、WebP。");
+    }
+
+    const selectedPreviews = uploadableFiles.map((file) => ({
       file,
       previewUrl: URL.createObjectURL(file)
     }));
@@ -74,16 +87,19 @@ export default function ImageUploader({ onUploaded }: Props) {
 
   return (
     <section className="image-uploader">
-      <label className="upload-zone">
-        <span>{isUploading ? "上传中..." : "选择图片"}</span>
-        <input
-          accept="image/jpeg,image/png,image/webp"
-          disabled={isUploading}
-          multiple
-          onChange={handleFilesChange}
-          type="file"
-        />
-      </label>
+      <button className="upload-zone" disabled={isUploading} type="button" onClick={() => fileInputRef.current?.click()}>
+        <span>{isUploading ? "上传中..." : "选择多张图片"}</span>
+      </button>
+      <input
+        ref={fileInputRef}
+        accept="image/*"
+        aria-label="选择多张图片"
+        className="upload-input"
+        disabled={isUploading}
+        multiple
+        onChange={handleFilesChange}
+        type="file"
+      />
       {error ? <p className="form-error">{error}</p> : null}
       <div className="upload-grid">
         {images.map((image) => (
@@ -102,3 +118,7 @@ export default function ImageUploader({ onUploaded }: Props) {
 type UploadedImagePreview = UploadedImage & {
   preview_url: string;
 };
+
+function isSupportedImageFile(file: File) {
+  return ["image/jpeg", "image/png", "image/webp"].includes(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
+}
