@@ -596,18 +596,39 @@ body {
   opacity: 0.72;
 }
 
-.upload-grid figure.is-dragging {
-  z-index: 5;
-  filter: saturate(1.06);
+.upload-grid figure.is-drag-placeholder {
+  opacity: 0.36;
   pointer-events: none;
-  transform: translate3d(var(--drag-x, 0), var(--drag-y, 0), 0) scale(1.055) rotate(-1.5deg);
+  transform: scale(0.94);
 }
 
-.upload-grid figure.is-dragging img {
+.upload-drag-ghost {
+  position: fixed;
+  top: var(--drag-top);
+  left: var(--drag-left);
+  z-index: 90;
+  display: grid;
+  width: var(--drag-width);
+  margin: 0;
+  filter: saturate(1.06);
+  pointer-events: none;
+  touch-action: none;
+  transform: translate3d(var(--drag-x, 0), var(--drag-y, 0), 0) scale(1.055) rotate(-1.5deg);
+  will-change: transform;
+}
+
+.upload-drag-ghost img {
+  width: 100%;
+  aspect-ratio: 1;
   border-color: var(--color-button);
+  border-radius: 8px;
+  object-fit: cover;
   box-shadow:
     0 0 0 4px rgb(245 130 174 / 22%),
     0 18px 42px rgb(0 24 88 / 22%);
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
 }
 
 .upload-grid button {

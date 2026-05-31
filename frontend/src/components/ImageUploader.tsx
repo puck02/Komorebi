@@ -97,10 +97,13 @@ export default function ImageUploader({ onUploaded }: Props) {
       return;
     }
 
-    event.currentTarget.setPointerCapture(event.pointerId);
+    const pressedElement = event.currentTarget;
+    const initialRect = pressedElement.getBoundingClientRect();
+    pressedElement.setPointerCapture(event.pointerId);
     const delay = event.pointerType === "mouse" ? 180 : 200;
     const session: DragSession = {
       activeId: imageId,
+      initialRect,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
@@ -112,6 +115,7 @@ export default function ImageUploader({ onUploaded }: Props) {
         session.isDragging = true;
         setDragVisual({
           activeId: imageId,
+          initialRect,
           offsetX: 0,
           offsetY: 0,
           targetId: imageId
@@ -161,6 +165,7 @@ export default function ImageUploader({ onUploaded }: Props) {
 
     setDragVisual({
       activeId: session.activeId,
+      initialRect: session.initialRect,
       offsetX,
       offsetY,
       targetId: targetId ?? session.lastTargetId
@@ -221,16 +226,10 @@ export default function ImageUploader({ onUploaded }: Props) {
         {images.map((image) => {
           const isDragging = dragVisual?.activeId === image.id;
           const isTarget = dragVisual?.targetId === image.id && dragVisual.activeId !== image.id;
-          const dragStyle = isDragging
-            ? ({
-                "--drag-x": `${dragVisual.offsetX}px`,
-                "--drag-y": `${dragVisual.offsetY}px`
-              } as CSSProperties)
-            : undefined;
 
           return (
             <figure
-              className={`${isDragging ? "is-dragging" : ""} ${isTarget ? "is-drag-target" : ""}`}
+              className={`${isDragging ? "is-drag-placeholder" : ""} ${isTarget ? "is-drag-target" : ""}`}
               data-upload-image-id={image.id}
               key={image.id}
               onContextMenu={(event) => event.preventDefault()}
@@ -238,7 +237,6 @@ export default function ImageUploader({ onUploaded }: Props) {
               onPointerDown={(event) => startPress(event, image.id)}
               onPointerMove={movePress}
               onPointerUp={endPress}
-              style={dragStyle}
             >
               <img alt="" draggable={false} src={image.preview_url} />
               <button type="button" onClick={() => removeImage(image.id)}>
@@ -248,6 +246,7 @@ export default function ImageUploader({ onUploaded }: Props) {
           );
         })}
       </div>
+      {dragVisual ? <DragGhost dragVisual={dragVisual} image={images.find((image) => image.id === dragVisual.activeId)} /> : null}
     </section>
   );
 }
@@ -258,6 +257,7 @@ type UploadedImagePreview = UploadedImage & {
 
 type DragSession = {
   activeId: string;
+  initialRect: DOMRect;
   pointerId: number;
   startX: number;
   startY: number;
@@ -270,10 +270,35 @@ type DragSession = {
 
 type DragVisual = {
   activeId: string;
+  initialRect: DOMRect;
   offsetX: number;
   offsetY: number;
   targetId: string;
 };
+
+function DragGhost({ dragVisual, image }: { dragVisual: DragVisual; image: UploadedImagePreview | undefined }) {
+  if (!image) {
+    return null;
+  }
+
+  return (
+    <figure
+      aria-hidden="true"
+      className="upload-drag-ghost"
+      style={
+        {
+          "--drag-left": `${dragVisual.initialRect.left}px`,
+          "--drag-top": `${dragVisual.initialRect.top}px`,
+          "--drag-width": `${dragVisual.initialRect.width}px`,
+          "--drag-x": `${dragVisual.offsetX}px`,
+          "--drag-y": `${dragVisual.offsetY}px`
+        } as CSSProperties
+      }
+    >
+      <img alt="" draggable={false} src={image.preview_url} />
+    </figure>
+  );
+}
 
 function isSupportedImageFile(file: File) {
   return ["image/jpeg", "image/png", "image/webp"].includes(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
