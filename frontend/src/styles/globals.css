@@ -510,6 +510,13 @@ body {
   gap: 16px;
 }
 
+.upload-hint {
+  margin: -6px 0 0;
+  color: rgb(23 44 102 / 72%);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .upload-zone {
   appearance: none;
   position: relative;
@@ -550,19 +557,54 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .upload-grid figure {
+  position: relative;
   display: grid;
   gap: 8px;
   margin: 0;
+  touch-action: pan-y;
+  transition:
+    opacity 160ms ease,
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .upload-grid img {
   width: 100%;
   aspect-ratio: 1;
+  border: 1px solid rgb(0 24 88 / 8%);
   border-radius: 8px;
+  box-shadow: 0 10px 26px rgb(0 24 88 / 10%);
   object-fit: cover;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  -webkit-user-drag: none;
+}
+
+.upload-grid figure.is-drag-target {
+  transform: scale(0.96);
+  opacity: 0.72;
+}
+
+.upload-grid figure.is-dragging {
+  z-index: 5;
+  filter: saturate(1.06);
+  pointer-events: none;
+  transform: translate3d(var(--drag-x, 0), var(--drag-y, 0), 0) scale(1.055) rotate(-1.5deg);
+}
+
+.upload-grid figure.is-dragging img {
+  border-color: var(--color-button);
+  box-shadow:
+    0 0 0 4px rgb(245 130 174 / 22%),
+    0 18px 42px rgb(0 24 88 / 22%);
 }
 
 .upload-grid button {
