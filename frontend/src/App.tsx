@@ -6,6 +6,7 @@ import { getAccessToken } from "./api/client";
 import AssetLibraryPage from "./pages/AssetLibraryPage";
 import CreateJournalPage from "./pages/CreateJournalPage";
 import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 
 const navItems = [
   { icon: NotebookPen, label: "创建", to: "/" },
@@ -15,11 +16,15 @@ const navItems = [
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(getAccessToken()));
+  const handleAuthenticated = () => setIsAuthenticated(true);
 
   if (!isAuthenticated) {
     return (
       <main className="min-h-screen bg-[#f6efe7] text-[#2f2924]">
-        <LoginPage onAuthenticated={() => setIsAuthenticated(true)} />
+        <Routes>
+          <Route path="/register" element={<RegisterPage onAuthenticated={handleAuthenticated} />} />
+          <Route path="*" element={<LoginPage onAuthenticated={handleAuthenticated} />} />
+        </Routes>
       </main>
     );
   }

@@ -256,11 +256,48 @@ body {
   font: inherit;
   font-weight: 800;
   cursor: pointer;
+  transition:
+    box-shadow 160ms ease,
+    transform 160ms ease,
+    opacity 160ms ease;
 }
 
 .auth-form button:disabled {
   cursor: wait;
   opacity: 0.65;
+}
+
+.auth-switch-link {
+  justify-self: center;
+  color: #7f5945;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.auth-switch-link:hover {
+  color: #5e3f31;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-submit-glow {
+  box-shadow:
+    0 0 0 1px rgb(127 89 69 / 18%),
+    0 10px 26px rgb(127 89 69 / 28%),
+    0 0 24px rgb(127 89 69 / 20%);
+}
+
+.auth-submit-glow:hover:not(:disabled) {
+  box-shadow:
+    0 0 0 1px rgb(127 89 69 / 24%),
+    0 14px 34px rgb(127 89 69 / 34%),
+    0 0 42px rgb(127 89 69 / 34%);
+  transform: translateY(-1px);
+}
+
+.auth-submit-glow:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .form-error {

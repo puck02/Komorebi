@@ -3,7 +3,11 @@ import { useNavigate } from "react-router-dom";
 
 import { login, register } from "../api/auth";
 
-export default function RegisterPage() {
+type RegisterPageProps = {
+  onAuthenticated?: () => void;
+};
+
+export default function RegisterPage({ onAuthenticated }: RegisterPageProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,7 +21,8 @@ export default function RegisterPage() {
     try {
       await register({ email, password });
       await login({ email, password });
-      navigate("/");
+      onAuthenticated?.();
+      navigate("/", { replace: true });
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "注册失败");
     } finally {

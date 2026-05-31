@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { login } from "../api/auth";
 
@@ -47,7 +47,10 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
         />
       </label>
       {error ? <p className="form-error">{error}</p> : null}
-      <button type="submit" disabled={isSubmitting}>
+      <Link className="auth-switch-link" to="/register">
+        注册
+      </Link>
+      <button className="auth-submit-glow" type="submit" disabled={isSubmitting}>
         {isSubmitting ? "登录中..." : "登录"}
       </button>
     </form>
