@@ -10,7 +10,6 @@ export default function ImageUploader({ onUploaded }: Props) {
   const [images, setImages] = useState<UploadedImagePreview[]>([]);
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const previewUrls = useRef(new Set<string>());
 
   useEffect(() => {
@@ -87,19 +86,18 @@ export default function ImageUploader({ onUploaded }: Props) {
 
   return (
     <section className="image-uploader">
-      <button className="upload-zone" disabled={isUploading} type="button" onClick={() => fileInputRef.current?.click()}>
+      <label className={`upload-zone ${isUploading ? "is-disabled" : ""}`}>
         <span>{isUploading ? "上传中..." : "选择多张图片"}</span>
-      </button>
-      <input
-        ref={fileInputRef}
-        accept="image/*"
-        aria-label="选择多张图片"
-        className="upload-input"
-        disabled={isUploading}
-        multiple
-        onChange={handleFilesChange}
-        type="file"
-      />
+        <input
+          accept="image/*,.jpg,.jpeg,.png,.webp"
+          aria-label="选择多张图片"
+          className="upload-input"
+          disabled={isUploading}
+          multiple
+          onChange={handleFilesChange}
+          type="file"
+        />
+      </label>
       {error ? <p className="form-error">{error}</p> : null}
       <div className="upload-grid">
         {images.map((image) => (
