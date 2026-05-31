@@ -39,7 +39,7 @@ export default function App() {
 
   return (
     <main className="app-shell min-h-screen bg-[#fef6e4] text-[#172c66]">
-      <nav className="top-nav backdrop-blur-md bg-[#fef6e4]/70" aria-label="Primary navigation">
+      <nav className="top-nav" aria-label="Primary navigation">
         <NavLink className="brand-link" to="/">
           Komorebi
         </NavLink>

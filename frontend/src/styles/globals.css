@@ -66,19 +66,19 @@ body {
   margin: 0;
   overflow: hidden;
   isolation: isolate;
-  border: 1px solid rgb(254 246 228 / 68%);
+  border: 1px solid rgb(254 246 228 / 56%);
   border-radius: 999px;
   padding: 10px 16px;
   background:
-    linear-gradient(135deg, rgb(254 246 228 / 82%), rgb(243 210 193 / 48%) 56%, rgb(139 211 221 / 28%)),
-    rgb(254 246 228 / 48%);
+    linear-gradient(135deg, rgb(254 246 228 / 42%), rgb(243 210 193 / 24%) 54%, rgb(139 211 221 / 18%)),
+    rgb(254 246 228 / 28%);
   box-shadow:
-    inset 0 1px 0 rgb(254 246 228 / 86%),
-    inset 0 -1px 0 rgb(0 24 88 / 8%),
-    0 18px 46px rgb(0 24 88 / 16%);
+    inset 0 1px 0 rgb(254 246 228 / 72%),
+    inset 0 -1px 0 rgb(0 24 88 / 6%),
+    0 18px 42px rgb(0 24 88 / 14%);
   transform: translateX(-50%);
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
 }
 
 .top-nav::before {
@@ -87,10 +87,23 @@ body {
   z-index: -1;
   border-radius: inherit;
   background:
-    radial-gradient(circle at 10% 0%, rgb(254 246 228 / 82%), transparent 32%),
-    radial-gradient(circle at 85% 20%, rgb(243 210 193 / 44%), transparent 34%),
-    linear-gradient(180deg, rgb(254 246 228 / 42%), transparent 70%);
+    radial-gradient(circle at 12% 0%, rgb(254 246 228 / 58%), transparent 32%),
+    radial-gradient(circle at 86% 10%, rgb(139 211 221 / 28%), transparent 38%),
+    linear-gradient(180deg, rgb(254 246 228 / 34%), rgb(254 246 228 / 8%) 72%);
   content: "";
+  pointer-events: none;
+}
+
+.top-nav::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, rgb(254 246 228 / 18%), transparent 28% 72%, rgb(254 246 228 / 16%)),
+    repeating-linear-gradient(90deg, rgb(254 246 228 / 8%) 0 1px, transparent 1px 18px);
+  content: "";
+  mix-blend-mode: soft-light;
   pointer-events: none;
 }
 
@@ -127,10 +140,10 @@ body {
 .nav-link:hover,
 .nav-link.is-active {
   color: var(--color-ink);
-  background: rgb(254 246 228 / 52%);
+  background: rgb(254 246 228 / 38%);
   box-shadow:
-    inset 0 1px 0 rgb(254 246 228 / 70%),
-    0 6px 18px rgb(0 24 88 / 12%);
+    inset 0 1px 0 rgb(254 246 228 / 56%),
+    0 6px 18px rgb(0 24 88 / 10%);
 }
 
 @media (max-width: 520px) {
