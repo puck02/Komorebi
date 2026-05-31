@@ -30,29 +30,39 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
-      <h1>登录</h1>
-      <label>
-        邮箱
-        <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required />
-      </label>
-      <label>
-        密码
-        <input
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          type="password"
-          minLength={8}
-          required
-        />
-      </label>
-      {error ? <p className="form-error">{error}</p> : null}
-      <Link className="auth-switch-link" to="/register">
-        注册
-      </Link>
-      <button className="auth-submit-glow" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "登录中..." : "登录"}
-      </button>
-    </form>
+    <section className="login-scene">
+      <form className="auth-form login-form" onSubmit={handleSubmit}>
+        <p className="login-brand">Komorebi</p>
+        <h1>LOGIN</h1>
+        <label>
+          <span>邮箱</span>
+          <input
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            type="email"
+            autoComplete="email"
+            required
+          />
+        </label>
+        <label>
+          <span>密码</span>
+          <input
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            type="password"
+            autoComplete="current-password"
+            minLength={8}
+            required
+          />
+        </label>
+        {error ? <p className="form-error login-error">{error}</p> : null}
+        <Link className="auth-switch-link login-register-link" to="/register">
+          注册
+        </Link>
+        <button className="auth-submit-glow login-submit" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "登录中..." : "登录"}
+        </button>
+      </form>
+    </section>
   );
 }
