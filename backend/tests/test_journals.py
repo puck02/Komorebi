@@ -49,6 +49,34 @@ def client(tmp_path, monkeypatch):
         get_settings.cache_clear()
 
 
+@pytest.fixture
+def client_without_generator_override(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    get_settings.cache_clear()
+    engine = create_engine(
+        "sqlite+pysqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    testing_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base.metadata.create_all(bind=engine)
+
+    def override_get_db():
+        db = testing_session()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        yield TestClient(app)
+    finally:
+        app.dependency_overrides.clear()
+        Base.metadata.drop_all(bind=engine)
+        get_settings.cache_clear()
+
+
 def test_generate_journal_requires_auth(client):
     response = client.post("/api/journals/generate", json={"imageIds": ["img_1"], "description": "今天很好"})
 
@@ -65,6 +93,19 @@ def test_generate_journal_validates_image_count_and_description(client):
     )
 
     assert response.status_code == 422
+
+
+def test_generate_journal_returns_clear_error_when_openai_key_missing(client_without_generator_override):
+    token = register_and_login(client_without_generator_override, "owner@example.com")
+
+    response = client_without_generator_override.post(
+        "/api/journals/generate",
+        json={"imageIds": ["img_1"], "description": "今天很好"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "OPENAI_API_KEY is required to generate journals"
 
 
 def test_user_cannot_generate_with_another_users_images(client):

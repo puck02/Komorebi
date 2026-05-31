@@ -17,13 +17,19 @@ from app.services.journal_generator import (
     JournalGenerator,
     JournalImageInput,
 )
-from app.services.openai_client import OpenAIJournalClient
+from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient
 
 router = APIRouter(prefix="/api/journals", tags=["journals"])
 
 
 def get_journal_generator() -> JournalGenerator:
-    return JournalGenerator(OpenAIJournalClient())
+    try:
+        return JournalGenerator(OpenAIJournalClient())
+    except OpenAIConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="OPENAI_API_KEY is required to generate journals",
+        ) from exc
 
 
 @router.post("/generate", response_model=JournalRead, status_code=status.HTTP_201_CREATED)
