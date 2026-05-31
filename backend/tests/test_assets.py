@@ -59,9 +59,26 @@ def test_train_sticker_is_not_rendered_as_rain_cloud():
     assert "M24 126L136 126" in svg
 
 
+def test_reviewed_internal_assets_do_not_contain_rough_fill_noise():
+    reviewed_asset_ids = {"paper_stamp_10", "sticker_sun_01", "sticker_pet_paw_17", "sticker_bow_20"}
+
+    for asset in load_assets():
+        if asset.id in reviewed_asset_ids:
+            svg = asset.file_path.read_text(encoding="utf-8")
+            assert 'stroke="none" stroke-width="0"' not in svg
+
+
 def test_external_assets_are_kept_as_draft_until_reviewed():
     external_assets = [asset for asset in load_assets() if asset.source.startswith("https://")]
 
-    assert external_assets
+    assert len(external_assets) >= 48
     assert all(asset.quality_status == "draft" for asset in external_assets)
     assert all(asset.license for asset in external_assets)
+
+
+def test_fluent_emoji_assets_are_imported_as_mit_drafts():
+    fluent_assets = [asset for asset in load_assets() if asset.id.startswith("ext_fluent_")]
+
+    assert len(fluent_assets) >= 60
+    assert {asset.license for asset in fluent_assets} == {"MIT"}
+    assert {asset.quality_status for asset in fluent_assets} == {"draft"}

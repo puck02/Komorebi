@@ -24,15 +24,20 @@ const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 await mkdir(path.join(assetRoot, "stickers"), { recursive: true });
 
 await Promise.all(
-  manifest.map((asset, index) => {
+  manifest.filter((asset) => asset.source === "internal").map((asset, index) => {
     const svg = renderAsset(asset, index + 1);
     return writeFile(path.join(assetRoot, asset.file), svg, "utf8");
   })
 );
 
-console.log(`Generated ${manifest.length} assets.`);
+console.log(`Generated ${manifest.filter((asset) => asset.source === "internal").length} internal assets.`);
 
 function renderAsset(asset, seed) {
+  const reviewedAsset = reviewedInternalAsset(asset);
+  if (reviewedAsset) {
+    return reviewedAsset;
+  }
+
   if (asset.category === "tape") {
     return svg(240, 72, [
       roughShape("rectangle", [10, 16, 220, 40], asset, seed, { fillStyle: "hachure" }),
@@ -49,6 +54,66 @@ function renderAsset(asset, seed) {
   }
 
   return svg(160, 160, stickerShape(asset, seed));
+}
+
+function reviewedInternalAsset(asset) {
+  if (asset.id === "paper_stamp_10") {
+    return cleanSvg(220, 170, [
+      roundedRect(38, 34, 144, 102, 8, "#fff3df", "#9f6b5e", 2),
+      `<path d="M54 54h44M54 74h68M54 94h52" stroke="#9f6b5e" stroke-width="2" stroke-linecap="round" opacity="0.28"/>`,
+      `<path d="M136 50c18 0 30 11 30 26s-12 26-30 26s-30-11-30-26s12-26 30-26Z" fill="none" stroke="#9f6b5e" stroke-width="2" opacity="0.7"/>`,
+      `<path d="M116 78c10-12 27-16 42-8" stroke="#9f6b5e" stroke-width="2" stroke-linecap="round" opacity="0.42"/>`,
+      `<path d="M42 36l6 8l6-8l6 8l6-8l6 8l6-8l6 8l6-8l6 8l6-8l6 8l6-8l6 8l6-8l6 8l6-8l6 8l6-8l6 8l6-8l6 8l6-8l6 8l6-8l6 8l6-8" stroke="#9f6b5e" stroke-width="1.6" stroke-linecap="round" opacity="0.46"/>`
+    ]);
+  }
+  if (asset.id === "sticker_sun_01") {
+    return cleanSvg(160, 160, [
+      ...Array.from({ length: 12 }, (_, index) => {
+        const angle = (Math.PI * 2 * index) / 12;
+        const x1 = Math.round(80 + Math.cos(angle) * 44);
+        const y1 = Math.round(80 + Math.sin(angle) * 44);
+        const x2 = Math.round(80 + Math.cos(angle) * 62);
+        const y2 = Math.round(80 + Math.sin(angle) * 62);
+        return `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="#9e813f" stroke-width="3" stroke-linecap="round" opacity="0.56"/>`;
+      }),
+      `<circle cx="80" cy="80" r="35" fill="#fff1cb" stroke="#9e813f" stroke-width="3"/>`,
+      `<path d="M65 78c8-8 22-8 30 0" stroke="#9e813f" stroke-width="2.4" stroke-linecap="round" opacity="0.55"/>`,
+      `<circle cx="69" cy="70" r="3" fill="#9e813f" opacity="0.55"/>`,
+      `<circle cx="91" cy="70" r="3" fill="#9e813f" opacity="0.55"/>`
+    ]);
+  }
+  if (asset.id === "sticker_pet_paw_17") {
+    return cleanSvg(160, 160, [
+      `<ellipse cx="80" cy="98" rx="30" ry="25" fill="#fff0e3" stroke="#785b49" stroke-width="3"/>`,
+      `<ellipse cx="47" cy="68" rx="12" ry="16" fill="#fff0e3" stroke="#785b49" stroke-width="3"/>`,
+      `<ellipse cx="68" cy="50" rx="13" ry="17" fill="#fff0e3" stroke="#785b49" stroke-width="3"/>`,
+      `<ellipse cx="94" cy="50" rx="13" ry="17" fill="#fff0e3" stroke="#785b49" stroke-width="3"/>`,
+      `<ellipse cx="115" cy="70" rx="12" ry="16" fill="#fff0e3" stroke="#785b49" stroke-width="3"/>`,
+      `<path d="M64 102c9-8 23-8 32 0" stroke="#785b49" stroke-width="2" stroke-linecap="round" opacity="0.28"/>`
+    ]);
+  }
+  if (asset.id === "sticker_bow_20") {
+    return cleanSvg(160, 160, [
+      `<path d="M76 80C50 48 25 58 31 93c5 30 31 22 45-8Z" fill="#fff0f2" stroke="#946971" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M84 80c26-32 51-22 45 13c-5 30-31 22-45-8Z" fill="#fff0f2" stroke="#946971" stroke-width="3" stroke-linejoin="round"/>`,
+      `<ellipse cx="80" cy="82" rx="17" ry="16" fill="#d99aa6" stroke="#946971" stroke-width="3"/>`,
+      `<path d="M57 79L36 63M103 79l21-16M58 91c6-1 11-4 16-9M102 91c-6-1-11-4-16-9" stroke="#946971" stroke-width="2" stroke-linecap="round" opacity="0.45"/>`
+    ]);
+  }
+  return null;
+}
+
+function cleanSvg(width, height, children) {
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" fill="none">`,
+    `<rect width="${width}" height="${height}" fill="none"/>`,
+    ...children,
+    `</svg>`
+  ].join("\n");
+}
+
+function roundedRect(x, y, width, height, radius, fill, stroke, strokeWidth) {
+  return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"/>`;
 }
 
 function svg(width, height, children) {
