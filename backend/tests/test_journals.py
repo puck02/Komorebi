@@ -15,6 +15,7 @@ from app.db.base import Base
 from app.main import app
 from app.models import asset, image, journal, user  # noqa: F401
 from app.schemas.journal import JournalLayout
+from app.services.journal_generator import GenerationError
 
 
 @pytest.fixture
@@ -122,6 +123,17 @@ def test_user_cannot_generate_with_another_users_images(client):
     assert response.status_code == 404
 
 
+def test_generate_journal_returns_clear_error_when_model_request_fails(client):
+    token = register_and_login(client, "owner@example.com")
+    image_id = upload_image(client, token)
+    client.fake_generator.error = GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")
+
+    response = generate_journal(client, token, image_id, "周末一起散步")
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == "AI 服务连接失败，请稍后重试或检查模型服务配置"
+
+
 def test_generate_journal_saves_and_lists_only_current_users_journals(client):
     owner_token = register_and_login(client, "owner@example.com")
     other_token = register_and_login(client, "other@example.com")
@@ -188,7 +200,11 @@ def test_delete_journal_removes_associated_image_files(client, tmp_path):
 
 
 class FakeGenerator:
+    error = None
+
     def generate(self, request):
+        if self.error is not None:
+            raise self.error
         self.request = request
         return JournalLayout.model_validate(layout_payload(request.images[0].id))
 

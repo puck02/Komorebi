@@ -1,10 +1,10 @@
 import json
 from typing import Any
 
-from openai import OpenAI
+from openai import APIStatusError, OpenAI, OpenAIError
 
 from app.core.config import get_settings
-from app.services.journal_generator import JournalGenerationRequest
+from app.services.journal_generator import GenerationError, JournalGenerationRequest
 
 
 class OpenAIConfigurationError(RuntimeError):
@@ -25,11 +25,16 @@ class OpenAIJournalClient:
         self.client = OpenAI(**client_kwargs)
 
     def generate_layout(self, request: JournalGenerationRequest) -> dict[str, Any]:
-        response = self.client.responses.create(
-            model=self.model,
-            input=build_generation_prompt(request),
-            text={"format": {"type": "json_object"}},
-        )
+        try:
+            response = self.client.responses.create(
+                model=self.model,
+                input=build_generation_prompt(request),
+                text={"format": {"type": "json_object"}},
+            )
+        except APIStatusError as exc:
+            raise GenerationError(f"AI 服务返回 {exc.status_code}，请检查模型、Key 或第三方渠道配置") from exc
+        except OpenAIError as exc:
+            raise GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置") from exc
         return json.loads(response.output_text)
 
 

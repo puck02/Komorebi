@@ -1,4 +1,6 @@
 import pytest
+import httpx
+from openai import APIConnectionError, APIStatusError
 
 from app.schemas.journal import JournalLayout
 from app.services.assets import get_approved_assets, load_assets
@@ -96,6 +98,41 @@ def test_openai_client_uses_configured_base_url(monkeypatch):
 
     assert client.model == "gpt-5.5"
     assert captured == {"api_key": "test-key", "base_url": "https://provider.example/v1"}
+
+
+def test_openai_client_converts_connection_errors_to_generation_error(monkeypatch):
+    class FakeResponses:
+        def create(self, **kwargs):
+            request = httpx.Request("POST", "https://provider.example/v1/responses")
+            raise APIConnectionError(request=request)
+
+    class FakeOpenAI:
+        def __init__(self, **kwargs):
+            self.responses = FakeResponses()
+
+    monkeypatch.setattr("app.services.openai_client.OpenAI", FakeOpenAI)
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+
+    with pytest.raises(GenerationError, match="AI 服务连接失败"):
+        client.generate_layout(generation_request())
+
+
+def test_openai_client_converts_status_errors_to_generation_error(monkeypatch):
+    class FakeResponses:
+        def create(self, **kwargs):
+            request = httpx.Request("POST", "https://provider.example/v1/responses")
+            response = httpx.Response(403, request=request, json={"error": {"message": "blocked"}})
+            raise APIStatusError("blocked", response=response, body=response.json())
+
+    class FakeOpenAI:
+        def __init__(self, **kwargs):
+            self.responses = FakeResponses()
+
+    monkeypatch.setattr("app.services.openai_client.OpenAI", FakeOpenAI)
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+
+    with pytest.raises(GenerationError, match="AI 服务返回 403"):
+        client.generate_layout(generation_request())
 
 
 class FakeClient:

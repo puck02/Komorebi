@@ -49,7 +49,10 @@ def generate_journal(
             )
         )
     except GenerationError as exc:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Journal generation failed") from exc
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc) or "AI 生成失败，请稍后重试",
+        ) from exc
 
     journal = Journal(
         user_id=current_user.id,
