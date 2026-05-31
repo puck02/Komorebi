@@ -138,11 +138,15 @@ export default function ImageUploader({ onUploaded }: Props) {
       return;
     }
 
+    if (event.pointerType !== "mouse") {
+      event.preventDefault();
+      lockPageScroll();
+    }
+
     const pressedElement = event.currentTarget;
     const initialRect = pressedElement.getBoundingClientRect();
     pressedElement.setPointerCapture(event.pointerId);
     const delay = event.pointerType === "mouse" ? 180 : 200;
-    const scrollLockDelay = event.pointerType === "mouse" ? delay : Math.max(0, delay - 40);
     const session: DragSession = {
       activeId: imageId,
       initialRect,
@@ -158,7 +162,6 @@ export default function ImageUploader({ onUploaded }: Props) {
       lastTargetId: imageId,
       visualTargetId: imageId,
       frameId: null,
-      scrollLockTimerId: window.setTimeout(lockPageScroll, scrollLockDelay),
       timerId: window.setTimeout(() => {
         lockPageScroll();
         session.isDragging = true;
@@ -238,7 +241,7 @@ export default function ImageUploader({ onUploaded }: Props) {
   }
 
   function endPress(event: PointerEvent<HTMLElement>) {
-    if (dragSession.current?.isDragging) {
+    if (dragSession.current?.isDragging || event.pointerType !== "mouse") {
       event.preventDefault();
     }
     finishDrag(event.pointerId, true);
@@ -278,10 +281,6 @@ export default function ImageUploader({ onUploaded }: Props) {
     if (dragSession.current?.timerId) {
       window.clearTimeout(dragSession.current.timerId);
       dragSession.current.timerId = null;
-    }
-    if (dragSession.current?.scrollLockTimerId) {
-      window.clearTimeout(dragSession.current.scrollLockTimerId);
-      dragSession.current.scrollLockTimerId = null;
     }
   }
 
@@ -404,7 +403,6 @@ type DragSession = {
   lastTargetId: string;
   visualTargetId: string;
   frameId: number | null;
-  scrollLockTimerId: number | null;
   timerId: number | null;
 };
 

@@ -565,7 +565,7 @@ body {
   display: grid;
   gap: 8px;
   margin: 0;
-  touch-action: pan-y;
+  touch-action: none;
   transition:
     opacity 160ms ease,
     transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
