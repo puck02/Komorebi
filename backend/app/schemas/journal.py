@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -78,3 +79,36 @@ class JournalLayout(BaseModel):
     theme: JournalTheme
     content: JournalContent
     layout: JournalLayoutLayer
+
+
+class JournalGenerateRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    image_ids: list[str] = Field(alias="imageIds", min_length=1, max_length=9)
+    description: str = Field(min_length=1)
+    journal_date: date | None = Field(default=None, alias="journalDate")
+    location: str | None = None
+    mood_tags: list[str] = Field(default_factory=list, alias="moodTags")
+
+
+class JournalUpdateRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    title: str | None = Field(default=None, min_length=1)
+    body: list[str] | None = Field(default=None, min_length=1)
+    layout_variant: str | None = Field(default=None, alias="layoutVariant", min_length=1)
+
+
+class JournalRead(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str
+    title: str
+    input_text: str = Field(alias="inputText")
+    journal_date: date | None = Field(alias="journalDate")
+    location: str | None
+    mood_tags: list[str] = Field(alias="moodTags")
+    layout: dict
+    image_ids: list[str] = Field(alias="imageIds")
+    created_at: datetime = Field(alias="createdAt")
+    updated_at: datetime = Field(alias="updatedAt")
