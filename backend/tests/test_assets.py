@@ -57,3 +57,11 @@ def test_train_sticker_is_not_rendered_as_rain_cloud():
     svg = train.file_path.read_text(encoding="utf-8")
 
     assert "M24 126L136 126" in svg
+
+
+def test_external_assets_are_kept_as_draft_until_reviewed():
+    external_assets = [asset for asset in load_assets() if asset.source.startswith("https://")]
+
+    assert external_assets
+    assert all(asset.quality_status == "draft" for asset in external_assets)
+    assert all(asset.license for asset in external_assets)

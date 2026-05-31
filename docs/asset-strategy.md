@@ -27,6 +27,8 @@
 
 外部素材只作为补充。引入外部素材前，需要记录来源和 license，不使用授权不清晰、质量不可控或需要复杂署名义务的素材。项目虽然不涉及商业用途，但第一版默认仍优先选择 CC0、MIT、Apache、ISC 或明确允许再分发的素材；需要 NC、SA 或强署名要求的素材只能先进入 draft，并在预览页标清授权后人工决定是否保留。
 
+当前已补充导入 `Streamline Freehand Color` 的少量生活类手绘素材，来源为 `https://icon-sets.iconify.design/streamline-freehand-color/`，许可证为 `CC-BY-4.0`。这批素材统一进入 `draft` 状态，必须在素材库预览页人工确认质量后，才可以调整为 `approved` 并参与自动生成。
+
 lucide-react 只用于网站 UI 图标，例如按钮、导航和工具栏；不作为手帐装饰素材。普通 UI 图标直接放进手帐会削弱温柔拼贴风格。
 
 ## 3. 质量标准
