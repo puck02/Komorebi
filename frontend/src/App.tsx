@@ -5,6 +5,7 @@ import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import { getAccessToken } from "./api/client";
 import AssetLibraryPage from "./pages/AssetLibraryPage";
 import CreateJournalPage from "./pages/CreateJournalPage";
+import JournalDetailPage from "./pages/JournalDetailPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
@@ -53,7 +54,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<CreateJournalPage />} />
         <Route path="/history" element={<PlaceholderPage title="历史手帐" description="历史列表会在手帐保存接口完成后接入。" />} />
-        <Route path="/journals/:journalId" element={<PlaceholderPage title="手帐详情" description="详情预览和轻量编辑会在下一步接入。" />} />
+        <Route path="/journals/:journalId" element={<JournalDetailPage />} />
         <Route path="/assets" element={<AssetLibraryPage />} />
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="/register" element={<Navigate to="/" replace />} />
