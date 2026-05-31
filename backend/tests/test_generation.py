@@ -145,6 +145,44 @@ def test_generator_removes_stickers_covering_photo_center():
     assert [decoration.asset_id for decoration in layout.layout.decorations] == ["sticker_cloud_02"]
 
 
+def test_generator_limits_decoration_density():
+    payload = valid_model_json()
+    payload["layout"]["decorations"] = [
+        {
+            "assetId": asset_id,
+            "x": 720 + index * 4,
+            "y": 160 + index * 18,
+            "width": 140,
+            "height": 80,
+            "rotation": 0,
+        }
+        for index, asset_id in enumerate(
+            [
+                "paper_note_cream_01",
+                "paper_note_blush_02",
+                "paper_note_sage_03",
+                "paper_note_sky_04",
+                "texture_dots_01",
+                "texture_grid_02",
+                "texture_wave_03",
+                "sticker_cloud_02",
+                "sticker_heart_03",
+                "sticker_leaf_05",
+                "sticker_coffee_06",
+                "tape_warm_grid_01",
+                "tape_warm_stripe_02",
+                "tape_sage_dash_03",
+                "tape_blush_dot_04",
+            ]
+        )
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(assets=load_assets()))
+
+    assert len(layout.layout.decorations) <= 6
+
+
 def test_generator_normalizes_common_model_field_variants():
     payload = valid_model_json()
     payload["canvas"]["background"] = {"type": "solid", "color": "#fff7ef"}

@@ -16,6 +16,13 @@ TAPE_MAX_WIDTH = 260
 TAPE_MAX_HEIGHT = 70
 TAPE_MIN_WIDTH = 150
 TAPE_MIN_HEIGHT = 38
+MAX_DECORATIONS = 6
+DECORATION_CATEGORY_LIMITS = {
+    "paper": 1,
+    "sticker": 2,
+    "tape": 3,
+    "texture": 1,
+}
 
 
 class GenerationError(RuntimeError):
@@ -201,7 +208,23 @@ def normalize_decorations(
         if category == "sticker" and overlaps_any_photo_safe_area(decoration, image_placements):
             continue
         normalized.append(clamp_decoration_to_canvas(decoration))
-    return normalized
+    return limit_decoration_density(normalized, asset_by_id)
+
+
+def limit_decoration_density(decorations: list[dict[str, Any]], asset_by_id: dict[str, AssetItem]) -> list[dict[str, Any]]:
+    limited: list[dict[str, Any]] = []
+    category_counts: dict[str, int] = {}
+    for decoration in decorations:
+        asset = asset_by_id.get(str(decoration.get("assetId")))
+        category = asset.category if asset is not None else "unknown"
+        category_limit = DECORATION_CATEGORY_LIMITS.get(category, 1)
+        if category_counts.get(category, 0) >= category_limit:
+            continue
+        if len(limited) >= MAX_DECORATIONS:
+            break
+        category_counts[category] = category_counts.get(category, 0) + 1
+        limited.append(decoration)
+    return limited
 
 
 def snap_tape_to_photo_edge(decoration: dict[str, Any], image_placements: list[dict[str, Any]]) -> dict[str, Any]:
