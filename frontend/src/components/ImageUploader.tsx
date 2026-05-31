@@ -233,6 +233,7 @@ export default function ImageUploader({ onUploaded }: Props) {
               className={`${isDragging ? "is-dragging" : ""} ${isTarget ? "is-drag-target" : ""}`}
               data-upload-image-id={image.id}
               key={image.id}
+              onContextMenu={(event) => event.preventDefault()}
               onPointerCancel={cancelPress}
               onPointerDown={(event) => startPress(event, image.id)}
               onPointerMove={movePress}
