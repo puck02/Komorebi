@@ -77,7 +77,7 @@ function reviewedInternalAsset(asset) {
         return `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="#9e813f" stroke-width="3" stroke-linecap="round" opacity="0.56"/>`;
       }),
       `<circle cx="80" cy="80" r="35" fill="#fff1cb" stroke="#9e813f" stroke-width="3"/>`,
-      `<path d="M65 78c8-8 22-8 30 0" stroke="#9e813f" stroke-width="2.4" stroke-linecap="round" opacity="0.55"/>`,
+      `<path d="M65 78c8 9 22 9 30 0" stroke="#9e813f" stroke-width="2.4" stroke-linecap="round" opacity="0.55"/>`,
       `<circle cx="69" cy="70" r="3" fill="#9e813f" opacity="0.55"/>`,
       `<circle cx="91" cy="70" r="3" fill="#9e813f" opacity="0.55"/>`
     ]);

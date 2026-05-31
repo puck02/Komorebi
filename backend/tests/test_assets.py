@@ -68,6 +68,14 @@ def test_reviewed_internal_assets_do_not_contain_rough_fill_noise():
             assert 'stroke="none" stroke-width="0"' not in svg
 
 
+def test_small_sun_uses_smiling_mouth():
+    sun = next(asset for asset in load_assets() if asset.id == "sticker_sun_01")
+    svg = sun.file_path.read_text(encoding="utf-8")
+
+    assert "M65 78c8 9 22 9 30 0" in svg
+    assert "M65 78c8-8 22-8 30 0" not in svg
+
+
 def test_external_assets_are_kept_as_draft_until_reviewed():
     external_assets = [asset for asset in load_assets() if asset.source.startswith("https://")]
 
