@@ -47,7 +47,7 @@ export default function JournalDetailPage() {
   if (isLoading) {
     return (
       <section className="journal-detail-page">
-        <p className="text-sm font-semibold text-[#6d6875]">正在加载手帐...</p>
+        <p className="text-sm font-semibold text-[#001858]">正在加载手帐...</p>
       </section>
     );
   }

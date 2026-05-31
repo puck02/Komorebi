@@ -11,17 +11,17 @@ const statusMeta = {
   approved: {
     icon: BadgeCheck,
     label: "approved",
-    tone: "bg-[#ffcdb2] text-[#6d6875]"
+    tone: "bg-[#fef6e4] text-[#001858]"
   },
   draft: {
     icon: CircleDashed,
     label: "draft",
-    tone: "bg-[#ffb4a2] text-[#6d6875]"
+    tone: "bg-[#f3d2c1] text-[#001858]"
   },
   rejected: {
     icon: CircleSlash,
     label: "rejected",
-    tone: "bg-[#e5989b] text-[#fff8f4]"
+    tone: "bg-[#8bd3dd] text-[#001858]"
   }
 };
 
@@ -31,8 +31,8 @@ export default function AssetCard({ asset }: Props) {
 
   return (
     <Card className="overflow-hidden">
-      <div className="grid aspect-[4/3] place-items-center border-b border-[#ffb4a2] bg-[linear-gradient(135deg,#fff3ed,#ffcdb2)] p-5">
-        <img className="max-h-full max-w-full drop-shadow-[0_8px_14px_rgba(109,104,117,0.14)]" src={asset.file_url} alt={asset.name} />
+      <div className="grid aspect-[4/3] place-items-center border-b border-[#f3d2c1] bg-[linear-gradient(135deg,#fef6e4,#f3d2c1)] p-5">
+        <img className="max-h-full max-w-full drop-shadow-[0_8px_14px_rgba(0,24,88,0.14)]" src={asset.file_url} alt={asset.name} />
       </div>
       <CardHeader>
         <div className="flex items-start justify-between gap-3">
@@ -42,17 +42,17 @@ export default function AssetCard({ asset }: Props) {
             {status.label}
           </span>
         </div>
-        <p className="text-xs uppercase tracking-[0.18em] text-[#b5838d]">{asset.category}</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-[#f582ae]">{asset.category}</p>
       </CardHeader>
       <CardContent className="grid gap-3">
         <div className="flex flex-wrap gap-1.5">
           {asset.tags.slice(0, 5).map((tag) => (
-            <span key={tag} className="rounded-full bg-[#ffcdb2]/60 px-2 py-1 text-xs text-[#6d6875]">
+            <span key={tag} className="rounded-full bg-[#fef6e4]/60 px-2 py-1 text-xs text-[#001858]">
               {tag}
             </span>
           ))}
         </div>
-        <dl className="grid gap-1 text-xs text-[#6d6875]">
+        <dl className="grid gap-1 text-xs text-[#172c66]">
           <div className="flex justify-between gap-3">
             <dt>license</dt>
             <dd className="truncate font-semibold">{asset.license}</dd>

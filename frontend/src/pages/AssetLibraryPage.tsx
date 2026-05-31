@@ -35,33 +35,33 @@ export default function AssetLibraryPage() {
 
   return (
     <section className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-8">
-      <div className="flex flex-col gap-4 border-b border-[#ffb4a2] pb-5 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-4 border-b border-[#f3d2c1] pb-5 md:flex-row md:items-end md:justify-between">
         <div className="grid gap-2">
-          <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[#b5838d]">
+          <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[#f582ae]">
             <Search size={16} />
             Asset Library
           </p>
-          <h1 className="text-3xl font-semibold text-[#6d6875] md:text-4xl">素材库预览</h1>
+          <h1 className="text-3xl font-semibold text-[#001858] md:text-4xl">素材库预览</h1>
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
-            <span className="rounded-full bg-[#ffcdb2] px-2.5 py-1 text-[#6d6875]">approved {statusCounts.approved}</span>
-            <span className="rounded-full bg-[#ffb4a2] px-2.5 py-1 text-[#6d6875]">draft {statusCounts.draft}</span>
-            <span className="rounded-full bg-[#e5989b] px-2.5 py-1 text-[#fff8f4]">rejected {statusCounts.rejected}</span>
+            <span className="rounded-full bg-[#fef6e4] px-2.5 py-1 text-[#001858]">approved {statusCounts.approved}</span>
+            <span className="rounded-full bg-[#f3d2c1] px-2.5 py-1 text-[#001858]">draft {statusCounts.draft}</span>
+            <span className="rounded-full bg-[#8bd3dd] px-2.5 py-1 text-[#001858]">rejected {statusCounts.rejected}</span>
           </div>
         </div>
-        <div className="rounded-md border border-[#ffb4a2] bg-[#fff3ed] px-4 py-3 text-sm text-[#6d6875]">
-          <strong className="text-[#b5838d]">{filteredAssets.length}</strong> / {assets.length} assets
+        <div className="rounded-md border border-[#f3d2c1] bg-[#fef6e4] px-4 py-3 text-sm text-[#172c66]">
+          <strong className="text-[#f582ae]">{filteredAssets.length}</strong> / {assets.length} assets
         </div>
       </div>
 
-      <div className="grid gap-4 rounded-md border border-[#ffb4a2] bg-[#fff3ed] p-4">
+      <div className="grid gap-4 rounded-md border border-[#f3d2c1] bg-[#fef6e4] p-4">
         <FilterRow label="分类" options={categories} value={category} onChange={setCategory} />
         <FilterRow label="状态" options={statuses} value={status} onChange={setStatus} />
         <FilterRow label="标签" options={tags} value={tag} onChange={setTag} />
       </div>
 
-      {isLoading ? <p className="text-sm text-[#6d6875]">正在加载素材...</p> : null}
-      {error instanceof Error ? <p className="text-sm font-semibold text-[#b5838d]">{error.message}</p> : null}
-      {!isLoading && filteredAssets.length === 0 ? <p className="text-sm text-[#6d6875]">没有符合筛选条件的素材。</p> : null}
+      {isLoading ? <p className="text-sm text-[#172c66]">正在加载素材...</p> : null}
+      {error instanceof Error ? <p className="text-sm font-semibold text-[#f582ae]">{error.message}</p> : null}
+      {!isLoading && filteredAssets.length === 0 ? <p className="text-sm text-[#172c66]">没有符合筛选条件的素材。</p> : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredAssets.map((asset) => (
@@ -82,7 +82,7 @@ type FilterRowProps = {
 function FilterRow({ label, options, value, onChange }: FilterRowProps) {
   return (
     <div className="grid gap-2 md:grid-cols-[72px_1fr] md:items-center">
-      <span className="text-sm font-semibold text-[#6d6875]">{label}</span>
+      <span className="text-sm font-semibold text-[#001858]">{label}</span>
       <div className="flex flex-wrap gap-2">
         {options.map((option) => (
           <Button

@@ -18,10 +18,10 @@ const buttonVariants = cva(
         sm: "h-8 px-3 text-xs"
       },
       variant: {
-        default: "bg-[#6d6875] text-[#fff8f4] hover:bg-[#b5838d]",
-        ghost: "text-[#6d6875] hover:bg-[#ffcdb2]/50",
-        outline: "border border-[#ffb4a2] bg-[#fff3ed] text-[#6d6875] hover:bg-[#ffcdb2]/45",
-        selected: "bg-[#b5838d] text-[#fff8f4] hover:bg-[#6d6875]"
+        default: "bg-[#f582ae] text-[#001858] shadow-[0_8px_20px_rgba(245,130,174,0.22)] hover:bg-[#8bd3dd]",
+        ghost: "text-[#001858] hover:bg-[#fef6e4]/50",
+        outline: "border border-[#f3d2c1] bg-[#fef6e4] text-[#001858] hover:bg-[#f3d2c1]/45",
+        selected: "bg-[#8bd3dd] text-[#001858] hover:bg-[#f3d2c1]"
       }
     }
   }
