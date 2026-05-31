@@ -63,7 +63,10 @@ def build_generation_message_content(request: JournalGenerationRequest) -> str |
 
 
 def build_generation_prompt(request: JournalGenerationRequest) -> str:
-    images = [{"id": image.id, "width": image.width, "height": image.height} for image in request.images]
+    images = [
+        {"id": image.id, "order": index + 1, "width": image.width, "height": image.height}
+        for index, image in enumerate(request.images)
+    ]
     assets = [
         {
             "id": asset.id,
@@ -116,9 +119,14 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "请只返回一个严格 JSON 对象，不要返回 Markdown。"
         "必须完全使用下面的字段结构和 camelCase 字段名，不要增加 subtitle、notes、safe_margin、typography、content.images 等额外结构。"
         "canvas.background 必须是颜色字符串，不能是对象。"
+        "文字要像真实的日记记录，像本人当天随手写下来的几句感受，可以自然、口语一点。"
+        "不要写成 AI 总结，不要写宣传文案，不要堆砌“被温柔包裹”“治愈”“仪式感”“把时光收藏”等套话。"
+        "图片数组顺序就是用户上传或拖拽排序后的顺序，必须尊重这个顺序，不要自行重排。"
+        "生成文字时要结合图片实际可见内容和用户描述；每段正文、每条 caption 都要和对应照片或照片组对得上，不能张冠李戴。"
         "content.body 必须是字符串数组，不能只写一大段；请按照片主题、场景或时间分成 2 到 4 段短文字，每段 1 到 2 句。"
         "如果照片天然能分成几类，就让 content.body 的段落数量尽量对应这些类别。content.captions 必须使用 imageId 和 text。"
-        "layout.images 必须使用 imageId。layout.decorations 必须使用 assetId。"
+        "content.captions 的顺序应尽量跟图片 order 一致，caption 只能描述对应 imageId 的照片内容。"
+        "layout.images 必须使用 imageId，排列顺序应尽量按照图片 order 从上到下、从左到右展开。layout.decorations 必须使用 assetId。"
         "layout.texts.role 只能是 title、body 或 caption；每一段 content.body 都应该对应一个单独的 body 文本框。"
         "画布宽度必须是 1080，高度必须按内容多少生成竖向长图，不能固定为 1440。"
         "图片不要排得太密，图片组、文字块和装饰之间要留出明显呼吸感；内容多时让 canvas.height 继续向下延伸。"

@@ -7,7 +7,7 @@ import httpx
 from app.schemas.journal import JournalLayout
 from app.services.assets import get_approved_assets, load_assets
 from app.services.journal_generator import GenerationError, JournalGenerationRequest, JournalGenerator, JournalImageInput
-from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient
+from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient, build_generation_prompt
 
 
 def test_generator_returns_valid_journal_layout():
@@ -322,6 +322,17 @@ def test_openai_client_sends_image_content_when_available(monkeypatch):
     content = captured["json"]["messages"][0]["content"]
     assert content[0]["type"] == "text"
     assert content[1] == {"type": "image_url", "image_url": {"url": "data:image/webp;base64,abc"}}
+
+
+def test_generation_prompt_requests_natural_diary_text_and_preserves_image_order():
+    prompt = build_generation_prompt(generation_request(images=three_images()))
+
+    assert "真实的日记记录" in prompt
+    assert "不要写成 AI 总结" in prompt
+    assert "图片数组顺序就是用户上传或拖拽排序后的顺序" in prompt
+    assert '"order": 1' in prompt
+    assert '"order": 2' in prompt
+    assert '"order": 3' in prompt
 
 
 def test_openai_client_converts_connection_errors_to_generation_error(monkeypatch):
