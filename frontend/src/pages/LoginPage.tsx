@@ -3,7 +3,11 @@ import { useNavigate } from "react-router-dom";
 
 import { login } from "../api/auth";
 
-export default function LoginPage() {
+type LoginPageProps = {
+  onAuthenticated?: () => void;
+};
+
+export default function LoginPage({ onAuthenticated }: LoginPageProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,7 +20,8 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await login({ email, password });
-      navigate("/");
+      onAuthenticated?.();
+      navigate("/", { replace: true });
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "登录失败");
     } finally {
