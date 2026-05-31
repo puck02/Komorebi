@@ -66,16 +66,16 @@ body {
   margin: 0;
   overflow: hidden;
   isolation: isolate;
-  border: 1px solid rgb(254 246 228 / 56%);
+  border: 1px solid rgb(254 246 228 / 42%);
   border-radius: 999px;
   padding: 10px 16px;
   background:
-    linear-gradient(135deg, rgb(254 246 228 / 42%), rgb(243 210 193 / 24%) 54%, rgb(139 211 221 / 18%)),
-    rgb(254 246 228 / 28%);
+    linear-gradient(135deg, rgb(254 246 228 / 26%), rgb(243 210 193 / 14%) 54%, rgb(139 211 221 / 12%)),
+    rgb(254 246 228 / 14%);
   box-shadow:
-    inset 0 1px 0 rgb(254 246 228 / 72%),
-    inset 0 -1px 0 rgb(0 24 88 / 6%),
-    0 18px 42px rgb(0 24 88 / 14%);
+    inset 0 1px 0 rgb(254 246 228 / 54%),
+    inset 0 -1px 0 rgb(0 24 88 / 5%),
+    0 18px 42px rgb(0 24 88 / 12%);
   transform: translateX(-50%);
   backdrop-filter: blur(24px) saturate(170%);
   -webkit-backdrop-filter: blur(24px) saturate(170%);
@@ -87,9 +87,9 @@ body {
   z-index: -1;
   border-radius: inherit;
   background:
-    radial-gradient(circle at 12% 0%, rgb(254 246 228 / 58%), transparent 32%),
-    radial-gradient(circle at 86% 10%, rgb(139 211 221 / 28%), transparent 38%),
-    linear-gradient(180deg, rgb(254 246 228 / 34%), rgb(254 246 228 / 8%) 72%);
+    radial-gradient(circle at 12% 0%, rgb(254 246 228 / 36%), transparent 32%),
+    radial-gradient(circle at 86% 10%, rgb(139 211 221 / 18%), transparent 38%),
+    linear-gradient(180deg, rgb(254 246 228 / 22%), rgb(254 246 228 / 4%) 72%);
   content: "";
   pointer-events: none;
 }
@@ -100,8 +100,8 @@ body {
   z-index: -1;
   border-radius: inherit;
   background:
-    linear-gradient(90deg, rgb(254 246 228 / 18%), transparent 28% 72%, rgb(254 246 228 / 16%)),
-    repeating-linear-gradient(90deg, rgb(254 246 228 / 8%) 0 1px, transparent 1px 18px);
+    linear-gradient(90deg, rgb(254 246 228 / 10%), transparent 28% 72%, rgb(254 246 228 / 10%)),
+    repeating-linear-gradient(90deg, rgb(254 246 228 / 5%) 0 1px, transparent 1px 18px);
   content: "";
   mix-blend-mode: soft-light;
   pointer-events: none;
@@ -140,9 +140,9 @@ body {
 .nav-link:hover,
 .nav-link.is-active {
   color: var(--color-ink);
-  background: rgb(254 246 228 / 38%);
+  background: rgb(254 246 228 / 28%);
   box-shadow:
-    inset 0 1px 0 rgb(254 246 228 / 56%),
+    inset 0 1px 0 rgb(254 246 228 / 44%),
     0 6px 18px rgb(0 24 88 / 10%);
 }
 
