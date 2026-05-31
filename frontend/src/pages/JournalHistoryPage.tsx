@@ -33,7 +33,7 @@ export default function JournalHistoryPage() {
   if (journalsQuery.isLoading) {
     return (
       <section className="history-page">
-        <p className="text-sm font-semibold text-[#65584d]">正在加载历史手帐...</p>
+        <p className="text-sm font-semibold text-[#6d6875]">正在加载历史手帐...</p>
       </section>
     );
   }

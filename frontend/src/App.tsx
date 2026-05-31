@@ -28,7 +28,7 @@ export default function App() {
 
   if (!isAuthenticated) {
     return (
-      <main className="min-h-screen bg-[#f6efe7] text-[#2f2924]">
+      <main className="min-h-screen bg-[#ffcdb2] text-[#6d6875]">
         <Routes>
           <Route path="/register" element={<RegisterPage onAuthenticated={handleAuthenticated} />} />
           <Route path="*" element={<LoginPage onAuthenticated={handleAuthenticated} />} />
@@ -38,7 +38,7 @@ export default function App() {
   }
 
   return (
-    <main className="app-shell min-h-screen bg-[#f6efe7] text-[#2f2924]">
+    <main className="app-shell min-h-screen bg-[#ffcdb2] text-[#6d6875]">
       <nav className="top-nav backdrop-blur-md bg-white/70" aria-label="Primary navigation">
         <NavLink className="brand-link" to="/">
           Komorebi
