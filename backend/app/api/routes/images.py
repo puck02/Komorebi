@@ -1,5 +1,6 @@
 from pathlib import Path
 from shutil import rmtree
+from threading import Lock
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
@@ -17,6 +18,7 @@ from app.services.storage import build_image_paths, extension_for_content_type, 
 from app.services.thumbnails import generate_display_image, generate_thumbnail
 
 router = APIRouter(prefix="/api/images", tags=["images"])
+IMAGE_PROCESSING_LOCK = Lock()
 
 
 @router.post("", response_model=ImageRead, status_code=status.HTTP_201_CREATED)
@@ -34,8 +36,9 @@ def upload_image(
     save_upload_file(file, paths.original)
 
     try:
-        width, height = generate_thumbnail(paths.original, paths.thumbnail)
-        generate_display_image(paths.original, paths.display)
+        with IMAGE_PROCESSING_LOCK:
+            width, height = generate_thumbnail(paths.original, paths.thumbnail)
+            generate_display_image(paths.original, paths.display)
     except UnidentifiedImageError as exc:
         rmtree(paths.directory, ignore_errors=True)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid image file") from exc
