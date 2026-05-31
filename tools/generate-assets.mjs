@@ -209,9 +209,11 @@ function stickerShape(asset, seed) {
   }
   if (asset.id.includes("camera")) {
     return [
-      roughShape("rectangle", [34, 52, 92, 62], asset, seed, { fill: secondary }),
-      roughShape("circle", [64, 64, 38], asset, seed + 1, { fill: "#fffaf5" }),
-      roughShape("rectangle", [48, 42, 34, 18], asset, seed + 2, { fill: primary })
+      roughShape("rectangle", [28, 54, 104, 62], asset, seed, { fill: secondary }),
+      roughShape("rectangle", [46, 42, 42, 18], asset, seed + 1, { fill: primary }),
+      roughShape("circle", [80, 84, 42], asset, seed + 2, { fill: "#fffaf5" }),
+      roughShape("circle", [80, 84, 20], asset, seed + 3, { fill: primary, fillStyle: "hachure" }),
+      roughShape("circle", [118, 68, 9], asset, seed + 4, { fill: primary })
     ];
   }
   if (asset.id.includes("star")) {
@@ -240,8 +242,9 @@ function stickerShape(asset, seed) {
   }
   if (asset.id.includes("route")) {
     return [
-      roughPath("M24 110 C54 64 76 126 104 78 C116 58 130 52 142 48", asset, seed, { fill: "none", strokeWidth: 4 }),
-      roughPath("M128 32 L144 48 L122 58", asset, seed + 1, { fill: "none", strokeWidth: 4 })
+      roughPath("M22 112 C46 84 62 102 80 76 C96 52 120 54 136 40", asset, seed, { fill: "none", strokeWidth: 4 }),
+      roughPath("M120 34 L138 40 L128 58", asset, seed + 1, { fill: "none", strokeWidth: 4 }),
+      ...dots([[42, 104], [66, 91], [92, 62], [118, 50]], primary, seed)
     ];
   }
   if (asset.id.includes("book")) {
@@ -252,20 +255,20 @@ function stickerShape(asset, seed) {
   }
   if (asset.id.includes("music")) {
     return [
-      roughPath("M72 36 V104 C72 118 48 118 48 104 C48 90 70 90 72 104", asset, seed, { fill: "none", strokeWidth: 4 }),
-      roughPath("M72 42 L122 32 V92 C122 106 98 106 98 92 C98 78 120 78 122 92", asset, seed + 1, { fill: "none", strokeWidth: 4 })
-    ];
-  }
-  if (asset.id.includes("rain")) {
-    return [
-      roughPath("M42 52 C54 30 78 30 88 52 C112 48 126 64 124 82 H34 C22 78 24 58 42 52 Z", asset, seed, { fill: secondary }),
-      ...dots([[52, 110], [82, 124], [112, 108]], primary, seed)
+      roughShape("ellipse", [48, 98, 34, 24], asset, seed, { fill: secondary }),
+      roughShape("ellipse", [102, 86, 34, 24], asset, seed + 1, { fill: secondary }),
+      line(64, 96, 64, 38, darken(primary), 1),
+      line(118, 84, 118, 26, darken(primary), 1),
+      line(64, 38, 118, 26, darken(primary), 1)
     ];
   }
   if (asset.id.includes("paw")) {
     return [
-      roughShape("ellipse", [58, 82, 48, 38], asset, seed, { fill: secondary }),
-      ...dots([[52, 60], [74, 48], [98, 60], [106, 84]], primary, seed)
+      roughShape("ellipse", [80, 94, 56, 44], asset, seed, { fill: secondary }),
+      roughShape("ellipse", [50, 66, 20, 26], asset, seed + 1, { fill: secondary }),
+      roughShape("ellipse", [72, 48, 22, 28], asset, seed + 2, { fill: secondary }),
+      roughShape("ellipse", [96, 50, 22, 28], asset, seed + 3, { fill: secondary }),
+      roughShape("ellipse", [118, 70, 20, 26], asset, seed + 4, { fill: secondary })
     ];
   }
   if (asset.id.includes("picnic")) {
@@ -279,17 +282,28 @@ function stickerShape(asset, seed) {
   }
   if (asset.id.includes("train")) {
     return [
-      roughShape("rectangle", [32, 58, 92, 42], asset, seed, { fill: secondary }),
-      roughShape("rectangle", [96, 44, 34, 56], asset, seed + 1, { fill: secondary }),
-      roughShape("circle", [46, 94, 18], asset, seed + 2, { fill: primary }),
-      roughShape("circle", [100, 94, 18], asset, seed + 3, { fill: primary })
+      roughShape("rectangle", [28, 66, 76, 42], asset, seed, { fill: secondary }),
+      roughShape("rectangle", [96, 48, 36, 60], asset, seed + 1, { fill: secondary }),
+      roughShape("rectangle", [38, 54, 20, 14], asset, seed + 2, { fill: primary }),
+      roughShape("rectangle", [106, 60, 16, 16], asset, seed + 3, { fill: "#fffaf5" }),
+      roughShape("circle", [50, 110, 18], asset, seed + 4, { fill: primary }),
+      roughShape("circle", [100, 110, 18], asset, seed + 5, { fill: primary }),
+      line(24, 126, 136, 126, darken(primary), 0.55)
+    ];
+  }
+  if (asset.id.includes("rain_")) {
+    return [
+      roughPath("M42 52 C54 30 78 30 88 52 C112 48 126 64 124 82 H34 C22 78 24 58 42 52 Z", asset, seed, { fill: secondary }),
+      ...dots([[52, 110], [82, 124], [112, 108]], primary, seed)
     ];
   }
   if (asset.id.includes("bow")) {
     return [
-      roughPath("M78 80 C42 44 22 66 38 98 C50 116 68 96 78 80 Z", asset, seed, { fill: secondary }),
-      roughPath("M82 80 C118 44 138 66 122 98 C110 116 92 96 82 80 Z", asset, seed + 1, { fill: secondary }),
-      roughShape("circle", [70, 70, 22], asset, seed + 2, { fill: primary })
+      roughPath("M78 80 C48 48 22 62 34 96 C48 122 68 98 78 84 Z", asset, seed, { fill: secondary, roughness: 0.75 }),
+      roughPath("M82 80 C112 48 138 62 126 96 C112 122 92 98 82 84 Z", asset, seed + 1, { fill: secondary, roughness: 0.75 }),
+      roughShape("ellipse", [80, 82, 30, 28], asset, seed + 2, { fill: primary, roughness: 0.7 }),
+      line(54, 78, 35, 62, darken(primary), 0.36),
+      line(106, 78, 125, 62, darken(primary), 0.36)
     ];
   }
   return [roughShape("circle", [42, 42, 76], asset, seed, { fill: secondary })];
@@ -313,7 +327,12 @@ function textureShape(asset, seed) {
   }
   if (asset.id.includes("wave")) {
     return Array.from({ length: 5 }, (_, index) =>
-      roughPath(`M18 ${34 + index * 24} C56 ${index % 2 ? 8 : 58} 96 ${index % 2 ? 58 : 8} 136 ${34 + index * 24} S190 ${34 + index * 24} 206 ${34 + index * 24}`, asset, seed + index, { fill: "none", strokeWidth: 2 })
+      roughPath(
+        `M18 ${34 + index * 20} C54 ${18 + index * 20} 84 ${50 + index * 20} 120 ${34 + index * 20} S178 ${18 + index * 20} 206 ${34 + index * 20}`,
+        asset,
+        seed + index,
+        { fill: "none", strokeWidth: 2, roughness: 0.75 }
+      )
     );
   }
   if (asset.id.includes("scribble")) {

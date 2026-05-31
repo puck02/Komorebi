@@ -50,3 +50,10 @@ def test_asset_api_serves_svg_file():
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("image/svg+xml")
+
+
+def test_train_sticker_is_not_rendered_as_rain_cloud():
+    train = next(asset for asset in load_assets() if asset.id == "sticker_train_19")
+    svg = train.file_path.read_text(encoding="utf-8")
+
+    assert "M24 126L136 126" in svg
