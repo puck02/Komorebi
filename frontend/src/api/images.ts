@@ -42,6 +42,10 @@ export async function getImageFileBlob(imageId: string) {
   return fetchAuthenticatedImage(`/images/${imageId}/file`);
 }
 
+export async function getImageThumbnailBlob(imageId: string) {
+  return fetchAuthenticatedImage(`/images/${imageId}/thumbnail`);
+}
+
 async function fetchAuthenticatedImage(path: string) {
   const token = getAccessToken();
   if (!token) {

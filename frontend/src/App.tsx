@@ -1,23 +1,30 @@
 import { useState } from "react";
-import { Images, Library, NotebookPen } from "lucide-react";
+import { Images, Library, NotebookPen, UserRound } from "lucide-react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 
-import { getAccessToken } from "./api/client";
+import { clearAccessToken, getAccessToken } from "./api/client";
+import AccountPage from "./pages/AccountPage";
 import AssetLibraryPage from "./pages/AssetLibraryPage";
 import CreateJournalPage from "./pages/CreateJournalPage";
 import JournalDetailPage from "./pages/JournalDetailPage";
+import JournalHistoryPage from "./pages/JournalHistoryPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
 const navItems = [
   { icon: NotebookPen, label: "创建", to: "/" },
   { icon: Images, label: "历史", to: "/history" },
-  { icon: Library, label: "素材", to: "/assets" }
+  { icon: Library, label: "素材", to: "/assets" },
+  { icon: UserRound, label: "账号", to: "/account" }
 ];
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(getAccessToken()));
   const handleAuthenticated = () => setIsAuthenticated(true);
+  const handleLogout = () => {
+    clearAccessToken();
+    setIsAuthenticated(false);
+  };
 
   if (!isAuthenticated) {
     return (
@@ -53,28 +60,14 @@ export default function App() {
 
       <Routes>
         <Route path="/" element={<CreateJournalPage />} />
-        <Route path="/history" element={<PlaceholderPage title="历史手帐" description="历史列表会在手帐保存接口完成后接入。" />} />
+        <Route path="/history" element={<JournalHistoryPage />} />
         <Route path="/journals/:journalId" element={<JournalDetailPage />} />
         <Route path="/assets" element={<AssetLibraryPage />} />
+        <Route path="/account" element={<AccountPage onLogout={handleLogout} />} />
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="/register" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </main>
-  );
-}
-
-type PlaceholderPageProps = {
-  title: string;
-  description: string;
-};
-
-function PlaceholderPage({ title, description }: PlaceholderPageProps) {
-  return (
-    <section className="mx-auto grid max-w-5xl gap-3 px-5 py-20">
-      <p className="eyebrow">Coming next</p>
-      <h1 className="text-4xl font-semibold">{title}</h1>
-      <p className="max-w-xl text-[#65584d]">{description}</p>
-    </section>
   );
 }
