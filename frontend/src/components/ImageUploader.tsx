@@ -1,4 +1,4 @@
-import { ChangeEvent, CSSProperties, PointerEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, CSSProperties, PointerEvent, type RefObject, useEffect, useRef, useState } from "react";
 
 import { UploadedImage, uploadImage } from "../api/images";
 
@@ -11,12 +11,14 @@ export default function ImageUploader({ onUploaded }: Props) {
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [dragVisual, setDragVisual] = useState<DragVisual | null>(null);
+  const dragGhostRef = useRef<HTMLElement | null>(null);
   const dragSession = useRef<DragSession | null>(null);
   const previewUrls = useRef(new Set<string>());
 
   useEffect(() => {
     return () => {
       clearDragTimer();
+      clearDragFrame();
       previewUrls.current.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
       previewUrls.current.clear();
     };
@@ -109,8 +111,12 @@ export default function ImageUploader({ onUploaded }: Props) {
       startY: event.clientY,
       currentX: event.clientX,
       currentY: event.clientY,
+      offsetX: 0,
+      offsetY: 0,
       isDragging: false,
       lastTargetId: imageId,
+      visualTargetId: imageId,
+      frameId: null,
       timerId: window.setTimeout(() => {
         session.isDragging = true;
         setDragVisual({
@@ -143,9 +149,11 @@ export default function ImageUploader({ onUploaded }: Props) {
     }
 
     event.preventDefault();
-    const offsetX = event.clientX - session.startX;
-    const offsetY = event.clientY - session.startY;
-    const targetId = findImageIdAtPoint(event.clientX, event.clientY);
+    session.offsetX = event.clientX - session.startX;
+    session.offsetY = event.clientY - session.startY;
+    scheduleDragGhostUpdate();
+    const targetId = findReorderTargetIdAtPoint(event.clientX, event.clientY, session.activeId);
+    const visualTargetId = targetId ?? session.lastTargetId;
 
     if (targetId && targetId !== session.activeId && targetId !== session.lastTargetId) {
       session.lastTargetId = targetId;
@@ -163,13 +171,16 @@ export default function ImageUploader({ onUploaded }: Props) {
       });
     }
 
-    setDragVisual({
-      activeId: session.activeId,
-      initialRect: session.initialRect,
-      offsetX,
-      offsetY,
-      targetId: targetId ?? session.lastTargetId
-    });
+    if (visualTargetId !== session.visualTargetId) {
+      session.visualTargetId = visualTargetId;
+      setDragVisual({
+        activeId: session.activeId,
+        initialRect: session.initialRect,
+        offsetX: session.offsetX,
+        offsetY: session.offsetY,
+        targetId: visualTargetId
+      });
+    }
   }
 
   function endPress(event: PointerEvent<HTMLElement>) {
@@ -179,6 +190,7 @@ export default function ImageUploader({ onUploaded }: Props) {
     }
 
     clearDragTimer();
+    clearDragFrame();
     if (session.isDragging) {
       event.preventDefault();
     }
@@ -192,6 +204,7 @@ export default function ImageUploader({ onUploaded }: Props) {
   function cancelPress(event?: PointerEvent<HTMLElement>) {
     const session = dragSession.current;
     clearDragTimer();
+    clearDragFrame();
     dragSession.current = null;
     setDragVisual(null);
     if (event && event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -204,6 +217,30 @@ export default function ImageUploader({ onUploaded }: Props) {
       window.clearTimeout(dragSession.current.timerId);
       dragSession.current.timerId = null;
     }
+  }
+
+  function clearDragFrame() {
+    if (dragSession.current?.frameId) {
+      window.cancelAnimationFrame(dragSession.current.frameId);
+      dragSession.current.frameId = null;
+    }
+  }
+
+  function scheduleDragGhostUpdate() {
+    const session = dragSession.current;
+    if (!session || session.frameId) {
+      return;
+    }
+
+    session.frameId = window.requestAnimationFrame(() => {
+      session.frameId = null;
+      const ghost = dragGhostRef.current;
+      if (!ghost) {
+        return;
+      }
+      ghost.style.setProperty("--drag-x", `${session.offsetX}px`);
+      ghost.style.setProperty("--drag-y", `${session.offsetY}px`);
+    });
   }
 
   return (
@@ -246,7 +283,9 @@ export default function ImageUploader({ onUploaded }: Props) {
           );
         })}
       </div>
-      {dragVisual ? <DragGhost dragVisual={dragVisual} image={images.find((image) => image.id === dragVisual.activeId)} /> : null}
+      {dragVisual ? (
+        <DragGhost dragVisual={dragVisual} ghostRef={dragGhostRef} image={images.find((image) => image.id === dragVisual.activeId)} />
+      ) : null}
     </section>
   );
 }
@@ -263,8 +302,12 @@ type DragSession = {
   startY: number;
   currentX: number;
   currentY: number;
+  offsetX: number;
+  offsetY: number;
   isDragging: boolean;
   lastTargetId: string;
+  visualTargetId: string;
+  frameId: number | null;
   timerId: number | null;
 };
 
@@ -276,7 +319,15 @@ type DragVisual = {
   targetId: string;
 };
 
-function DragGhost({ dragVisual, image }: { dragVisual: DragVisual; image: UploadedImagePreview | undefined }) {
+function DragGhost({
+  dragVisual,
+  ghostRef,
+  image
+}: {
+  dragVisual: DragVisual;
+  ghostRef: RefObject<HTMLElement | null>;
+  image: UploadedImagePreview | undefined;
+}) {
   if (!image) {
     return null;
   }
@@ -285,6 +336,7 @@ function DragGhost({ dragVisual, image }: { dragVisual: DragVisual; image: Uploa
     <figure
       aria-hidden="true"
       className="upload-drag-ghost"
+      ref={ghostRef}
       style={
         {
           "--drag-left": `${dragVisual.initialRect.left}px`,
@@ -304,7 +356,31 @@ function isSupportedImageFile(file: File) {
   return ["image/jpeg", "image/png", "image/webp"].includes(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
 }
 
-function findImageIdAtPoint(x: number, y: number) {
+function findReorderTargetIdAtPoint(x: number, y: number, activeId: string) {
   const element = document.elementFromPoint(x, y);
-  return element?.closest<HTMLElement>("[data-upload-image-id]")?.dataset.uploadImageId;
+  const directTargetId = element?.closest<HTMLElement>("[data-upload-image-id]")?.dataset.uploadImageId;
+  if (directTargetId && directTargetId !== activeId) {
+    return directTargetId;
+  }
+
+  let nearestTargetId: string | undefined;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+
+  document.querySelectorAll<HTMLElement>("[data-upload-image-id]").forEach((item) => {
+    const itemId = item.dataset.uploadImageId;
+    if (!itemId || itemId === activeId) {
+      return;
+    }
+    const rect = item.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const distance = Math.hypot(x - centerX, y - centerY);
+    const maxDistance = Math.max(rect.width, rect.height) * 1.2;
+    if (distance <= maxDistance && distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestTargetId = itemId;
+    }
+  });
+
+  return nearestTargetId;
 }
