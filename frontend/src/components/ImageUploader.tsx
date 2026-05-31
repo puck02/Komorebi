@@ -17,12 +17,64 @@ export default function ImageUploader({ onUploaded }: Props) {
 
   useEffect(() => {
     return () => {
-      clearDragTimer();
-      clearDragFrame();
+      resetDragState();
       previewUrls.current.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
       previewUrls.current.clear();
     };
   }, []);
+
+  useEffect(() => {
+    if (!dragVisual) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousBodyTouchAction = document.body.style.touchAction;
+    const previousBodyOverscroll = document.body.style.overscrollBehavior;
+    const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overscrollBehavior = "none";
+
+    function handleWindowPointerMove(event: globalThis.PointerEvent) {
+      const session = dragSession.current;
+      if (!session || session.pointerId !== event.pointerId || !session.isDragging) {
+        return;
+      }
+      event.preventDefault();
+      moveDrag(event.clientX, event.clientY);
+    }
+
+    function handleWindowPointerUp(event: globalThis.PointerEvent) {
+      finishDrag(event.pointerId, true);
+    }
+
+    function handleWindowPointerCancel(event: globalThis.PointerEvent) {
+      finishDrag(event.pointerId, false);
+    }
+
+    function handleWindowBlur() {
+      finishDrag(undefined, false);
+    }
+
+    window.addEventListener("pointermove", handleWindowPointerMove, { passive: false });
+    window.addEventListener("pointerup", handleWindowPointerUp, { passive: false });
+    window.addEventListener("pointercancel", handleWindowPointerCancel, { passive: false });
+    window.addEventListener("blur", handleWindowBlur);
+
+    return () => {
+      window.removeEventListener("pointermove", handleWindowPointerMove);
+      window.removeEventListener("pointerup", handleWindowPointerUp);
+      window.removeEventListener("pointercancel", handleWindowPointerCancel);
+      window.removeEventListener("blur", handleWindowBlur);
+      document.body.style.overflow = previousBodyOverflow;
+      document.body.style.touchAction = previousBodyTouchAction;
+      document.body.style.overscrollBehavior = previousBodyOverscroll;
+      document.documentElement.style.overscrollBehavior = previousHtmlOverscroll;
+    };
+  }, [dragVisual !== null]);
 
   async function handleFilesChange(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? []);
@@ -107,6 +159,7 @@ export default function ImageUploader({ onUploaded }: Props) {
       activeId: imageId,
       initialRect,
       pointerId: event.pointerId,
+      sourceElement: pressedElement,
       startX: event.clientX,
       startY: event.clientY,
       currentX: event.clientX,
@@ -149,10 +202,21 @@ export default function ImageUploader({ onUploaded }: Props) {
     }
 
     event.preventDefault();
-    session.offsetX = event.clientX - session.startX;
-    session.offsetY = event.clientY - session.startY;
+    moveDrag(event.clientX, event.clientY);
+  }
+
+  function moveDrag(clientX: number, clientY: number) {
+    const session = dragSession.current;
+    if (!session || !session.isDragging) {
+      return;
+    }
+
+    session.currentX = clientX;
+    session.currentY = clientY;
+    session.offsetX = clientX - session.startX;
+    session.offsetY = clientY - session.startY;
     scheduleDragGhostUpdate();
-    const targetId = findReorderTargetIdAtPoint(event.clientX, event.clientY, session.activeId);
+    const targetId = findReorderTargetIdAtPoint(clientX, clientY, session.activeId);
     const visualTargetId = targetId ?? session.lastTargetId;
 
     if (targetId && targetId !== session.activeId && targetId !== session.lastTargetId) {
@@ -184,32 +248,39 @@ export default function ImageUploader({ onUploaded }: Props) {
   }
 
   function endPress(event: PointerEvent<HTMLElement>) {
-    const session = dragSession.current;
-    if (!session || session.pointerId !== event.pointerId) {
-      return;
-    }
-
-    clearDragTimer();
-    clearDragFrame();
-    if (session.isDragging) {
+    if (dragSession.current?.isDragging) {
       event.preventDefault();
     }
-    dragSession.current = null;
-    setDragVisual(null);
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
+    finishDrag(event.pointerId, true);
   }
 
   function cancelPress(event?: PointerEvent<HTMLElement>) {
+    finishDrag(event?.pointerId, false);
+  }
+
+  function finishDrag(pointerId: number | undefined, preventNextClick: boolean) {
     const session = dragSession.current;
+    if (!session || (pointerId !== undefined && session.pointerId !== pointerId)) {
+      return;
+    }
+
+    if (preventNextClick) {
+      session.sourceElement.dataset.dragJustEnded = "true";
+      window.setTimeout(() => {
+        delete session.sourceElement.dataset.dragJustEnded;
+      }, 0);
+    }
+    if (session.sourceElement.hasPointerCapture(session.pointerId)) {
+      session.sourceElement.releasePointerCapture(session.pointerId);
+    }
+    resetDragState();
+  }
+
+  function resetDragState() {
     clearDragTimer();
     clearDragFrame();
     dragSession.current = null;
     setDragVisual(null);
-    if (event && event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
   }
 
   function clearDragTimer() {
@@ -298,6 +369,7 @@ type DragSession = {
   activeId: string;
   initialRect: DOMRect;
   pointerId: number;
+  sourceElement: HTMLElement;
   startX: number;
   startY: number;
   currentX: number;
