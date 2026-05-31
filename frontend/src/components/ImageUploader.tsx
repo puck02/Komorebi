@@ -13,6 +13,7 @@ export default function ImageUploader({ onUploaded }: Props) {
   const [dragVisual, setDragVisual] = useState<DragVisual | null>(null);
   const dragGhostRef = useRef<HTMLElement | null>(null);
   const dragSession = useRef<DragSession | null>(null);
+  const scrollLock = useRef<ScrollLockSnapshot | null>(null);
   const previewUrls = useRef(new Set<string>());
 
   useEffect(() => {
@@ -27,16 +28,6 @@ export default function ImageUploader({ onUploaded }: Props) {
     if (!dragVisual) {
       return;
     }
-
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousBodyTouchAction = document.body.style.touchAction;
-    const previousBodyOverscroll = document.body.style.overscrollBehavior;
-    const previousHtmlOverscroll = document.documentElement.style.overscrollBehavior;
-
-    document.body.style.overflow = "hidden";
-    document.body.style.touchAction = "none";
-    document.body.style.overscrollBehavior = "none";
-    document.documentElement.style.overscrollBehavior = "none";
 
     function handleWindowPointerMove(event: globalThis.PointerEvent) {
       const session = dragSession.current;
@@ -69,10 +60,6 @@ export default function ImageUploader({ onUploaded }: Props) {
       window.removeEventListener("pointerup", handleWindowPointerUp);
       window.removeEventListener("pointercancel", handleWindowPointerCancel);
       window.removeEventListener("blur", handleWindowBlur);
-      document.body.style.overflow = previousBodyOverflow;
-      document.body.style.touchAction = previousBodyTouchAction;
-      document.body.style.overscrollBehavior = previousBodyOverscroll;
-      document.documentElement.style.overscrollBehavior = previousHtmlOverscroll;
     };
   }, [dragVisual !== null]);
 
@@ -155,6 +142,7 @@ export default function ImageUploader({ onUploaded }: Props) {
     const initialRect = pressedElement.getBoundingClientRect();
     pressedElement.setPointerCapture(event.pointerId);
     const delay = event.pointerType === "mouse" ? 180 : 200;
+    const scrollLockDelay = event.pointerType === "mouse" ? delay : Math.max(0, delay - 40);
     const session: DragSession = {
       activeId: imageId,
       initialRect,
@@ -170,7 +158,9 @@ export default function ImageUploader({ onUploaded }: Props) {
       lastTargetId: imageId,
       visualTargetId: imageId,
       frameId: null,
+      scrollLockTimerId: window.setTimeout(lockPageScroll, scrollLockDelay),
       timerId: window.setTimeout(() => {
+        lockPageScroll();
         session.isDragging = true;
         setDragVisual({
           activeId: imageId,
@@ -281,12 +271,17 @@ export default function ImageUploader({ onUploaded }: Props) {
     clearDragFrame();
     dragSession.current = null;
     setDragVisual(null);
+    unlockPageScroll();
   }
 
   function clearDragTimer() {
     if (dragSession.current?.timerId) {
       window.clearTimeout(dragSession.current.timerId);
       dragSession.current.timerId = null;
+    }
+    if (dragSession.current?.scrollLockTimerId) {
+      window.clearTimeout(dragSession.current.scrollLockTimerId);
+      dragSession.current.scrollLockTimerId = null;
     }
   }
 
@@ -312,6 +307,35 @@ export default function ImageUploader({ onUploaded }: Props) {
       ghost.style.setProperty("--drag-x", `${session.offsetX}px`);
       ghost.style.setProperty("--drag-y", `${session.offsetY}px`);
     });
+  }
+
+  function lockPageScroll() {
+    if (scrollLock.current) {
+      return;
+    }
+
+    scrollLock.current = {
+      bodyOverflow: document.body.style.overflow,
+      bodyTouchAction: document.body.style.touchAction,
+      bodyOverscroll: document.body.style.overscrollBehavior,
+      htmlOverscroll: document.documentElement.style.overscrollBehavior
+    };
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+    document.body.style.overscrollBehavior = "none";
+    document.documentElement.style.overscrollBehavior = "none";
+  }
+
+  function unlockPageScroll() {
+    if (!scrollLock.current) {
+      return;
+    }
+
+    document.body.style.overflow = scrollLock.current.bodyOverflow;
+    document.body.style.touchAction = scrollLock.current.bodyTouchAction;
+    document.body.style.overscrollBehavior = scrollLock.current.bodyOverscroll;
+    document.documentElement.style.overscrollBehavior = scrollLock.current.htmlOverscroll;
+    scrollLock.current = null;
   }
 
   return (
@@ -380,7 +404,15 @@ type DragSession = {
   lastTargetId: string;
   visualTargetId: string;
   frameId: number | null;
+  scrollLockTimerId: number | null;
   timerId: number | null;
+};
+
+type ScrollLockSnapshot = {
+  bodyOverflow: string;
+  bodyTouchAction: string;
+  bodyOverscroll: string;
+  htmlOverscroll: string;
 };
 
 type DragVisual = {
