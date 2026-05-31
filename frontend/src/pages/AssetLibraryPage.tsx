@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Filter, Search } from "lucide-react";
+import { Filter } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 import { getAssets } from "../api/assets";
@@ -37,11 +37,6 @@ export default function AssetLibraryPage() {
     <section className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-8">
       <div className="flex flex-col gap-4 border-b border-[#f3d2c1] pb-5 md:flex-row md:items-end md:justify-between">
         <div className="grid gap-2">
-          <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[#f582ae]">
-            <Search size={16} />
-            Asset Library
-          </p>
-          <h1 className="text-3xl font-semibold text-[#001858] md:text-4xl">素材库预览</h1>
           <div className="flex flex-wrap gap-2 text-xs font-semibold">
             <span className="rounded-full bg-[#fef6e4] px-2.5 py-1 text-[#001858]">approved {statusCounts.approved}</span>
             <span className="rounded-full bg-[#f3d2c1] px-2.5 py-1 text-[#001858]">draft {statusCounts.draft}</span>
