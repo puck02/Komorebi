@@ -147,6 +147,7 @@ def test_generate_journal_saves_and_lists_only_current_users_journals(client):
     assert owner_response.status_code == 201
     assert owner_response.json()["title"] == "慢下来的周末"
     assert owner_response.json()["imageIds"] == [owner_image_id]
+    assert client.fake_generator.request.images[0].data_url.startswith("data:image/webp;base64,")
     assert list_response.status_code == 200
     assert [item["id"] for item in list_response.json()] == [owner_response.json()["id"]]
 

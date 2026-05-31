@@ -19,7 +19,7 @@ export default function JournalCanvas({ assets, images, layout, onImageClick, sc
   const imageMap = new Map(images.map((image) => [image.id, image]));
   const assetMap = new Map(assets.map((asset) => [asset.id, asset]));
   const titlePlacement = layout.layout.texts.find((text) => text.role === "title");
-  const bodyPlacement = layout.layout.texts.find((text) => text.role === "body");
+  const bodyPlacements = layout.layout.texts.filter((text) => text.role === "body");
   const scaledWidth = layout.canvas.width * scale;
   const scaledHeight = layout.canvas.height * scale;
   const backgroundDecorations = layout.layout.decorations.filter((decoration) =>
@@ -99,19 +99,25 @@ export default function JournalCanvas({ assets, images, layout, onImageClick, sc
           {layout.content.title}
         </section>
 
-        <section
-          className="journal-body"
-          style={{
-            fontSize: bodyPlacement?.fontSize ?? 28,
-            left: bodyPlacement?.x ?? 80,
-            top: bodyPlacement?.y ?? 1040,
-            width: bodyPlacement?.width ?? 760
-          }}
-        >
-          {layout.content.body.map((paragraph) => (
-            <p key={paragraph}>{paragraph}</p>
-          ))}
-        </section>
+        {layout.content.body.map((paragraph, index) => {
+          const placement = bodyPlacements[index];
+          const fallbackTop = (bodyPlacements[0]?.y ?? 1040) + index * 180;
+
+          return (
+            <section
+              className="journal-body"
+              key={`${index}-${paragraph}`}
+              style={{
+                fontSize: placement?.fontSize ?? 28,
+                left: placement?.x ?? 80,
+                top: placement?.y ?? fallbackTop,
+                width: placement?.width ?? 760
+              }}
+            >
+              <p>{paragraph}</p>
+            </section>
+          );
+        })}
       </div>
     </div>
   );

@@ -198,6 +198,51 @@ def test_generator_limits_decoration_density():
     assert category_counts == {"paper": 4, "texture": 2, "tape": 8, "sticker": 8}
 
 
+def test_generator_places_each_body_block_away_from_photos():
+    payload = valid_model_json()
+    payload["content"]["body"] = [
+        "早餐和咖啡是一组，颜色很暖。",
+        "路上的照片放在一起，像慢慢散步。",
+        "最后的夜色收尾，适合写一点柔软的话。",
+    ]
+    payload["layout"]["images"] = [
+        {"imageId": "img_1", "x": 80, "y": 220, "width": 420, "height": 320, "rotation": 0},
+        {"imageId": "img_2", "x": 120, "y": 260, "width": 420, "height": 320, "rotation": 0},
+        {"imageId": "img_3", "x": 160, "y": 300, "width": 420, "height": 320, "rotation": 0},
+    ]
+    payload["layout"]["texts"] = [
+        {"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56},
+        {"role": "body", "x": 100, "y": 260, "width": 760, "fontSize": 30},
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    body_texts = [text for text in layout.layout.texts if text.role == "body"]
+    assert len(body_texts) == 3
+    assert [text.y for text in body_texts] == sorted(text.y for text in body_texts)
+    for index, text in enumerate(body_texts):
+        text_rect = (text.x, text.y, text.width, estimated_paragraph_height(layout.content.body[index], text.font_size, text.width))
+        assert all(not overlaps(text_rect, (image.x, image.y, image.width, image.height)) for image in layout.layout.images)
+    assert layout.canvas.height >= body_texts[-1].y + estimated_paragraph_height(
+        layout.content.body[-1], body_texts[-1].font_size, body_texts[-1].width
+    )
+
+
+def test_generator_adds_missing_image_placements_for_long_collage():
+    payload = valid_model_json()
+    payload["content"]["body"] = ["第一组照片轻轻展开。", "第二组照片留出呼吸感。"]
+    payload["layout"]["images"] = [
+        {"imageId": "img_1", "x": 80, "y": 220, "width": 420, "height": 320, "rotation": 0}
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    assert {image.image_id for image in layout.layout.images} == {"img_1", "img_2", "img_3"}
+    assert layout.canvas.height > 1600
+
+
 def test_generator_normalizes_common_model_field_variants():
     payload = valid_model_json()
     payload["canvas"]["background"] = {"type": "solid", "color": "#fff7ef"}
@@ -258,6 +303,27 @@ def test_openai_client_uses_configured_base_url(monkeypatch):
     assert captured["trust_env"] is True
 
 
+def test_openai_client_sends_image_content_when_available(monkeypatch):
+    captured = {}
+
+    def fake_post(url, **kwargs):
+        request = httpx.Request("POST", url)
+        captured.update(kwargs)
+        return httpx.Response(
+            200,
+            request=request,
+            json={"choices": [{"message": {"content": json.dumps(valid_model_json())}}]},
+        )
+
+    monkeypatch.setattr("app.services.openai_client.httpx.post", fake_post)
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+    client.generate_layout(generation_request(images=[JournalImageInput(id="img_1", width=640, height=480, data_url="data:image/webp;base64,abc")]))
+
+    content = captured["json"]["messages"][0]["content"]
+    assert content[0]["type"] == "text"
+    assert content[1] == {"type": "image_url", "image_url": {"url": "data:image/webp;base64,abc"}}
+
+
 def test_openai_client_converts_connection_errors_to_generation_error(monkeypatch):
     def fake_post(url, **kwargs):
         request = httpx.Request("POST", url)
@@ -291,11 +357,35 @@ class FakeClient:
         return self.payload
 
 
-def generation_request(assets=None):
+def generation_request(assets=None, images=None):
     return JournalGenerationRequest(
         description="周末一起散步，天气很好，喝了咖啡。",
-        images=[JournalImageInput(id="img_1", width=640, height=480)],
+        images=images or [JournalImageInput(id="img_1", width=640, height=480)],
         assets=assets or get_approved_assets(tags=["warm", "daily"]),
+    )
+
+
+def three_images():
+    return [
+        JournalImageInput(id="img_1", width=640, height=480),
+        JournalImageInput(id="img_2", width=900, height=1200),
+        JournalImageInput(id="img_3", width=1200, height=900),
+    ]
+
+
+def estimated_paragraph_height(paragraph, font_size, width):
+    characters_per_line = max(int(width / max(font_size, 1)), 1)
+    return max((len(paragraph) + characters_per_line - 1) // characters_per_line, 1) * font_size * 1.8
+
+
+def overlaps(first, second):
+    first_x, first_y, first_width, first_height = first
+    second_x, second_y, second_width, second_height = second
+    return (
+        first_x < second_x + second_width
+        and first_x + first_width > second_x
+        and first_y < second_y + second_height
+        and first_y + first_height > second_y
     )
 
 

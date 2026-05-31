@@ -12,6 +12,21 @@ CANVAS_WIDTH = 1080
 DEFAULT_CANVAS_HEIGHT = 1440
 CANVAS_BOTTOM_PADDING = 80
 PHOTO_SAFE_INSET_RATIO = 0.18
+TITLE_X = 80
+TITLE_Y = 72
+TITLE_WIDTH = 760
+TITLE_FONT_SIZE = 58
+BODY_X = 112
+BODY_WIDTH = 820
+BODY_FONT_SIZE = 32
+BODY_BLOCK_GAP = 46
+TEXT_PHOTO_GAP = 64
+SECTION_GAP = 104
+PHOTO_COLUMN_WIDTH = 420
+PHOTO_LEFT_X = 92
+PHOTO_RIGHT_X = 568
+PHOTO_ROW_GAP = 56
+LONG_BODY_SPLIT_TARGET = 58
 TAPE_MAX_WIDTH = 260
 TAPE_MAX_HEIGHT = 70
 TAPE_MIN_WIDTH = 150
@@ -34,6 +49,7 @@ class JournalImageInput:
     id: str
     width: int
     height: int
+    data_url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -78,6 +94,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
         content["body"] = content["notes"]
     if "body" not in content and isinstance(content.get("subtitle"), str):
         content["body"] = [content["subtitle"]]
+    content["body"] = normalize_body_content(content.get("body"), len(request.images))
 
     image_ids = {image.id for image in request.images}
     approved_asset_ids = [asset.id for asset in request.assets if asset.quality_status == "approved"]
@@ -100,6 +117,8 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
         normalize_id_alias(caption, "imageId")
     layout["content"]["captions"] = [caption for caption in captions if caption.get("imageId") in image_ids]
 
+    normalize_story_layout(layout, request.images)
+
     asset_by_id = {asset.id: asset for asset in request.assets}
 
     if approved_asset_ids:
@@ -118,6 +137,222 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
 
     layout["canvas"]["height"] = normalize_canvas_height(layout)
     return layout
+
+
+def normalize_body_content(body: Any, image_count: int) -> list[str]:
+    if isinstance(body, str):
+        paragraphs = [body]
+    elif isinstance(body, list):
+        paragraphs = [str(paragraph).strip() for paragraph in body if str(paragraph).strip()]
+    else:
+        paragraphs = []
+
+    if not paragraphs:
+        return ["把这一天轻轻收进手帐里。"]
+
+    if len(paragraphs) == 1 and len(paragraphs[0]) > LONG_BODY_SPLIT_TARGET:
+        return split_long_paragraph(paragraphs[0], image_count)
+    return paragraphs
+
+
+def split_long_paragraph(paragraph: str, image_count: int) -> list[str]:
+    target_count = min(max(ceil(len(paragraph) / LONG_BODY_SPLIT_TARGET), min(max(image_count, 1), 3)), 4)
+    sentences = split_sentences(paragraph)
+    if len(sentences) >= target_count:
+        groups = split_evenly(sentences, target_count)
+        return ["".join(group).strip() for group in groups if "".join(group).strip()]
+
+    chunk_size = ceil(len(paragraph) / target_count)
+    return [paragraph[index : index + chunk_size].strip() for index in range(0, len(paragraph), chunk_size) if paragraph[index : index + chunk_size].strip()]
+
+
+def split_sentences(paragraph: str) -> list[str]:
+    sentences: list[str] = []
+    start = 0
+    for index, character in enumerate(paragraph):
+        if character in "。！？!?；;":
+            sentences.append(paragraph[start : index + 1].strip())
+            start = index + 1
+    if start < len(paragraph):
+        sentences.append(paragraph[start:].strip())
+    return [sentence for sentence in sentences if sentence]
+
+
+def split_evenly(items: list[Any], group_count: int) -> list[list[Any]]:
+    if group_count <= 0:
+        return []
+    base_size, remainder = divmod(len(items), group_count)
+    groups: list[list[Any]] = []
+    cursor = 0
+    for index in range(group_count):
+        size = base_size + (1 if index < remainder else 0)
+        groups.append(items[cursor : cursor + size])
+        cursor += size
+    return groups
+
+
+def normalize_story_layout(layout: dict[str, Any], request_images: list[JournalImageInput]) -> None:
+    image_placements = layout["layout"].get("images", [])
+    body = layout["content"].get("body", [])
+    has_missing_images = {placement.get("imageId") for placement in image_placements} != {image.id for image in request_images}
+    should_use_long_collage = len(request_images) > 1 or has_missing_images
+
+    title = normalize_title_text(next((text for text in layout["layout"].get("texts", []) if text.get("role") == "title"), None))
+    if should_use_long_collage:
+        images, body_texts = build_long_collage_items(request_images, image_placements, body, title)
+        layout["layout"]["images"] = images
+        layout["layout"]["texts"] = [title, *body_texts]
+        return
+
+    layout["layout"]["texts"] = [
+        title,
+        *normalize_body_texts(layout["layout"].get("texts", []), body, image_placements, title),
+    ]
+
+
+def normalize_title_text(title: dict[str, Any] | None) -> dict[str, Any]:
+    source = title or {}
+    return {
+        "role": "title",
+        "x": clamp_number(positive_number(source.get("x"), TITLE_X), 0, CANVAS_WIDTH - 240),
+        "y": positive_number(source.get("y"), TITLE_Y),
+        "width": min(positive_number(source.get("width"), TITLE_WIDTH), CANVAS_WIDTH - 120),
+        "fontSize": positive_number(source.get("fontSize"), TITLE_FONT_SIZE),
+    }
+
+
+def normalize_body_texts(
+    texts: list[dict[str, Any]],
+    body: list[str],
+    image_placements: list[dict[str, Any]],
+    title: dict[str, Any],
+) -> list[dict[str, Any]]:
+    body_texts = [text for text in texts if text.get("role") == "body"]
+    next_texts: list[dict[str, Any]] = []
+    y = positive_number(title.get("y"), TITLE_Y) + estimate_text_height(title, {"title": "", "body": body, "captions": []}) + SECTION_GAP
+    for index, paragraph in enumerate(body):
+        source = body_texts[index] if index < len(body_texts) else {}
+        font_size = positive_number(source.get("fontSize"), BODY_FONT_SIZE)
+        width = min(positive_number(source.get("width"), BODY_WIDTH), CANVAS_WIDTH - BODY_X * 2)
+        x = clamp_number(positive_number(source.get("x"), BODY_X), 40, CANVAS_WIDTH - width - 40)
+        height = estimate_paragraph_height(paragraph, font_size, width)
+        y = max(y, positive_number(source.get("y"), y))
+        y = next_non_overlapping_y((x, y, width, height), image_placements)
+        next_texts.append({"role": "body", "x": x, "y": y, "width": width, "fontSize": font_size})
+        y += height + BODY_BLOCK_GAP
+    return next_texts
+
+
+def build_long_collage_items(
+    request_images: list[JournalImageInput],
+    existing_placements: list[dict[str, Any]],
+    body: list[str],
+    title: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    existing_by_id = {placement.get("imageId"): placement for placement in existing_placements}
+    section_count = max(len(body), min(ceil(len(request_images) / 3), 4), 1)
+    image_groups = split_evenly(request_images, section_count)
+    image_placements: list[dict[str, Any]] = []
+    body_texts: list[dict[str, Any]] = []
+    title_height = estimate_text_height(title, {"title": "", "body": body, "captions": []})
+    y = positive_number(title.get("y"), TITLE_Y) + title_height + SECTION_GAP
+
+    for section_index in range(section_count):
+        group = image_groups[section_index] if section_index < len(image_groups) else []
+        if group:
+            group_placements, group_bottom = build_image_group(group, existing_by_id, y, section_index)
+            image_placements.extend(group_placements)
+            y = group_bottom + TEXT_PHOTO_GAP
+
+        if section_index < len(body):
+            paragraph = body[section_index]
+            text_height = estimate_paragraph_height(paragraph, BODY_FONT_SIZE, BODY_WIDTH)
+            body_texts.append({"role": "body", "x": BODY_X, "y": y, "width": BODY_WIDTH, "fontSize": BODY_FONT_SIZE})
+            y += text_height + SECTION_GAP
+        else:
+            y += SECTION_GAP
+
+    return image_placements, body_texts
+
+
+def build_image_group(
+    images: list[JournalImageInput],
+    existing_by_id: dict[str, dict[str, Any]],
+    start_y: float,
+    section_index: int,
+) -> tuple[list[dict[str, Any]], float]:
+    if len(images) == 1:
+        placement = build_single_image_placement(images[0], existing_by_id.get(images[0].id), start_y, section_index)
+        return [placement], placement["y"] + placement["height"]
+
+    placements: list[dict[str, Any]] = []
+    column_y = [start_y, start_y + 42]
+    for index, image in enumerate(images):
+        column = 0 if column_y[0] <= column_y[1] else 1
+        x = PHOTO_LEFT_X if column == 0 else PHOTO_RIGHT_X
+        height = photo_height_for_width(image, PHOTO_COLUMN_WIDTH)
+        placements.append(
+            {
+                "imageId": image.id,
+                "x": x,
+                "y": column_y[column],
+                "width": PHOTO_COLUMN_WIDTH,
+                "height": height,
+                "rotation": normalized_photo_rotation(existing_by_id.get(image.id), index + section_index),
+            }
+        )
+        column_y[column] += height + PHOTO_ROW_GAP
+    return placements, max(column_y) - PHOTO_ROW_GAP
+
+
+def build_single_image_placement(
+    image: JournalImageInput,
+    existing: dict[str, Any] | None,
+    y: float,
+    index: int,
+) -> dict[str, Any]:
+    aspect = image.width / max(image.height, 1)
+    width = 780 if aspect >= 1 else 620
+    height = photo_height_for_width(image, width)
+    return {
+        "imageId": image.id,
+        "x": (CANVAS_WIDTH - width) / 2,
+        "y": y,
+        "width": width,
+        "height": height,
+        "rotation": normalized_photo_rotation(existing, index),
+    }
+
+
+def photo_height_for_width(image: JournalImageInput, width: float) -> float:
+    height = width * image.height / max(image.width, 1)
+    return clamp_number(height, 300, 620)
+
+
+def normalized_photo_rotation(existing: dict[str, Any] | None, index: int) -> float:
+    if existing is not None:
+        return clamp_number(positive_number(existing.get("rotation"), 0), -6, 6)
+    return [-2, 2.5, -1.5, 1.5][index % 4]
+
+
+def next_non_overlapping_y(rect: tuple[float, float, float, float], image_placements: list[dict[str, Any]]) -> float:
+    x, y, width, height = rect
+    for _ in range(len(image_placements) + 1):
+        overlapping_bottoms = [
+            positive_number(image.get("y"), 0) + positive_number(image.get("height"), 0)
+            for image in image_placements
+            if rects_overlap((x, y, width, height), rect_from_item(image))
+        ]
+        if not overlapping_bottoms:
+            return y
+        y = max(overlapping_bottoms) + TEXT_PHOTO_GAP
+    return y
+
+
+def estimate_paragraph_height(paragraph: str, font_size: float, width: float) -> float:
+    characters_per_line = max(int(width / max(font_size, 1)), 1)
+    line_count = max(ceil(len(paragraph) / characters_per_line), 1)
+    return line_count * font_size * 1.8
 
 
 def normalize_canvas_height(layout: dict[str, Any]) -> int:

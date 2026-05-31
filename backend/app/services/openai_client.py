@@ -33,7 +33,7 @@ class OpenAIJournalClient:
                 },
                 json={
                     "model": self.model,
-                    "messages": [{"role": "user", "content": build_generation_prompt(request)}],
+                    "messages": [{"role": "user", "content": build_generation_message_content(request)}],
                     "response_format": {"type": "json_object"},
                 },
                 timeout=OPENAI_TIMEOUT_SECONDS,
@@ -48,6 +48,18 @@ class OpenAIJournalClient:
         payload = response.json()
         content = payload["choices"][0]["message"]["content"]
         return json.loads(content)
+
+
+def build_generation_message_content(request: JournalGenerationRequest) -> str | list[dict[str, Any]]:
+    prompt = build_generation_prompt(request)
+    image_parts = [
+        {"type": "image_url", "image_url": {"url": image.data_url}}
+        for image in request.images
+        if image.data_url
+    ]
+    if not image_parts:
+        return prompt
+    return [{"type": "text", "text": prompt}, *image_parts]
 
 
 def build_generation_prompt(request: JournalGenerationRequest) -> str:
@@ -67,7 +79,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["温柔"]},
         "content": {
             "title": "慢下来的周末",
-            "body": ["一段温柔的正文。"],
+            "body": ["咖啡和阳光是一组，像把早晨轻轻摊开。", "散步的照片放在一起，留下慢下来的路。"],
             "captions": [{"imageId": images[0]["id"] if images else "image_id", "text": "照片说明"}],
         },
         "layout": {
@@ -82,7 +94,11 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
                     "rotation": -3,
                 }
             ],
-            "texts": [{"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56}],
+            "texts": [
+                {"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56},
+                {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32},
+                {"role": "body", "x": 112, "y": 1360, "width": 820, "fontSize": 32},
+            ],
             "decorations": [
                 {
                     "assetId": assets[0]["id"] if assets else "asset_id",
@@ -100,11 +116,13 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "请只返回一个严格 JSON 对象，不要返回 Markdown。"
         "必须完全使用下面的字段结构和 camelCase 字段名，不要增加 subtitle、notes、safe_margin、typography、content.images 等额外结构。"
         "canvas.background 必须是颜色字符串，不能是对象。"
-        "content.body 必须是字符串数组。content.captions 必须使用 imageId 和 text。"
+        "content.body 必须是字符串数组，不能只写一大段；请按照片主题、场景或时间分成 2 到 4 段短文字，每段 1 到 2 句。"
+        "如果照片天然能分成几类，就让 content.body 的段落数量尽量对应这些类别。content.captions 必须使用 imageId 和 text。"
         "layout.images 必须使用 imageId。layout.decorations 必须使用 assetId。"
-        "layout.texts.role 只能是 title、body 或 caption。"
+        "layout.texts.role 只能是 title、body 或 caption；每一段 content.body 都应该对应一个单独的 body 文本框。"
         "画布宽度必须是 1080，高度必须按内容多少生成竖向长图，不能固定为 1440。"
-        "所有图片、文字和装饰都必须落在 0 到 canvas.height 范围内，内容多时让 canvas.height 继续向下延伸。"
+        "图片不要排得太密，图片组、文字块和装饰之间要留出明显呼吸感；内容多时让 canvas.height 继续向下延伸。"
+        "所有图片、文字和装饰都必须落在 0 到 canvas.height 范围内，文字框不能和图片重叠。"
         "素材使用必须符合语义：tape 只能作为胶带贴在照片边缘或四角；paper 只能作为底纸或文字背景，不能盖住照片主体；"
         "sticker 只能放在照片外侧空白区或轻微压住照片边缘，不能遮挡照片中心；texture 只能作为背景纹理。"
         "最终效果是一张可纵向滚动的完整手帐长图，而不是右侧附加正文。只能使用给定 image id 和 asset id。"

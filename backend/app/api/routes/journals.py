@@ -1,3 +1,4 @@
+from base64 import b64encode
 from pathlib import Path
 from shutil import rmtree
 
@@ -19,6 +20,7 @@ from app.services.journal_generator import (
     sanitize_model_layout,
 )
 from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient
+from app.services.thumbnails import generate_display_image
 
 router = APIRouter(prefix="/api/journals", tags=["journals"])
 
@@ -45,7 +47,7 @@ def generate_journal(
         layout = generator.generate(
             JournalGenerationRequest(
                 description=payload.description,
-                images=[JournalImageInput(id=image.id, width=image.width, height=image.height) for image in images],
+                images=[image_to_generation_input(image) for image in images],
                 assets=get_approved_assets(),
             )
         )
@@ -154,6 +156,18 @@ def get_owned_journal(db: Session, user_id: str, journal_id: str) -> Journal:
 
 def delete_image_files(image: ImageModel) -> None:
     rmtree(Path(image.original_path).parent, ignore_errors=True)
+
+
+def image_to_generation_input(image: ImageModel) -> JournalImageInput:
+    display_path = Path(image.original_path).parent / "display.webp"
+    if not display_path.exists():
+        generate_display_image(Path(image.original_path), display_path)
+    return JournalImageInput(
+        id=image.id,
+        width=image.width,
+        height=image.height,
+        data_url=f"data:image/webp;base64,{b64encode(display_path.read_bytes()).decode('ascii')}",
+    )
 
 
 def journal_to_read(journal: Journal) -> JournalRead:

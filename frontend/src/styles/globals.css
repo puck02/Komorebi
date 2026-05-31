@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Bailu Qiaoli";
+  src: url("../assets/fonts/BailuQiaoli.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   --color-background: #fef6e4;
   --color-headline: #001858;
@@ -645,21 +651,21 @@ body {
 
 .journal-title {
   color: var(--color-ink);
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 700;
+  font-family: "Bailu Qiaoli", "LXGW WenKai", "Kaiti SC", "STKaiti", serif;
+  font-weight: 600;
   line-height: 1.08;
   text-wrap: balance;
 }
 
 .journal-body {
   color: var(--color-paragraph);
-  font-family: "LXGW WenKai", "Kaiti SC", "STKaiti", serif;
+  font-family: "Bailu Qiaoli", "LXGW WenKai", "Kaiti SC", "STKaiti", serif;
   line-height: 1.75;
   white-space: pre-wrap;
 }
 
 .journal-body p {
-  margin: 0 0 18px;
+  margin: 0;
 }
 
 .journal-detail-page {
