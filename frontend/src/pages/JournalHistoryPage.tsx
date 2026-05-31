@@ -48,19 +48,6 @@ export default function JournalHistoryPage() {
 
   return (
     <section className="history-page">
-      <header className="history-header">
-        <div>
-          <p className="eyebrow">Journal Archive</p>
-          <h1>历史手帐</h1>
-        </div>
-        <Button asChild>
-          <Link to="/">
-            <NotebookPen size={17} />
-            新建手帐
-          </Link>
-        </Button>
-      </header>
-
       {journals.length === 0 ? (
         <div className="history-empty">
           <NotebookPen size={28} />
