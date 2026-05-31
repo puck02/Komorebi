@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 
 import pytest
 import httpx
@@ -147,6 +148,35 @@ def test_generator_removes_stickers_covering_photo_center():
 
 def test_generator_limits_decoration_density():
     payload = valid_model_json()
+    decoration_asset_ids = [
+        "paper_note_cream_01",
+        "paper_note_blush_02",
+        "paper_note_sage_03",
+        "paper_note_sky_04",
+        "texture_dots_01",
+        "texture_grid_02",
+        "texture_wave_03",
+        "tape_warm_grid_01",
+        "tape_warm_stripe_02",
+        "tape_sage_dash_03",
+        "tape_blush_dot_04",
+        "tape_sunbeam_05",
+        "tape_coffee_06",
+        "tape_mist_07",
+        "tape_olive_08",
+        "tape_rose_line_09",
+        "sticker_cloud_02",
+        "sticker_heart_03",
+        "sticker_leaf_05",
+        "sticker_coffee_06",
+        "sticker_camera_07",
+        "sticker_star_08",
+        "sticker_moon_09",
+        "sticker_wave_10",
+        "sticker_birthday_11",
+        "sticker_spark_12",
+        "texture_scribble_04",
+    ]
     payload["layout"]["decorations"] = [
         {
             "assetId": asset_id,
@@ -156,31 +186,16 @@ def test_generator_limits_decoration_density():
             "height": 80,
             "rotation": 0,
         }
-        for index, asset_id in enumerate(
-            [
-                "paper_note_cream_01",
-                "paper_note_blush_02",
-                "paper_note_sage_03",
-                "paper_note_sky_04",
-                "texture_dots_01",
-                "texture_grid_02",
-                "texture_wave_03",
-                "sticker_cloud_02",
-                "sticker_heart_03",
-                "sticker_leaf_05",
-                "sticker_coffee_06",
-                "tape_warm_grid_01",
-                "tape_warm_stripe_02",
-                "tape_sage_dash_03",
-                "tape_blush_dot_04",
-            ]
-        )
+        for index, asset_id in enumerate(decoration_asset_ids)
     ]
     generator = JournalGenerator(FakeClient(payload))
 
     layout = generator.generate(generation_request(assets=load_assets()))
 
-    assert len(layout.layout.decorations) <= 6
+    asset_by_id = {asset.id: asset for asset in load_assets()}
+    category_counts = Counter(asset_by_id[decoration.asset_id].category for decoration in layout.layout.decorations)
+    assert len(layout.layout.decorations) == 22
+    assert category_counts == {"paper": 4, "texture": 2, "tape": 8, "sticker": 8}
 
 
 def test_generator_normalizes_common_model_field_variants():

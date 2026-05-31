@@ -16,12 +16,12 @@ TAPE_MAX_WIDTH = 260
 TAPE_MAX_HEIGHT = 70
 TAPE_MIN_WIDTH = 150
 TAPE_MIN_HEIGHT = 38
-MAX_DECORATIONS = 6
+MAX_DECORATIONS = 22
 DECORATION_CATEGORY_LIMITS = {
-    "paper": 1,
-    "sticker": 2,
-    "tape": 3,
-    "texture": 1,
+    "paper": 4,
+    "sticker": 8,
+    "tape": 8,
+    "texture": 2,
 }
 
 
