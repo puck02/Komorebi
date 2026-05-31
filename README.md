@@ -74,6 +74,8 @@ npm run dev
 DATABASE_URL=postgresql+psycopg://komorebi:komorebi@postgres:5432/komorebi
 JWT_SECRET=change-me
 OPENAI_API_KEY=
+OPENAI_BASE_URL=
+OPENAI_MODEL=gpt-5.5
 STORAGE_ROOT=/data/storage
 PUBLIC_API_BASE_URL=/api
 ```

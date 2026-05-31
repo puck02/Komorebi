@@ -12,13 +12,17 @@ class OpenAIConfigurationError(RuntimeError):
 
 
 class OpenAIJournalClient:
-    def __init__(self, api_key: str | None = None, model: str | None = None):
+    def __init__(self, api_key: str | None = None, base_url: str | None = None, model: str | None = None):
         settings = get_settings()
         self.api_key = api_key if api_key is not None else settings.openai_api_key
+        self.base_url = base_url if base_url is not None else settings.openai_base_url
         self.model = model or settings.openai_model
         if not self.api_key:
             raise OpenAIConfigurationError("OPENAI_API_KEY is required to generate journals")
-        self.client = OpenAI(api_key=self.api_key)
+        client_kwargs = {"api_key": self.api_key}
+        if self.base_url:
+            client_kwargs["base_url"] = self.base_url
+        self.client = OpenAI(**client_kwargs)
 
     def generate_layout(self, request: JournalGenerationRequest) -> dict[str, Any]:
         response = self.client.responses.create(

@@ -83,6 +83,21 @@ def test_openai_client_requires_api_key_only_when_constructed(monkeypatch):
         OpenAIJournalClient(api_key="")
 
 
+def test_openai_client_uses_configured_base_url(monkeypatch):
+    captured = {}
+
+    class FakeOpenAI:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+    monkeypatch.setattr("app.services.openai_client.OpenAI", FakeOpenAI)
+
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+
+    assert client.model == "gpt-5.5"
+    assert captured == {"api_key": "test-key", "base_url": "https://provider.example/v1"}
+
+
 class FakeClient:
     def __init__(self, payload):
         self.payload = payload

@@ -864,6 +864,8 @@ Use these names consistently across backend and frontend.
   - `DATABASE_URL`
   - `JWT_SECRET`
   - `OPENAI_API_KEY`
+  - `OPENAI_BASE_URL`
+  - `OPENAI_MODEL`
   - `STORAGE_ROOT`
   - `PUBLIC_API_BASE_URL`
 

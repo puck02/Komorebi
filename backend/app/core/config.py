@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24 * 7
     storage_root: str = "storage"
     openai_api_key: str = ""
-    openai_model: str = "gpt-4.1-mini"
+    openai_base_url: str = ""
+    openai_model: str = "gpt-5.5"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
