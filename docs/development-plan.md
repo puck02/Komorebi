@@ -6,6 +6,8 @@
 
 **Architecture:** The app is a single-server Docker Compose deployment with a React/Vite frontend, FastAPI backend, PostgreSQL database, and local file storage. The backend owns auth, uploads, OpenAI calls, asset matching, journal persistence, and access control; the frontend owns the 1080 x 1440 journal renderer, lightweight editing, asset preview, history, and PNG export.
 
+**AI Requirement:** Journal generation must be multimodal. The model must understand uploaded image content, not only image IDs, dimensions, filenames, or user text.
+
 **Tech Stack:** React, Vite, TypeScript, Tailwind CSS, shadcn/ui, Radix UI, lucide-react, React Router, TanStack Query, react-hook-form, Zod, Rough.js, FastAPI, Python, SQLAlchemy, Alembic, PostgreSQL, Pillow, OpenAI API, Docker Compose, Caddy.
 
 ---
@@ -568,17 +570,19 @@ Use these names consistently across backend and frontend.
   - Generator returns valid `JournalLayout`.
   - Generated layout includes only provided image IDs.
   - Generated decorations include only `approved` asset IDs.
+  - OpenAI client payload includes model-readable image content or image URLs for every selected uploaded image.
   - Invalid model JSON is rejected and converted to a generation error.
 
-- [ ] **Step 2: Implement OpenAI client wrapper**
+- [ ] **Step 2: Implement multimodal OpenAI client wrapper**
 
-  Wrapper accepts user input, image metadata, and approved asset candidates. It returns raw model JSON.
+  Wrapper accepts user input, image metadata, model-readable image inputs, and approved asset candidates. It returns raw model JSON. Images may be passed as temporary authenticated URLs or backend-encoded image content, depending on provider compatibility.
 
 - [ ] **Step 3: Implement generator service**
 
   Responsibilities:
 
   - Build prompt.
+  - Include uploaded image content in the model request so the model can identify scene, subject, colors, mood, and events.
   - Call OpenAI client.
   - Validate JSON with Pydantic schema.
   - Clamp canvas size to 1080 x 1440.
