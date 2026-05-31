@@ -90,7 +90,7 @@ export default function ImageUploader({ onUploaded }: Props) {
       <label className={`upload-zone ${isUploading ? "is-disabled" : ""}`}>
         <span>{isUploading ? "上传中..." : "选择多张图片"}</span>
         <input
-          accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+          accept="image/*,.jpg,.jpeg,.png,.webp"
           aria-label="选择多张图片"
           className="upload-input"
           disabled={isUploading}
