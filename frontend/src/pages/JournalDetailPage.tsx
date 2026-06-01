@@ -46,7 +46,6 @@ export default function JournalDetailPage() {
     }
 
     let shouldIgnore = false;
-    const objectUrls: string[] = [];
     const imageIds = journal.imageIds;
     const title = journal.title;
     setDisplayImages([]);
@@ -59,8 +58,10 @@ export default function JournalDetailPage() {
           if (shouldIgnore) {
             return;
           }
-          const src = URL.createObjectURL(blob);
-          objectUrls.push(src);
+          const src = await blobToDataUrl(blob);
+          if (shouldIgnore) {
+            return;
+          }
           setDisplayImages((currentImages) => [
             ...currentImages,
             {
@@ -85,7 +86,6 @@ export default function JournalDetailPage() {
 
     return () => {
       shouldIgnore = true;
-      objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [journalQuery.data]);
 
@@ -288,4 +288,19 @@ function getElementContentWidth(element: HTMLElement) {
   const paddingLeft = Number.parseFloat(style.paddingLeft) || 0;
   const paddingRight = Number.parseFloat(style.paddingRight) || 0;
   return Math.max(element.clientWidth - paddingLeft - paddingRight, 0);
+}
+
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("图片读取失败"));
+      }
+    });
+    reader.addEventListener("error", () => reject(reader.error ?? new Error("图片读取失败")));
+    reader.readAsDataURL(blob);
+  });
 }
