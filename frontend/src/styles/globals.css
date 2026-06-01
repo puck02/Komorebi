@@ -7,12 +7,12 @@
 }
 
 :root {
-  --color-background: #fef6e4;
+  --color-background: #fffaf1;
   --color-headline: #001858;
   --color-paragraph: #172c66;
   --color-button: #f582ae;
-  --color-main: #f3d2c1;
-  --color-highlight: #fef6e4;
+  --color-main: #f8e2d6;
+  --color-highlight: #fffdf8;
   --color-secondary: #8bd3dd;
   --color-tertiary: #f582ae;
   --color-stroke: #001858;
@@ -41,16 +41,16 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 10% 8%, rgb(243 210 193 / 42%), transparent 28%),
-    linear-gradient(135deg, #fef6e4 0%, #fef6e4 48%, #8bd3dd 100%);
+    radial-gradient(circle at 10% 8%, rgb(248 226 214 / 24%), transparent 28%),
+    linear-gradient(135deg, #fffdf8 0%, #fffaf1 58%, #dff8fb 100%);
 }
 
 .app-shell {
   padding-top: 88px;
   background:
-    radial-gradient(circle at 10% 0%, rgb(243 210 193 / 34%), transparent 32%),
-    radial-gradient(circle at 90% 18%, rgb(245 130 174 / 22%), transparent 28%),
-    linear-gradient(135deg, #fef6e4 0%, #fef6e4 52%, #f3d2c1 100%);
+    radial-gradient(circle at 10% 0%, rgb(248 226 214 / 22%), transparent 32%),
+    radial-gradient(circle at 90% 18%, rgb(245 130 174 / 12%), transparent 28%),
+    linear-gradient(135deg, #fffdf8 0%, #fffaf1 58%, #fbede5 100%);
 }
 
 .top-nav {
