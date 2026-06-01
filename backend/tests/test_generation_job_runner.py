@@ -1,0 +1,130 @@
+from pathlib import Path
+
+from PIL import Image as PillowImage
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from app.db.base import Base
+from app.models.generation_job import GenerationJob
+from app.models.image import Image
+from app.models.user import User
+from app.schemas.journal import JournalLayout
+from app.services.generation_jobs import recover_incomplete_generation_jobs, run_generation_job
+from app.services.journal_agent import JournalAgentResult
+from app.services.journal_generator import GenerationError
+
+
+def test_runner_saves_completed_journal_and_progress(tmp_path):
+    session_factory = make_session_factory()
+    job_id = seed_job(session_factory, tmp_path)
+    agent = FakeAgent()
+
+    run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: agent)
+
+    with session_factory() as db:
+        job = db.get(GenerationJob, job_id)
+        assert job.status == "completed"
+        assert job.stage == "completed"
+        assert job.revision_round == 2
+        assert job.best_score == 91
+        assert job.journal_id is not None
+        assert job.error_message is None
+        assert agent.request.images[0].data_url.startswith("data:image/webp;base64,")
+        assert [stage for stage, _round, _score in agent.progress_events] == ["generating_draft", "reviewing", "reviewed"]
+
+
+def test_runner_marks_job_failed_when_agent_raises(tmp_path):
+    session_factory = make_session_factory()
+    job_id = seed_job(session_factory, tmp_path)
+
+    run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: FakeAgent(error=GenerationError("AI 调用失败")))
+
+    with session_factory() as db:
+        job = db.get(GenerationJob, job_id)
+        assert job.status == "failed"
+        assert job.stage == "failed"
+        assert job.error_message == "AI 调用失败"
+
+
+def test_recover_marks_incomplete_jobs_failed(tmp_path):
+    session_factory = make_session_factory()
+    queued_job_id = seed_job(session_factory, tmp_path, status="queued")
+    running_job_id = seed_job(session_factory, tmp_path, status="running")
+
+    recover_incomplete_generation_jobs(session_factory=session_factory)
+
+    with session_factory() as db:
+        assert db.get(GenerationJob, queued_job_id).status == "failed"
+        assert db.get(GenerationJob, running_job_id).status == "failed"
+
+
+class FakeAgent:
+    def __init__(self, error=None):
+        self.error = error
+        self.progress_events = []
+
+    def generate(self, request, on_progress=None):
+        if self.error:
+            raise self.error
+        self.request = request
+        for event in [("generating_draft", 0, None), ("reviewing", 2, None), ("reviewed", 2, 91)]:
+            self.progress_events.append(event)
+            on_progress(*event)
+        return JournalAgentResult(
+            layout=JournalLayout.model_validate(layout_payload(request.images[0].id)),
+            score=91,
+            revision_round=2,
+            passed=True,
+        )
+
+
+def make_session_factory():
+    engine = create_engine(
+        "sqlite+pysqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+    return sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+def seed_job(session_factory, tmp_path, status="queued"):
+    image_path = Path(tmp_path) / f"{status}-original.png"
+    PillowImage.new("RGB", (64, 48), color=(210, 170, 140)).save(image_path)
+    with session_factory() as db:
+        user = User(email=f"{status}-{id(image_path)}@example.com", password_hash="hash")
+        db.add(user)
+        db.flush()
+        image = Image(
+            user_id=user.id,
+            original_path=str(image_path),
+            thumbnail_path=str(image_path),
+            content_type="image/png",
+            width=64,
+            height=48,
+        )
+        db.add(image)
+        db.flush()
+        job = GenerationJob(
+            user_id=user.id,
+            status=status,
+            payload_json={"imageIds": [image.id], "description": "周末一起散步。", "moodTags": []},
+        )
+        db.add(job)
+        db.commit()
+        return job.id
+
+
+def layout_payload(image_id):
+    return {
+        "canvas": {"width": 1080, "height": 1440, "background": "#f8f1e8"},
+        "theme": {"style": "soft-collage", "palette": ["#f8f1e8"], "mood": ["温柔"]},
+        "content": {"title": "慢下来的周末", "body": ["今天走了很久。"], "captions": []},
+        "layout": {
+            "variant": "long_collage",
+            "images": [{"imageId": image_id, "x": 92, "y": 210, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56}],
+            "decorations": [],
+        },
+    }
