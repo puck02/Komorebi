@@ -535,6 +535,69 @@ def photo_safe_rect(image: dict[str, Any]) -> tuple[float, float, float, float]:
     return (x + inset_x, y + inset_y, width - inset_x * 2, height - inset_y * 2)
 
 
+def check_layout_rules(layout: JournalLayout, request: JournalGenerationRequest) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    expected_image_ids = [image.id for image in request.images]
+    actual_image_ids = [image.image_id for image in layout.layout.images]
+    if actual_image_ids != expected_image_ids:
+        issues.append(rule_issue("imageOrder", "high", actual_image_ids, "图片集合或顺序与用户确认结果不一致"))
+
+    image_rects = [(image.x, image.y, image.width, image.height) for image in layout.layout.images]
+    title = layout.content.title
+    body_index = 0
+    for text in layout.layout.texts:
+        content = title
+        if text.role == "body":
+            content = layout.content.body[body_index] if body_index < len(layout.content.body) else ""
+            body_index += 1
+        text_rect = (text.x, text.y, text.width, estimate_paragraph_height(content, text.font_size, text.width))
+        if any(rects_overlap(text_rect, image_rect) for image_rect in image_rects):
+            issues.append(rule_issue("readability", "high", [text.role], "文字与照片发生重叠"))
+
+    asset_by_id = {asset.id: asset for asset in request.assets if asset.quality_status == "approved"}
+    category_counts: dict[str, int] = {}
+    image_dicts = [image.model_dump(by_alias=True) for image in layout.layout.images]
+    for decoration in layout.layout.decorations:
+        asset = asset_by_id.get(decoration.asset_id)
+        if asset is None:
+            issues.append(rule_issue("asset", "high", [decoration.asset_id], "使用了未审核或不存在的素材"))
+            continue
+        category_counts[asset.category] = category_counts.get(asset.category, 0) + 1
+        if not rect_inside_canvas((decoration.x, decoration.y, decoration.width, decoration.height), layout.canvas.height):
+            issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "素材超出画布范围"))
+        decoration_dict = decoration.model_dump(by_alias=True)
+        if asset.category == "sticker" and overlaps_any_photo_safe_area(decoration_dict, image_dicts):
+            issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "贴纸覆盖照片主体安全区"))
+        if asset.category == "tape" and not overlaps_any_photo_edge(decoration_dict, image_dicts):
+            issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "胶带没有贴近照片边缘"))
+
+    if len(layout.layout.decorations) > MAX_DECORATIONS:
+        issues.append(rule_issue("decorationDensity", "high", [], "装饰总数超过限制"))
+    for category, count in category_counts.items():
+        if count > DECORATION_CATEGORY_LIMITS.get(category, 1):
+            issues.append(rule_issue("decorationDensity", "high", [category], f"{category} 类素材数量超过限制"))
+    return issues
+
+
+def rule_issue(issue_type: str, severity: str, target_ids: list[str], description: str) -> dict[str, Any]:
+    return {"type": issue_type, "severity": severity, "targetIds": target_ids, "description": description}
+
+
+def rect_inside_canvas(rect: tuple[float, float, float, float], canvas_height: float) -> bool:
+    x, y, width, height = rect
+    return x >= 0 and y >= 0 and x + width <= CANVAS_WIDTH and y + height <= canvas_height
+
+
+def overlaps_any_photo_edge(decoration: dict[str, Any], image_placements: list[dict[str, Any]]) -> bool:
+    decoration_rect = rect_from_item(decoration)
+    for image in image_placements:
+        image_x, image_y, image_width, image_height = rect_from_item(image)
+        expanded_image = (image_x - 48, image_y - 48, image_width + 96, image_height + 96)
+        if rects_overlap(decoration_rect, expanded_image):
+            return True
+    return False
+
+
 def rect_from_item(item: dict[str, Any]) -> tuple[float, float, float, float]:
     return (
         positive_number(item.get("x"), 0),

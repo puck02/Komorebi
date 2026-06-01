@@ -1,0 +1,133 @@
+from dataclasses import dataclass
+from typing import Any, Callable, Protocol
+
+from app.schemas.journal import JournalLayout
+from app.services.journal_generator import JournalGenerationRequest, check_layout_rules, sanitize_model_layout
+
+QUALITY_THRESHOLD = 85
+MAX_REVISION_ROUNDS = 5
+
+
+class JournalAgentClient(Protocol):
+    def generate_layout(self, request: JournalGenerationRequest) -> dict[str, Any]:
+        pass
+
+    def review_layout(
+        self,
+        request: JournalGenerationRequest,
+        layout: dict[str, Any],
+        screenshot_data_url: str,
+        rule_issues: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        pass
+
+    def revise_layout(
+        self,
+        request: JournalGenerationRequest,
+        layout: dict[str, Any],
+        screenshot_data_url: str,
+        review: dict[str, Any],
+        revision_round: int,
+        best_score: float,
+    ) -> dict[str, Any]:
+        pass
+
+
+class JournalRenderer(Protocol):
+    def render(self, layout: dict[str, Any], request: JournalGenerationRequest) -> str:
+        pass
+
+
+@dataclass(frozen=True)
+class JournalAgentResult:
+    layout: JournalLayout
+    score: float
+    revision_round: int
+    passed: bool
+
+
+@dataclass(frozen=True)
+class JournalCandidate:
+    layout: JournalLayout
+    screenshot_data_url: str
+    review: dict[str, Any]
+    score: float
+    revision_round: int
+    rule_issues: list[dict[str, Any]]
+
+
+class JournalAgent:
+    def __init__(
+        self,
+        client: JournalAgentClient,
+        renderer: JournalRenderer,
+        *,
+        max_revision_rounds: int = MAX_REVISION_ROUNDS,
+        quality_threshold: float = QUALITY_THRESHOLD,
+        rule_checker: Callable[[JournalLayout, JournalGenerationRequest], list[dict[str, Any]]] = check_layout_rules,
+    ):
+        self.client = client
+        self.renderer = renderer
+        self.max_revision_rounds = max_revision_rounds
+        self.quality_threshold = quality_threshold
+        self.rule_checker = rule_checker
+
+    def generate(
+        self,
+        request: JournalGenerationRequest,
+        on_progress: Callable[[str, int, float | None], None] | None = None,
+    ) -> JournalAgentResult:
+        notify = on_progress or (lambda _stage, _round, _score: None)
+        notify("generating_draft", 0, None)
+        raw_layout = self.client.generate_layout(request)
+        current = self._review_candidate(raw_layout, request, 0, notify)
+        best_any = current
+        best_valid = current if not current.rule_issues else None
+
+        for revision_round in range(1, self.max_revision_rounds + 1):
+            if self._passes(current):
+                return result_from_candidate(current, passed=True)
+
+            base = best_valid or best_any
+            notify("revising", revision_round, base.score)
+            raw_layout = self.client.revise_layout(
+                request,
+                base.layout.model_dump(by_alias=True),
+                base.screenshot_data_url,
+                base.review,
+                revision_round,
+                base.score,
+            )
+            current = self._review_candidate(raw_layout, request, revision_round, notify)
+            if current.score > best_any.score:
+                best_any = current
+            if not current.rule_issues and (best_valid is None or current.score > best_valid.score):
+                best_valid = current
+
+        if self._passes(current):
+            return result_from_candidate(current, passed=True)
+        return result_from_candidate(best_valid or best_any, passed=False)
+
+    def _review_candidate(
+        self,
+        raw_layout: dict[str, Any],
+        request: JournalGenerationRequest,
+        revision_round: int,
+        notify: Callable[[str, int, float | None], None],
+    ) -> JournalCandidate:
+        cleaned = sanitize_model_layout(raw_layout, request)
+        layout = JournalLayout.model_validate(cleaned)
+        rule_issues = self.rule_checker(layout, request)
+        notify("reviewing", revision_round, None)
+        screenshot_data_url = self.renderer.render(layout.model_dump(by_alias=True), request)
+        review = self.client.review_layout(request, layout.model_dump(by_alias=True), screenshot_data_url, rule_issues)
+        score = float(review.get("score", 0))
+        notify("reviewed", revision_round, score)
+        return JournalCandidate(layout, screenshot_data_url, review, score, revision_round, rule_issues)
+
+    def _passes(self, candidate: JournalCandidate) -> bool:
+        return not candidate.rule_issues and candidate.score >= self.quality_threshold and candidate.review.get("passed") is True
+
+
+def result_from_candidate(candidate: JournalCandidate, *, passed: bool) -> JournalAgentResult:
+    return JournalAgentResult(candidate.layout, candidate.score, candidate.revision_round, passed)
