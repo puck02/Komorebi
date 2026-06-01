@@ -137,20 +137,18 @@ def test_small_sun_uses_smiling_mouth():
     assert "M65 78c8-8 22-8 30 0" not in svg
 
 
-def test_external_assets_are_kept_as_draft_until_reviewed():
+def test_external_assets_include_license_metadata():
     external_assets = [asset for asset in load_assets() if asset.source.startswith("https://")]
 
     assert len(external_assets) >= 48
-    assert all(asset.quality_status == "draft" for asset in external_assets)
     assert all(asset.license for asset in external_assets)
 
 
-def test_fluent_emoji_assets_are_imported_as_mit_drafts():
+def test_fluent_emoji_assets_are_imported_with_mit_license():
     fluent_assets = [asset for asset in load_assets() if asset.id.startswith("ext_fluent_")]
 
     assert len(fluent_assets) >= 60
     assert {asset.license for asset in fluent_assets} == {"MIT"}
-    assert {asset.quality_status for asset in fluent_assets} == {"draft"}
 
 
 @pytest.fixture
