@@ -16,6 +16,8 @@ type CanvasImage = {
   alt: string;
 };
 
+const TRANSPARENT_IMAGE_PLACEHOLDER = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+
 export default function JournalDetailPage() {
   const { journalId } = useParams<{ journalId: string }>();
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -170,7 +172,9 @@ export default function JournalDetailPage() {
       const dataUrl = await toPng(canvasRef.current, {
         cacheBust: true,
         height: journal.layout.canvas.height,
+        imagePlaceholder: TRANSPARENT_IMAGE_PLACEHOLDER,
         pixelRatio: 1,
+        skipFonts: true,
         style: {
           transform: "none"
         },
