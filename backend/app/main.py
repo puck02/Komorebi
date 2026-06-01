@@ -9,9 +9,11 @@ from app.api.routes.images import router as images_router
 from app.api.routes.internal_render import router as internal_render_router
 from app.api.routes.journals import router as journals_router
 from app.core.config import get_settings
+from app.core.logging import configure_logging
 from app.services.generation_jobs import recover_incomplete_generation_jobs
 
 settings = get_settings()
+configure_logging(settings.log_level)
 
 
 @asynccontextmanager

@@ -1,3 +1,5 @@
+import json
+import logging
 from pathlib import Path
 
 from PIL import Image as PillowImage
@@ -34,6 +36,29 @@ def test_runner_saves_completed_journal_and_progress(tmp_path):
         assert [stage for stage, _round, _score in agent.progress_events] == ["generating_draft", "reviewing", "reviewed"]
 
 
+def test_runner_logs_generation_job_lifecycle(tmp_path, caplog):
+    session_factory = make_session_factory()
+    job_id = seed_job(session_factory, tmp_path)
+
+    with caplog.at_level(logging.INFO, logger="komorebi.agent"):
+        run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: FakeAgent())
+
+    payloads = [json.loads(record.message) for record in caplog.records]
+    events = [payload["event"] for payload in payloads]
+    assert events == [
+        "agent.job_started",
+        "agent.progress",
+        "agent.progress",
+        "agent.progress",
+        "agent.job_completed",
+    ]
+    assert {payload["job_id"] for payload in payloads} == {job_id}
+    assert payloads[0]["image_count"] == 1
+    assert payloads[0]["asset_count"] > 0
+    assert payloads[-1]["revision_round"] == 2
+    assert payloads[-1]["score"] == 91
+
+
 def test_runner_marks_job_failed_when_agent_raises(tmp_path):
     session_factory = make_session_factory()
     job_id = seed_job(session_factory, tmp_path)
@@ -45,6 +70,21 @@ def test_runner_marks_job_failed_when_agent_raises(tmp_path):
         assert job.status == "failed"
         assert job.stage == "failed"
         assert job.error_message == "AI 调用失败"
+
+
+def test_runner_logs_generation_job_failure(tmp_path, caplog):
+    session_factory = make_session_factory()
+    job_id = seed_job(session_factory, tmp_path)
+
+    with caplog.at_level(logging.INFO, logger="komorebi.agent"):
+        run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: FakeAgent(error=GenerationError("AI 调用失败")))
+
+    payloads = [json.loads(record.message) for record in caplog.records]
+    failed = payloads[-1]
+    assert failed["event"] == "agent.job_failed"
+    assert failed["job_id"] == job_id
+    assert failed["error_type"] == "GenerationError"
+    assert failed["error_message"] == "AI 调用失败"
 
 
 def test_recover_marks_incomplete_jobs_failed(tmp_path):
@@ -64,7 +104,7 @@ class FakeAgent:
         self.error = error
         self.progress_events = []
 
-    def generate(self, request, on_progress=None):
+    def generate(self, request, on_progress=None, log_context=None):
         if self.error:
             raise self.error
         self.request = request

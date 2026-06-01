@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Protocol
 
 from app.schemas.journal import JournalLayout
+from app.services.agent_observability import issue_summary, layout_observability_summary, log_agent_event
 from app.services.journal_generator import JournalGenerationRequest, check_layout_rules, sanitize_model_layout
 
 QUALITY_THRESHOLD = 85
@@ -76,11 +77,13 @@ class JournalAgent:
         self,
         request: JournalGenerationRequest,
         on_progress: Callable[[str, int, float | None], None] | None = None,
+        log_context: dict[str, Any] | None = None,
     ) -> JournalAgentResult:
         notify = on_progress or (lambda _stage, _round, _score: None)
+        context = log_context or {}
         notify("generating_draft", 0, None)
         raw_layout = self.client.generate_layout(request)
-        current = self._review_candidate(raw_layout, request, 0, notify)
+        current = self._review_candidate(raw_layout, request, 0, notify, context)
         best_any = current
         best_valid = current if not current.rule_issues else None
 
@@ -90,6 +93,13 @@ class JournalAgent:
 
             base = best_valid or best_any
             notify("revising", revision_round, base.score)
+            log_agent_event(
+                "agent.revision_requested",
+                **context,
+                revision_round=revision_round,
+                base_score=base.score,
+                base_revision_round=base.revision_round,
+            )
             raw_layout = self.client.revise_layout(
                 request,
                 base.layout.model_dump(by_alias=True),
@@ -98,7 +108,7 @@ class JournalAgent:
                 revision_round,
                 base.score,
             )
-            current = self._review_candidate(raw_layout, request, revision_round, notify)
+            current = self._review_candidate(raw_layout, request, revision_round, notify, context)
             if current.score > best_any.score:
                 best_any = current
             if not current.rule_issues and (best_valid is None or current.score > best_valid.score):
@@ -114,6 +124,7 @@ class JournalAgent:
         request: JournalGenerationRequest,
         revision_round: int,
         notify: Callable[[str, int, float | None], None],
+        log_context: dict[str, Any],
     ) -> JournalCandidate:
         cleaned = sanitize_model_layout(raw_layout, request)
         layout = JournalLayout.model_validate(cleaned)
@@ -123,6 +134,19 @@ class JournalAgent:
         review = self.client.review_layout(request, layout.model_dump(by_alias=True), screenshot_data_url, rule_issues)
         score = float(review.get("score", 0))
         notify("reviewed", revision_round, score)
+        review_issues = review.get("issues", [])
+        if not isinstance(review_issues, list):
+            review_issues = []
+        log_agent_event(
+            "agent.candidate_reviewed",
+            **log_context,
+            revision_round=revision_round,
+            score=score,
+            passed=review.get("passed") is True,
+            rule_issues=issue_summary(rule_issues),
+            review_issues=issue_summary(review_issues),
+            **layout_observability_summary(layout, request.assets),
+        )
         return JournalCandidate(layout, screenshot_data_url, review, score, revision_round, rule_issues)
 
     def _passes(self, candidate: JournalCandidate) -> bool:

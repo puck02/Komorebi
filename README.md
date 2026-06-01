@@ -77,11 +77,43 @@ JWT_SECRET=change-me
 OPENAI_API_KEY=
 OPENAI_BASE_URL=
 OPENAI_MODEL=gpt-5.5
+LOG_LEVEL=INFO
 STORAGE_ROOT=/data/storage
 PUBLIC_API_BASE_URL=/api
 ```
 
 不要提交 `.env` 或任何真实密钥。
+
+## Agent Loop 日志
+
+后端会输出 `komorebi.agent` JSON 行日志，用来观察每次 AI 手帐生成的 Agent Loop 行为。当前后台服务通过 systemd 运行时，可以这样看：
+
+```bash
+journalctl --user -u komorebi-backend.service -f
+```
+
+只看 Agent Loop 事件：
+
+```bash
+journalctl --user -u komorebi-backend.service -f | rg '"event":"agent\.'
+```
+
+按某个生成任务排查：
+
+```bash
+journalctl --user -u komorebi-backend.service --since "30 minutes ago" | rg '<job_id>'
+```
+
+常用事件：
+
+- `agent.job_started`：任务开始，包含图片数、可用素材数、描述长度。
+- `agent.progress`：阶段变化，包含当前轮次、当前分数和最佳分数。
+- `agent.candidate_reviewed`：每轮评审结果，包含规则问题、视觉评审问题、装饰数量、唯一素材数和外部素材数。
+- `agent.revision_requested`：触发下一轮修订。
+- `agent.job_completed`：任务完成，包含最终分数、轮次和手帐 ID。
+- `agent.job_failed`：任务失败，包含错误类型和错误信息。
+
+日志不会记录 API Key、图片 Base64、完整 prompt 或完整用户隐私文本。
 
 ## 测试与验证
 

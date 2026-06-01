@@ -360,13 +360,15 @@ GET  /api/journal-generation-jobs/{job_id}
 
 日志记录：
 
-- `jobId`
+- `job_id`
 - 阶段
 - 修订轮次
 - 规则检查结果
 - 视觉评分
 - 最佳版本轮次
 - 错误类型
+- 每轮画布高度、图片数、文本框数、装饰总数、唯一素材数、外部素材数。
+- 每轮使用的素材 ID 列表，最多记录前 30 个。
 
 日志不记录：
 
@@ -374,6 +376,23 @@ GET  /api/journal-generation-jobs/{job_id}
 - API Key。
 - 完整用户隐私文本。
 - 完整模型输入。
+
+后端输出 JSON 行日志，logger 名称为 `komorebi.agent`。在当前 systemd 用户服务部署中，可以用以下命令查看：
+
+```bash
+journalctl --user -u komorebi-backend.service -f
+journalctl --user -u komorebi-backend.service -f | rg '"event":"agent\.'
+journalctl --user -u komorebi-backend.service --since "30 minutes ago" | rg '<job_id>'
+```
+
+关键事件：
+
+- `agent.job_started`：任务开始，包含图片数、可用素材数、描述长度。
+- `agent.progress`：阶段推进，包含 `stage`、`revision_round`、`score`、`best_score`。
+- `agent.candidate_reviewed`：每轮候选版评审结果，包含视觉分、规则问题、评审问题和素材使用摘要。
+- `agent.revision_requested`：准备进入下一轮修订。
+- `agent.job_completed`：任务完成，包含最终手帐 ID、分数、轮次和是否通过阈值。
+- `agent.job_failed`：任务失败，包含错误类型和错误信息。
 
 ## 14. 测试范围
 

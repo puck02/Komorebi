@@ -1,4 +1,6 @@
 from copy import deepcopy
+import json
+import logging
 
 from app.schemas.journal import JournalLayout
 from app.services.assets import get_approved_assets
@@ -73,6 +75,26 @@ def test_agent_restores_user_image_order_after_revision():
     result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(generation_request(images=two_images()))
 
     assert [image.image_id for image in result.layout.layout.images] == ["img_1", "img_2"]
+
+
+def test_agent_logs_structured_review_events(caplog):
+    client = FakeAgentClient(reviews=[review(score=90, passed=True)])
+
+    with caplog.at_level(logging.INFO, logger="komorebi.agent"):
+        JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(
+            generation_request(),
+            log_context={"job_id": "job_123"},
+        )
+
+    payloads = [json.loads(record.message) for record in caplog.records]
+    reviewed = next(payload for payload in payloads if payload["event"] == "agent.candidate_reviewed")
+    assert reviewed["job_id"] == "job_123"
+    assert reviewed["revision_round"] == 0
+    assert reviewed["score"] == 90
+    assert reviewed["passed"] is True
+    assert reviewed["decorations"] == {"total": 0, "unique_assets": 0, "external": 0}
+    assert reviewed["rule_issues"] == {"count": 0, "types": [], "severities": []}
+    assert reviewed["review_issues"] == {"count": 0, "types": [], "severities": []}
 
 
 class FakeAgentClient:

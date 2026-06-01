@@ -11,6 +11,7 @@ from app.models.generation_job import GenerationJob
 from app.models.image import Image as ImageModel
 from app.models.journal import Journal
 from app.schemas.journal import JournalGenerateRequest
+from app.services.agent_observability import log_agent_event
 from app.services.assets import get_approved_assets
 from app.services.journal_agent import JournalAgent, JournalAgentResult
 from app.services.journal_generator import JournalGenerationRequest, JournalImageInput
@@ -42,17 +43,28 @@ def run_generation_job(
         try:
             payload = JournalGenerateRequest.model_validate(job.payload_json)
             images = get_job_images(db, job.user_id, payload.image_ids)
+            assets = get_approved_assets()
             request = JournalGenerationRequest(
                 description=payload.description,
                 images=[image_to_generation_input(image) for image in images],
-                assets=get_approved_assets(),
+                assets=assets,
             )
             job.status = "running"
             job.stage = "understanding_photos"
             db.commit()
+            log_agent_event(
+                "agent.job_started",
+                job_id=job.id,
+                user_id=job.user_id,
+                image_count=len(images),
+                asset_count=len(assets),
+                description_length=len(payload.description),
+                mood_tag_count=len(payload.mood_tags),
+            )
             result = agent_factory().generate(
                 request,
                 on_progress=lambda stage, revision_round, score: update_job_progress(db, job, stage, revision_round, score),
+                log_context={"job_id": job.id, "user_id": job.user_id},
             )
             journal = save_generated_journal(db, job, payload, images, result)
             job.status = "completed"
@@ -62,6 +74,15 @@ def run_generation_job(
             job.best_score = result.score
             job.error_message = None
             db.commit()
+            log_agent_event(
+                "agent.job_completed",
+                job_id=job.id,
+                user_id=job.user_id,
+                journal_id=journal.id,
+                revision_round=result.revision_round,
+                score=result.score,
+                passed=result.passed,
+            )
         except Exception as exc:
             db.rollback()
             failed_job = db.get(GenerationJob, job_id)
@@ -70,6 +91,13 @@ def run_generation_job(
                 failed_job.stage = "failed"
                 failed_job.error_message = str(exc) or exc.__class__.__name__
                 db.commit()
+                log_agent_event(
+                    "agent.job_failed",
+                    job_id=failed_job.id,
+                    user_id=failed_job.user_id,
+                    error_type=exc.__class__.__name__,
+                    error_message=str(exc) or exc.__class__.__name__,
+                )
 
 
 def update_job_progress(
@@ -84,6 +112,15 @@ def update_job_progress(
     if score is not None and (job.best_score is None or score > job.best_score):
         job.best_score = score
     db.commit()
+    log_agent_event(
+        "agent.progress",
+        job_id=job.id,
+        user_id=job.user_id,
+        stage=stage,
+        revision_round=revision_round,
+        score=score,
+        best_score=job.best_score,
+    )
 
 
 def save_generated_journal(
