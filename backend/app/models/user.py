@@ -25,3 +25,4 @@ class User(Base):
 
     images = relationship("Image", back_populates="user", cascade="all, delete-orphan")
     journals = relationship("Journal", back_populates="user", cascade="all, delete-orphan")
+    generation_jobs = relationship("GenerationJob", back_populates="user", cascade="all, delete-orphan")
