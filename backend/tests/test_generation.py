@@ -318,12 +318,72 @@ def test_openai_client_uses_configured_base_url(monkeypatch):
     layout = client.generate_layout(generation_request())
 
     assert client.model == "gpt-5.5"
+    assert client.review_model == "gpt-5.4-mini"
     assert layout["content"]["title"] == "慢下来的周末"
     assert captured["url"] == "https://provider.example/v1/chat/completions"
     assert captured["headers"]["Authorization"] == "Bearer test-key"
     assert captured["json"]["model"] == "gpt-5.5"
     assert captured["json"]["response_format"] == {"type": "json_object"}
     assert captured["trust_env"] is True
+
+
+def test_openai_client_sends_visual_review_request_with_screenshot_and_images(monkeypatch):
+    captured = {}
+
+    def fake_post(url, **kwargs):
+        request = httpx.Request("POST", url)
+        captured.update(kwargs)
+        return httpx.Response(
+            200,
+            request=request,
+            json={"choices": [{"message": {"content": json.dumps(valid_review_json())}}]},
+        )
+
+    monkeypatch.setattr("app.services.openai_client.httpx.post", fake_post)
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+    review = client.review_layout(
+        generation_request(images=[JournalImageInput(id="img_1", width=640, height=480, data_url="data:image/webp;base64,photo")]),
+        valid_model_json(),
+        "data:image/webp;base64,screenshot",
+        [{"type": "readability", "severity": "high", "description": "文字遮挡图片"}],
+    )
+
+    content = captured["json"]["messages"][0]["content"]
+    assert captured["json"]["model"] == "gpt-5.4-mini"
+    assert content[1] == {"type": "image_url", "image_url": {"url": "data:image/webp;base64,screenshot"}}
+    assert content[2] == {"type": "image_url", "image_url": {"url": "data:image/webp;base64,photo"}}
+    assert review["score"] == 78
+
+
+def test_openai_client_sends_targeted_revision_request(monkeypatch):
+    captured = {}
+
+    def fake_post(url, **kwargs):
+        request = httpx.Request("POST", url)
+        captured.update(kwargs)
+        return httpx.Response(
+            200,
+            request=request,
+            json={"choices": [{"message": {"content": json.dumps(valid_model_json())}}]},
+        )
+
+    monkeypatch.setattr("app.services.openai_client.httpx.post", fake_post)
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+    layout = client.revise_layout(
+        generation_request(images=[JournalImageInput(id="img_1", width=640, height=480, data_url="data:image/webp;base64,photo")]),
+        valid_model_json(),
+        "data:image/webp;base64,screenshot",
+        valid_review_json(),
+        revision_round=2,
+        best_score=84,
+    )
+
+    content = captured["json"]["messages"][0]["content"]
+    assert captured["json"]["model"] == "gpt-5.5"
+    assert "第 2/5 轮修订" in content[0]["text"]
+    assert "当前最佳得分：84" in content[0]["text"]
+    assert content[1] == {"type": "image_url", "image_url": {"url": "data:image/webp;base64,screenshot"}}
+    assert layout["content"]["title"] == "慢下来的周末"
 
 
 def test_openai_client_sends_image_content_when_available(monkeypatch):
@@ -507,4 +567,28 @@ def valid_model_json():
                 }
             ],
         },
+    }
+
+
+def valid_review_json():
+    return {
+        "score": 78,
+        "passed": False,
+        "scores": {
+            "layout": 19,
+            "photoTextMatch": 20,
+            "decorationPlacement": 13,
+            "readability": 17,
+            "coherence": 9,
+        },
+        "issues": [
+            {
+                "type": "decorationPlacement",
+                "severity": "high",
+                "targetIds": ["sticker_camera_07", "img_1"],
+                "description": "贴纸覆盖了照片主体区域",
+                "instruction": "将贴纸移动到照片外侧空白处",
+            }
+        ],
+        "summary": "保留整体布局，只移动遮挡主体的贴纸。",
     }

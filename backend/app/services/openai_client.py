@@ -16,15 +16,58 @@ class OpenAIConfigurationError(RuntimeError):
 
 
 class OpenAIJournalClient:
-    def __init__(self, api_key: str | None = None, base_url: str | None = None, model: str | None = None):
+    def __init__(
+        self,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        model: str | None = None,
+        review_model: str | None = None,
+    ):
         settings = get_settings()
         self.api_key = api_key if api_key is not None else settings.openai_api_key
         self.base_url = (base_url if base_url is not None else settings.openai_base_url) or DEFAULT_OPENAI_BASE_URL
         self.model = model or settings.openai_model
+        self.review_model = review_model or settings.openai_review_model
         if not self.api_key:
             raise OpenAIConfigurationError("OPENAI_API_KEY is required to generate journals")
 
     def generate_layout(self, request: JournalGenerationRequest) -> dict[str, Any]:
+        return self._post_json(self.model, build_generation_message_content(request))
+
+    def review_layout(
+        self,
+        request: JournalGenerationRequest,
+        layout: dict[str, Any],
+        screenshot_data_url: str,
+        rule_issues: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        content = [
+            {"type": "text", "text": build_review_prompt(request, layout, rule_issues)},
+            {"type": "image_url", "image_url": {"url": screenshot_data_url}},
+            *source_image_parts(request),
+        ]
+        return self._post_json(self.review_model, content)
+
+    def revise_layout(
+        self,
+        request: JournalGenerationRequest,
+        layout: dict[str, Any],
+        screenshot_data_url: str,
+        review: dict[str, Any],
+        revision_round: int,
+        best_score: float,
+    ) -> dict[str, Any]:
+        content = [
+            {
+                "type": "text",
+                "text": build_revision_prompt(request, layout, review, revision_round, best_score),
+            },
+            {"type": "image_url", "image_url": {"url": screenshot_data_url}},
+            *source_image_parts(request),
+        ]
+        return self._post_json(self.model, content)
+
+    def _post_json(self, model: str, content: str | list[dict[str, Any]]) -> dict[str, Any]:
         try:
             response = httpx.post(
                 f"{self.base_url.rstrip('/')}/chat/completions",
@@ -33,8 +76,8 @@ class OpenAIJournalClient:
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": self.model,
-                    "messages": [{"role": "user", "content": build_generation_message_content(request)}],
+                    "model": model,
+                    "messages": [{"role": "user", "content": content}],
                     "response_format": {"type": "json_object"},
                 },
                 timeout=OPENAI_TIMEOUT_SECONDS,
@@ -53,14 +96,18 @@ class OpenAIJournalClient:
 
 def build_generation_message_content(request: JournalGenerationRequest) -> str | list[dict[str, Any]]:
     prompt = build_generation_prompt(request)
-    image_parts = [
+    image_parts = source_image_parts(request)
+    if not image_parts:
+        return prompt
+    return [{"type": "text", "text": prompt}, *image_parts]
+
+
+def source_image_parts(request: JournalGenerationRequest) -> list[dict[str, Any]]:
+    return [
         {"type": "image_url", "image_url": {"url": image.data_url}}
         for image in request.images
         if image.data_url
     ]
-    if not image_parts:
-        return prompt
-    return [{"type": "text", "text": prompt}, *image_parts]
 
 
 def build_generation_prompt(request: JournalGenerationRequest) -> str:
@@ -152,3 +199,52 @@ def order_assets_for_ai(assets: list[AssetItem]) -> list[AssetItem]:
         if index < len(external_assets):
             ordered_assets.append(external_assets[index])
     return ordered_assets
+
+
+def build_review_prompt(
+    request: JournalGenerationRequest,
+    layout: dict[str, Any],
+    rule_issues: list[dict[str, Any]],
+) -> str:
+    image_order = [{"imageId": image.id, "order": index + 1} for index, image in enumerate(request.images)]
+    return (
+        "你是严格但克制的手帐视觉评审器。只评审当前手帐，不要修改 JSON。"
+        "第一张图片是当前手帐截图，后续图片是按用户确认顺序排列的原图展示图。"
+        "必须对照原图编号检查正文和 caption，不能凭空推测。"
+        "不要因个人审美随意扣分；每个问题必须能从截图、原图或程序规则检查中找到证据。"
+        "总分满分 100：layout 25、photoTextMatch 25、decorationPlacement 20、readability 20、coherence 10。"
+        "passed=true 必须满足 score>=85，且不存在硬失败。每轮只列出最影响体验的 3 到 6 个问题。"
+        "只返回严格 JSON，字段为 score、passed、scores、issues、summary。"
+        "issues 每项字段为 type、severity、targetIds、description、instruction。"
+        f"\n用户描述：{request.description}"
+        f"\n图片顺序：{json.dumps(image_order, ensure_ascii=False)}"
+        f"\n程序规则问题：{json.dumps(rule_issues, ensure_ascii=False)}"
+        f"\n当前 JSON：{json.dumps(layout, ensure_ascii=False)}"
+    )
+
+
+def build_revision_prompt(
+    request: JournalGenerationRequest,
+    layout: dict[str, Any],
+    review: dict[str, Any],
+    revision_round: int,
+    best_score: float,
+) -> str:
+    assets = [
+        {"id": asset.id, "category": asset.category, "tags": asset.tags, "style": asset.style, "colors": asset.colors}
+        for asset in order_assets_for_ai(request.assets)
+    ]
+    image_order = [{"imageId": image.id, "order": index + 1} for index, image in enumerate(request.images)]
+    return (
+        "你是手帐排版修订师。第一张图片是当前最佳版截图，后续图片是按用户确认顺序排列的原图展示图。"
+        "根据视觉评审问题修订当前 JSON。只修改解决 issues 所必需的字段，保留已经合理的设计。"
+        "禁止修改图片集合和图片顺序。正文或 caption 只有在评审指出图文不匹配时才修改。"
+        "不得新增列表之外的 assetId。若建议冲突，优先处理 high severity 问题。"
+        f"这是第 {revision_round}/5 轮修订。当前最佳得分：{best_score:g}。不得扩大修改范围。"
+        "输出完整严格 JSON，不要输出解释。"
+        f"\n用户描述：{request.description}"
+        f"\n图片顺序：{json.dumps(image_order, ensure_ascii=False)}"
+        f"\n当前 JSON：{json.dumps(layout, ensure_ascii=False)}"
+        f"\n视觉评审：{json.dumps(review, ensure_ascii=False)}"
+        f"\n可用素材：{json.dumps(assets, ensure_ascii=False)}"
+    )
