@@ -123,8 +123,9 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
 
     if approved_asset_ids:
         fallback_asset_id = approved_asset_ids[0]
+        category_fallbacks = build_category_fallbacks(request.assets)
         normalized_decorations = [
-            normalize_decoration_asset(decoration, approved_asset_set, fallback_asset_id)
+            normalize_decoration_asset(decoration, approved_asset_set, fallback_asset_id, category_fallbacks, asset_by_id)
             for decoration in layout["layout"].get("decorations", [])
         ]
         layout["layout"]["decorations"] = normalize_decorations(
@@ -420,11 +421,28 @@ def normalize_id_alias(item: dict[str, Any], alias: str) -> None:
         item[alias] = item["id"]
 
 
-def normalize_decoration_asset(decoration: dict[str, Any], approved_asset_ids: set[str], fallback_asset_id: str) -> dict[str, Any]:
+def build_category_fallbacks(assets: list[AssetItem]) -> dict[str, str]:
+    fallbacks: dict[str, str] = {}
+    for asset in assets:
+        if asset.quality_status == "approved" and asset.category not in fallbacks:
+            fallbacks[asset.category] = asset.id
+    return fallbacks
+
+
+def normalize_decoration_asset(
+    decoration: dict[str, Any],
+    approved_asset_ids: set[str],
+    fallback_asset_id: str,
+    category_fallbacks: dict[str, str],
+    asset_by_id: dict[str, AssetItem],
+) -> dict[str, Any]:
     next_decoration = dict(decoration)
     normalize_id_alias(next_decoration, "assetId")
     if next_decoration.get("assetId") not in approved_asset_ids:
-        next_decoration["assetId"] = fallback_asset_id
+        asset_id = str(next_decoration.get("assetId", ""))
+        asset = asset_by_id.get(asset_id)
+        category = asset.category if asset is not None else asset_id.split("_", 1)[0]
+        next_decoration["assetId"] = category_fallbacks.get(category, fallback_asset_id)
     return next_decoration
 
 

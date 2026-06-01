@@ -4,6 +4,7 @@ from typing import Any
 import httpx
 
 from app.core.config import get_settings
+from app.services.assets import AssetItem
 from app.services.journal_generator import GenerationError, JournalGenerationRequest
 
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
@@ -75,7 +76,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
             "style": asset.style,
             "colors": asset.colors,
         }
-        for asset in request.assets
+        for asset in order_assets_for_ai(request.assets)
     ]
     schema_example = {
         "canvas": {"width": 1080, "height": 2400, "background": "#f8f1e8"},
@@ -139,3 +140,15 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         f"\n图片：{json.dumps(images, ensure_ascii=False)}"
         f"\n可用素材：{json.dumps(assets, ensure_ascii=False)}"
     )
+
+
+def order_assets_for_ai(assets: list[AssetItem]) -> list[AssetItem]:
+    internal_assets = [asset for asset in assets if asset.source == "internal"]
+    external_assets = [asset for asset in assets if asset.source != "internal"]
+    ordered_assets: list[AssetItem] = []
+    for index in range(max(len(internal_assets), len(external_assets))):
+        if index < len(internal_assets):
+            ordered_assets.append(internal_assets[index])
+        if index < len(external_assets):
+            ordered_assets.append(external_assets[index])
+    return ordered_assets

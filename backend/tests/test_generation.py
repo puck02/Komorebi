@@ -5,9 +5,9 @@ import pytest
 import httpx
 
 from app.schemas.journal import JournalLayout
-from app.services.assets import get_approved_assets, load_assets
+from app.services.assets import AssetItem, get_approved_assets, load_assets
 from app.services.journal_generator import GenerationError, JournalGenerationRequest, JournalGenerator, JournalImageInput
-from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient, build_generation_prompt
+from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient, build_generation_prompt, order_assets_for_ai
 
 
 def test_generator_returns_valid_journal_layout():
@@ -91,6 +91,29 @@ def test_generator_replaces_decorations_with_approved_asset_ids():
     approved_ids = {asset.id for asset in get_approved_assets()}
     assert layout.layout.decorations
     assert all(decoration.asset_id in approved_ids for decoration in layout.layout.decorations)
+
+
+def test_generator_replaces_unknown_decoration_with_approved_asset_from_same_category():
+    payload = valid_model_json()
+    payload["layout"]["decorations"] = [
+        {
+            "assetId": "tape_missing_99",
+            "x": 60,
+            "y": 180,
+            "width": 220,
+            "height": 54,
+            "rotation": -8,
+        }
+    ]
+    assets = [
+        asset_item("sticker_approved", "sticker"),
+        asset_item("tape_approved", "tape"),
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(assets=assets))
+
+    assert layout.layout.decorations[0].asset_id == "tape_approved"
 
 
 def test_generator_snaps_tape_to_photo_edge():
@@ -335,6 +358,19 @@ def test_generation_prompt_requests_natural_diary_text_and_preserves_image_order
     assert '"order": 3' in prompt
 
 
+def test_assets_sent_to_ai_alternate_between_internal_and_external_sources():
+    assets = [
+        asset_item("internal_1", "sticker"),
+        asset_item("internal_2", "tape"),
+        asset_item("external_1", "sticker", source="https://example.com/icons"),
+        asset_item("external_2", "sticker", source="https://example.com/icons"),
+    ]
+
+    ordered_assets = order_assets_for_ai(assets)
+
+    assert [asset.id for asset in ordered_assets] == ["internal_1", "external_1", "internal_2", "external_2"]
+
+
 def test_openai_client_converts_connection_errors_to_generation_error(monkeypatch):
     def fake_post(url, **kwargs):
         request = httpx.Request("POST", url)
@@ -382,6 +418,21 @@ def three_images():
         JournalImageInput(id="img_2", width=900, height=1200),
         JournalImageInput(id="img_3", width=1200, height=900),
     ]
+
+
+def asset_item(asset_id, category, source="internal"):
+    return AssetItem(
+        id=asset_id,
+        name=asset_id,
+        category=category,
+        tags=["daily"],
+        style=["soft-collage"],
+        colors=["#fef6e4"],
+        file=f"{asset_id}.svg",
+        license="internal",
+        source=source,
+        quality_status="approved",
+    )
 
 
 def estimated_paragraph_height(paragraph, font_size, width):
