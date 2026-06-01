@@ -21,6 +21,7 @@ const TRANSPARENT_IMAGE_PLACEHOLDER = "data:image/gif;base64,R0lGODlhAQABAIAAAAA
 export default function JournalDetailPage() {
   const { journalId } = useParams<{ journalId: string }>();
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const detailPageRef = useRef<HTMLElement | null>(null);
   const previewPanelRef = useRef<HTMLDivElement | null>(null);
   const [displayImages, setDisplayImages] = useState<CanvasImage[]>([]);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -36,6 +37,31 @@ export default function JournalDetailPage() {
     queryKey: ["journal", journalId]
   });
   const assetsQuery = useQuery({ queryFn: getAssets, queryKey: ["assets"] });
+
+  useEffect(() => {
+    const detailPage = detailPageRef.current;
+    if (!detailPage) {
+      return;
+    }
+
+    let animationFrame = 0;
+    function updateGlassScroll() {
+      const progress = Math.min(window.scrollY / 420, 1);
+      detailPage?.style.setProperty("--glass-scroll", progress.toFixed(3));
+    }
+
+    function handleScroll() {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(updateGlassScroll);
+    }
+
+    updateGlassScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [journalQuery.data?.id]);
 
   useEffect(() => {
     const journal = journalQuery.data;
@@ -214,7 +240,7 @@ export default function JournalDetailPage() {
   }
 
   return (
-    <section className="journal-detail-page">
+    <section className="journal-detail-page" ref={detailPageRef}>
       <header className="journal-detail-toolbar">
         <Button asChild variant="ghost">
           <Link to="/history">
@@ -224,6 +250,7 @@ export default function JournalDetailPage() {
         </Button>
         <div className="journal-detail-actions">
           <Button
+            className="liquid-glass-button"
             disabled={isExporting || isDisplayImagesLoading}
             onClick={handleExportImage}
             type="button"
@@ -232,7 +259,7 @@ export default function JournalDetailPage() {
             <Download size={16} />
             {isExporting ? "导出中" : "导出图片"}
           </Button>
-          <Button asChild variant="ghost">
+          <Button asChild className="liquid-glass-button" variant="ghost">
             <Link to="/">
               <NotebookPen size={16} />
               继续创建
