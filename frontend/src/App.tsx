@@ -6,6 +6,8 @@ import { clearAccessToken, getAccessToken } from "./api/client";
 import AccountPage from "./pages/AccountPage";
 import AssetLibraryPage from "./pages/AssetLibraryPage";
 import CreateJournalPage from "./pages/CreateJournalPage";
+import GenerationJobPage from "./pages/GenerationJobPage";
+import InternalJournalRenderPage from "./pages/InternalJournalRenderPage";
 import JournalDetailPage from "./pages/JournalDetailPage";
 import JournalHistoryPage from "./pages/JournalHistoryPage";
 import LoginPage from "./pages/LoginPage";
@@ -19,6 +21,10 @@ const navItems = [
 ];
 
 export default function App() {
+  if (window.location.pathname === "/internal/render") {
+    return <InternalJournalRenderPage />;
+  }
+
   const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(getAccessToken()));
   const handleAuthenticated = () => setIsAuthenticated(true);
   const handleLogout = () => {
@@ -62,6 +68,7 @@ export default function App() {
         <Route path="/" element={<CreateJournalPage />} />
         <Route path="/history" element={<JournalHistoryPage />} />
         <Route path="/journals/:journalId" element={<JournalDetailPage />} />
+        <Route path="/generation/:jobId" element={<GenerationJobPage />} />
         <Route path="/assets" element={<AssetLibraryPage />} />
         <Route path="/account" element={<AccountPage onLogout={handleLogout} />} />
         <Route path="/login" element={<Navigate to="/" replace />} />

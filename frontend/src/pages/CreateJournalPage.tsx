@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 
-import { generateJournal } from "../api/journals";
+import { createGenerationJob } from "../api/generationJobs";
 import type { UploadedImage } from "../api/images";
 import ImageUploader from "../components/ImageUploader";
 import { Button } from "../components/ui/button";
@@ -51,14 +51,14 @@ export default function CreateJournalPage() {
     }
 
     try {
-      const journal = await generateJournal({
+      const job = await createGenerationJob({
         description: values.description,
         imageIds: images.map((image) => image.id),
         journalDate: values.journalDate || null,
         location: values.location?.trim() || null,
         moodTags: selectedMood ? [selectedMood] : []
       });
-      navigate(`/journals/${journal.id}`);
+      navigate(`/generation/${job.id}`);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "生成失败，请稍后重试。");
     }
@@ -138,7 +138,7 @@ export default function CreateJournalPage() {
           {submitError ? <p className="form-error">{submitError}</p> : null}
           <Button className="create-submit" disabled={isSubmitting} type="submit">
             <Sparkles size={17} />
-            {isSubmitting ? "正在生成手帐..." : "生成手帐"}
+            {isSubmitting ? "正在准备..." : "生成手帐"}
           </Button>
         </div>
       </form>
