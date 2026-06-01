@@ -6,8 +6,19 @@ import httpx
 
 from app.schemas.journal import JournalLayout
 from app.services.assets import AssetItem, get_approved_assets, load_assets
-from app.services.journal_generator import GenerationError, JournalGenerationRequest, JournalGenerator, JournalImageInput
-from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient, build_generation_prompt, order_assets_for_ai
+from app.services.journal_generator import (
+    GenerationError,
+    JournalGenerationRequest,
+    JournalGenerator,
+    JournalImageInput,
+    check_layout_rules,
+)
+from app.services.openai_client import (
+    OpenAIConfigurationError,
+    OpenAIJournalClient,
+    build_generation_prompt,
+    order_assets_for_ai,
+)
 
 
 def test_generator_returns_valid_journal_layout():
@@ -416,6 +427,66 @@ def test_generation_prompt_requests_natural_diary_text_and_preserves_image_order
     assert '"order": 1' in prompt
     assert '"order": 2' in prompt
     assert '"order": 3' in prompt
+
+
+def test_generation_prompt_requests_rich_and_varied_asset_usage():
+    prompt = build_generation_prompt(generation_request(images=three_images()))
+
+    assert "12 到 22 个装饰" in prompt
+    assert "尽量不要重复 assetId" in prompt
+    assert "外部素材" in prompt
+
+
+def test_review_and_revision_prompts_check_asset_richness(monkeypatch):
+    captured = []
+
+    def fake_post(url, **kwargs):
+        request = httpx.Request("POST", url)
+        captured.append(kwargs["json"]["messages"][0]["content"][0]["text"])
+        payload = valid_review_json() if len(captured) == 1 else valid_model_json()
+        return httpx.Response(200, request=request, json={"choices": [{"message": {"content": json.dumps(payload)}}]})
+
+    monkeypatch.setattr("app.services.openai_client.httpx.post", fake_post)
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+    request = generation_request(images=[JournalImageInput(id="img_1", width=640, height=480, data_url="data:image/webp;base64,photo")])
+    client.review_layout(request, valid_model_json(), "data:image/webp;base64,screenshot", [])
+    client.revise_layout(request, valid_model_json(), "data:image/webp;base64,screenshot", valid_review_json(), revision_round=1, best_score=70)
+
+    assert "素材丰富度" in captured[0]
+    assert "外部素材" in captured[0]
+    assert "可新增装饰" in captured[1]
+
+
+def test_layout_rules_report_sparse_repetitive_or_external_poor_decorations():
+    request = generation_request(
+        assets=[
+            asset_item("internal_sticker_1", "sticker"),
+            asset_item("internal_sticker_2", "sticker"),
+            asset_item("external_sticker_1", "sticker", source="https://example.com/icons"),
+            asset_item("external_sticker_2", "sticker", source="https://example.com/icons"),
+            asset_item("tape_approved", "tape"),
+            asset_item("paper_approved", "paper"),
+            asset_item("paper_approved_2", "paper"),
+            asset_item("paper_approved_3", "paper"),
+            asset_item("tape_approved_2", "tape"),
+            asset_item("tape_approved_3", "tape"),
+            asset_item("texture_approved", "texture"),
+            asset_item("texture_approved_2", "texture"),
+        ]
+    )
+    payload = valid_model_json()
+    payload["layout"]["decorations"] = [
+        {"assetId": "internal_sticker_1", "x": 720, "y": 160 + index * 60, "width": 120, "height": 80, "rotation": 0}
+        for index in range(4)
+    ]
+    layout = JournalGenerator(FakeClient(payload)).generate(request)
+
+    issues = check_layout_rules(layout, request)
+
+    issue_descriptions = [issue["description"] for issue in issues]
+    assert "装饰数量偏少，画面丰富度不足" in issue_descriptions
+    assert "素材重复使用过多，画面变化不足" in issue_descriptions
+    assert "外部素材使用偏少，素材库丰富度没有体现出来" in issue_descriptions
 
 
 def test_assets_sent_to_ai_alternate_between_internal_and_external_sources():

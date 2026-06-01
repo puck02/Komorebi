@@ -32,6 +32,8 @@ TAPE_MAX_HEIGHT = 70
 TAPE_MIN_WIDTH = 150
 TAPE_MIN_HEIGHT = 38
 MAX_DECORATIONS = 22
+MIN_DECORATIONS = 12
+MIN_EXTERNAL_STICKERS = 2
 DECORATION_CATEGORY_LIMITS = {
     "paper": 4,
     "sticker": 8,
@@ -556,13 +558,21 @@ def check_layout_rules(layout: JournalLayout, request: JournalGenerationRequest)
 
     asset_by_id = {asset.id: asset for asset in request.assets if asset.quality_status == "approved"}
     category_counts: dict[str, int] = {}
+    asset_counts: dict[str, int] = {}
+    sticker_count = 0
+    external_sticker_count = 0
     image_dicts = [image.model_dump(by_alias=True) for image in layout.layout.images]
     for decoration in layout.layout.decorations:
         asset = asset_by_id.get(decoration.asset_id)
         if asset is None:
             issues.append(rule_issue("asset", "high", [decoration.asset_id], "使用了未审核或不存在的素材"))
             continue
+        asset_counts[asset.id] = asset_counts.get(asset.id, 0) + 1
         category_counts[asset.category] = category_counts.get(asset.category, 0) + 1
+        if asset.category == "sticker":
+            sticker_count += 1
+            if asset.source != "internal":
+                external_sticker_count += 1
         if not rect_inside_canvas((decoration.x, decoration.y, decoration.width, decoration.height), layout.canvas.height):
             issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "素材超出画布范围"))
         decoration_dict = decoration.model_dump(by_alias=True)
@@ -573,6 +583,16 @@ def check_layout_rules(layout: JournalLayout, request: JournalGenerationRequest)
 
     if len(layout.layout.decorations) > MAX_DECORATIONS:
         issues.append(rule_issue("decorationDensity", "high", [], "装饰总数超过限制"))
+    if len(asset_by_id) >= MIN_DECORATIONS and len(layout.layout.decorations) < MIN_DECORATIONS:
+        issues.append(rule_issue("decorationDensity", "medium", [], "装饰数量偏少，画面丰富度不足"))
+    repeated_asset_ids = [asset_id for asset_id, count in asset_counts.items() if count > 1]
+    if repeated_asset_ids and len(asset_by_id) > len(asset_counts):
+        issues.append(rule_issue("decorationVariety", "medium", repeated_asset_ids, "素材重复使用过多，画面变化不足"))
+    external_sticker_candidates = [
+        asset for asset in asset_by_id.values() if asset.category == "sticker" and asset.source != "internal"
+    ]
+    if len(external_sticker_candidates) >= MIN_EXTERNAL_STICKERS and sticker_count >= 4 and external_sticker_count < MIN_EXTERNAL_STICKERS:
+        issues.append(rule_issue("decorationVariety", "medium", [], "外部素材使用偏少，素材库丰富度没有体现出来"))
     for category, count in category_counts.items():
         if count > DECORATION_CATEGORY_LIMITS.get(category, 1):
             issues.append(rule_issue("decorationDensity", "high", [category], f"{category} 类素材数量超过限制"))

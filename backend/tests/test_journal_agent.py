@@ -10,7 +10,7 @@ def test_agent_stops_after_first_review_when_quality_threshold_passes():
     client = FakeAgentClient(reviews=[review(score=90, passed=True)])
     renderer = FakeRenderer()
 
-    result = JournalAgent(client, renderer).generate(generation_request())
+    result = JournalAgent(client, renderer, rule_checker=no_rule_issues).generate(generation_request())
 
     assert result.score == 90
     assert result.revision_round == 0
@@ -25,7 +25,7 @@ def test_agent_revises_from_best_version_when_new_version_scores_lower():
         revisions=[layout_payload(title="较差版本"), layout_payload(title="最终版本")],
     )
 
-    result = JournalAgent(client, FakeRenderer()).generate(generation_request())
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(generation_request())
 
     assert result.layout.content.title == "最终版本"
     assert client.revision_inputs[0]["layout"]["content"]["title"] == "初稿"
@@ -70,7 +70,7 @@ def test_agent_restores_user_image_order_after_revision():
         revisions=[reversed_layout],
     )
 
-    result = JournalAgent(client, FakeRenderer()).generate(generation_request(images=two_images()))
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(generation_request(images=two_images()))
 
     assert [image.image_id for image in result.layout.layout.images] == ["img_1", "img_2"]
 
@@ -146,6 +146,10 @@ def review(score, passed=False):
         "issues": [],
         "summary": "调整细节。",
     }
+
+
+def no_rule_issues(_layout, _request):
+    return []
 
 
 def layout_payload(title="初稿", image_ids=None):
