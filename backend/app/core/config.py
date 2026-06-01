@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     openai_base_url: str = ""
     openai_model: str = "gpt-5.5"
     openai_review_model: str = "gpt-5.4-mini"
+    internal_render_url: str = "http://127.0.0.1:52897/internal/render"
+    playwright_chromium_executable: str = "/usr/bin/google-chrome"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
