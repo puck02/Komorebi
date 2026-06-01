@@ -1,6 +1,7 @@
-import { ArrowLeft, NotebookPen } from "lucide-react";
+import { ArrowLeft, Download, NotebookPen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { toPng } from "html-to-image";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { getAssets } from "../api/assets";
@@ -17,11 +18,16 @@ type CanvasImage = {
 
 export default function JournalDetailPage() {
   const { journalId } = useParams<{ journalId: string }>();
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const previewShellRef = useRef<HTMLDivElement | null>(null);
   const [displayImages, setDisplayImages] = useState<CanvasImage[]>([]);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [isDisplayImagesLoading, setIsDisplayImagesLoading] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [isOriginalImageLoading, setIsOriginalImageLoading] = useState(false);
+  const [previewWidth, setPreviewWidth] = useState(0);
   const journalQuery = useQuery({
     enabled: Boolean(journalId),
     queryFn: () => getJournal(journalId as string),
@@ -87,6 +93,22 @@ export default function JournalDetailPage() {
   );
 
   useEffect(() => {
+    const shell = previewShellRef.current;
+    if (!shell) {
+      return;
+    }
+
+    function updatePreviewWidth() {
+      setPreviewWidth(shell?.clientWidth ?? 0);
+    }
+
+    updatePreviewWidth();
+    const resizeObserver = new ResizeObserver(updatePreviewWidth);
+    resizeObserver.observe(shell);
+    return () => resizeObserver.disconnect();
+  }, [journalQuery.data?.id]);
+
+  useEffect(() => {
     if (!selectedImageId) {
       setOriginalImageUrl(null);
       setIsOriginalImageLoading(false);
@@ -127,6 +149,42 @@ export default function JournalDetailPage() {
   const journal = journalQuery.data;
   const isLoading = journalQuery.isLoading || assetsQuery.isLoading;
   const error = journalQuery.error ?? assetsQuery.error;
+  const canvasScale = useMemo(() => {
+    if (!journal) {
+      return 0.64;
+    }
+
+    const fitScale = previewWidth > 0 ? previewWidth / journal.layout.canvas.width : 0.64;
+    return Math.min(0.64, Math.max(0.28, fitScale));
+  }, [journal, previewWidth]);
+
+  const handleExportImage = useCallback(async () => {
+    if (!journal || !canvasRef.current) {
+      return;
+    }
+
+    setExportError(null);
+    setIsExporting(true);
+    try {
+      const dataUrl = await toPng(canvasRef.current, {
+        cacheBust: true,
+        height: journal.layout.canvas.height,
+        pixelRatio: 1,
+        style: {
+          transform: "none"
+        },
+        width: journal.layout.canvas.width
+      });
+      const link = document.createElement("a");
+      link.download = `${sanitizeFileName(journal.title)}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch {
+      setExportError("导出失败，请稍后重试");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [journal]);
 
   if (isLoading) {
     return (
@@ -159,27 +217,42 @@ export default function JournalDetailPage() {
             返回历史
           </Link>
         </Button>
-        <Button asChild variant="ghost">
-          <Link to="/">
-            <NotebookPen size={16} />
-            继续创建
-          </Link>
-        </Button>
+        <div className="journal-detail-actions">
+          <Button
+            disabled={isExporting || isDisplayImagesLoading}
+            onClick={handleExportImage}
+            type="button"
+            variant="outline"
+          >
+            <Download size={16} />
+            {isExporting ? "导出中" : "导出图片"}
+          </Button>
+          <Button asChild variant="ghost">
+            <Link to="/">
+              <NotebookPen size={16} />
+              继续创建
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <div className="journal-detail-single">
         <div className="journal-preview-panel">
-          <JournalCanvas
-            assets={assetsQuery.data ?? []}
-            images={displayImages}
-            layout={journal.layout}
-            onImageClick={setSelectedImageId}
-            scale={0.64}
-          />
+          <div className="journal-canvas-fit-shell" ref={previewShellRef}>
+            <JournalCanvas
+              assets={assetsQuery.data ?? []}
+              canvasRef={canvasRef}
+              images={displayImages}
+              layout={journal.layout}
+              onImageClick={setSelectedImageId}
+              scale={canvasScale}
+            />
+          </div>
         </div>
       </div>
 
       {isDisplayImagesLoading ? <p className="journal-image-loading">图片正在逐张加载...</p> : null}
+      {exportError ? <p className="form-error journal-export-error">{exportError}</p> : null}
 
       {selectedImageId ? (
         <button className="image-lightbox" type="button" onClick={() => setSelectedImageId(null)}>
@@ -192,4 +265,8 @@ export default function JournalDetailPage() {
       ) : null}
     </section>
   );
+}
+
+function sanitizeFileName(fileName: string) {
+  return fileName.trim().replace(/[\\/:*?"<>|]/g, "_") || "komorebi-journal";
 }

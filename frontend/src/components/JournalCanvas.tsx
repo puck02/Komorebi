@@ -1,5 +1,6 @@
 import type { Asset } from "../types/asset";
 import type { JournalLayout } from "../types/journal";
+import type { Ref } from "react";
 
 type JournalCanvasImage = {
   id: string;
@@ -11,11 +12,12 @@ type Props = {
   layout: JournalLayout;
   images: JournalCanvasImage[];
   assets: Asset[];
+  canvasRef?: Ref<HTMLDivElement>;
   onImageClick?: (imageId: string) => void;
   scale?: number;
 };
 
-export default function JournalCanvas({ assets, images, layout, onImageClick, scale = 0.42 }: Props) {
+export default function JournalCanvas({ assets, canvasRef, images, layout, onImageClick, scale = 0.42 }: Props) {
   const imageMap = new Map(images.map((image) => [image.id, image]));
   const assetMap = new Map(assets.map((asset) => [asset.id, asset]));
   const titlePlacement = layout.layout.texts.find((text) => text.role === "title");
@@ -33,6 +35,7 @@ export default function JournalCanvas({ assets, images, layout, onImageClick, sc
     <div className="journal-canvas-frame" style={{ height: scaledHeight, width: scaledWidth }}>
       <div
         className="journal-canvas"
+        ref={canvasRef}
         style={{
           background: layout.canvas.background,
           height: layout.canvas.height,
