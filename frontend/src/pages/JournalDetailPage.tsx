@@ -1,7 +1,7 @@
 import { ArrowLeft, Download, NotebookPen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { getAssets } from "../api/assets";
@@ -19,7 +19,7 @@ type CanvasImage = {
 export default function JournalDetailPage() {
   const { journalId } = useParams<{ journalId: string }>();
   const canvasRef = useRef<HTMLDivElement | null>(null);
-  const previewShellRef = useRef<HTMLDivElement | null>(null);
+  const previewPanelRef = useRef<HTMLDivElement | null>(null);
   const [displayImages, setDisplayImages] = useState<CanvasImage[]>([]);
   const [exportError, setExportError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -27,7 +27,7 @@ export default function JournalDetailPage() {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [isOriginalImageLoading, setIsOriginalImageLoading] = useState(false);
-  const [previewWidth, setPreviewWidth] = useState(0);
+  const [previewWidth, setPreviewWidth] = useState(getInitialPreviewWidth);
   const journalQuery = useQuery({
     enabled: Boolean(journalId),
     queryFn: () => getJournal(journalId as string),
@@ -92,19 +92,20 @@ export default function JournalDetailPage() {
     [displayImages, selectedImageId]
   );
 
-  useEffect(() => {
-    const shell = previewShellRef.current;
-    if (!shell) {
+  useLayoutEffect(() => {
+    const panel = previewPanelRef.current;
+    if (!panel) {
       return;
     }
+    const observedPanel = panel;
 
     function updatePreviewWidth() {
-      setPreviewWidth(shell?.clientWidth ?? 0);
+      setPreviewWidth(getElementContentWidth(observedPanel));
     }
 
     updatePreviewWidth();
     const resizeObserver = new ResizeObserver(updatePreviewWidth);
-    resizeObserver.observe(shell);
+    resizeObserver.observe(observedPanel);
     return () => resizeObserver.disconnect();
   }, [journalQuery.data?.id]);
 
@@ -154,8 +155,8 @@ export default function JournalDetailPage() {
       return 0.64;
     }
 
-    const fitScale = previewWidth > 0 ? previewWidth / journal.layout.canvas.width : 0.64;
-    return Math.min(0.64, Math.max(0.28, fitScale));
+    const fitScale = previewWidth / journal.layout.canvas.width;
+    return Math.min(0.64, Math.max(0.1, fitScale));
   }, [journal, previewWidth]);
 
   const handleExportImage = useCallback(async () => {
@@ -237,8 +238,8 @@ export default function JournalDetailPage() {
       </header>
 
       <div className="journal-detail-single">
-        <div className="journal-preview-panel">
-          <div className="journal-canvas-fit-shell" ref={previewShellRef}>
+        <div className="journal-preview-panel" ref={previewPanelRef}>
+          <div className="journal-canvas-fit-shell">
             <JournalCanvas
               assets={assetsQuery.data ?? []}
               canvasRef={canvasRef}
@@ -269,4 +270,18 @@ export default function JournalDetailPage() {
 
 function sanitizeFileName(fileName: string) {
   return fileName.trim().replace(/[\\/:*?"<>|]/g, "_") || "komorebi-journal";
+}
+
+function getInitialPreviewWidth() {
+  if (typeof window === "undefined") {
+    return 0;
+  }
+  return Math.max(window.innerWidth - 40, 0);
+}
+
+function getElementContentWidth(element: HTMLElement) {
+  const style = window.getComputedStyle(element);
+  const paddingLeft = Number.parseFloat(style.paddingLeft) || 0;
+  const paddingRight = Number.parseFloat(style.paddingRight) || 0;
+  return Math.max(element.clientWidth - paddingLeft - paddingRight, 0);
 }
