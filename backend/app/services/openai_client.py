@@ -240,7 +240,7 @@ def build_revision_prompt(
         "根据视觉评审问题修订当前 JSON。只修改解决 issues 所必需的字段，保留已经合理的设计。"
         "禁止修改图片集合和图片顺序。正文或 caption 只有在评审指出图文不匹配时才修改。"
         "不得新增列表之外的 assetId。若建议冲突，优先处理 high severity 问题。"
-        f"这是第 {revision_round}/5 轮修订。当前最佳得分：{best_score:g}。不得扩大修改范围。"
+        f"这是第 {revision_round}/3 轮修订。当前最佳得分：{best_score:g}。不得扩大修改范围。"
         "输出完整严格 JSON，不要输出解释。"
         f"\n用户描述：{request.description}"
         f"\n图片顺序：{json.dumps(image_order, ensure_ascii=False)}"

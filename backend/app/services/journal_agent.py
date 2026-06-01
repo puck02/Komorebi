@@ -5,7 +5,7 @@ from app.schemas.journal import JournalLayout
 from app.services.journal_generator import JournalGenerationRequest, check_layout_rules, sanitize_model_layout
 
 QUALITY_THRESHOLD = 85
-MAX_REVISION_ROUNDS = 5
+MAX_REVISION_ROUNDS = 3
 
 
 class JournalAgentClient(Protocol):

@@ -2,7 +2,7 @@
 
 ## 目标
 
-将同步手帐生成改造成后台 Agent Loop：生成初稿后使用真实前端画布截图，由 `gpt-5.4-mini` 视觉评审，必要时由 `gpt-5.5` 定向修订，最多调整 5 轮，并保存历史最高分版本。
+将同步手帐生成改造成后台 Agent Loop：生成初稿后使用真实前端画布截图，由 `gpt-5.4-mini` 视觉评审，必要时由 `gpt-5.5` 定向修订，最多调整 3 轮，并保存历史最高分版本。
 
 ## 技术方案
 
@@ -61,7 +61,7 @@
 
 步骤：
 
-1. 先写 Agent 测试：评分达到阈值提前停止、硬失败继续修订、最多修订 5 轮、评分下降时保留历史最佳版、图片顺序不变。
+1. 先写 Agent 测试：评分达到阈值提前停止、硬失败继续修订、最多修订 3 轮、评分下降时保留历史最佳版、图片顺序不变。
 2. 新增确定性规则检查函数，输出结构化问题列表。
 3. 实现 `JournalAgent.generate()`，始终基于历史最佳版本做下一轮修订。
 4. 跑 `backend/tests/test_journal_agent.py backend/tests/test_generation.py`。
@@ -138,4 +138,3 @@
 5. 跑 `git diff --check`。
 6. 重启 `komorebi-backend.service` 和 `komorebi-frontend.service`。
 7. 检查 `/api/health` 和前端页面。
-

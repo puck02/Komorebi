@@ -24,7 +24,7 @@ class GenerationJob(Base):
     status: Mapped[str] = mapped_column(String(24), default="queued", nullable=False)
     stage: Mapped[str] = mapped_column(String(40), default="queued", nullable=False)
     revision_round: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    max_revision_rounds: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+    max_revision_rounds: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
     best_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     journal_id: Mapped[str | None] = mapped_column(ForeignKey("journals.id", ondelete="SET NULL"), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -32,19 +32,19 @@ def test_agent_revises_from_best_version_when_new_version_scores_lower():
     assert client.revision_inputs[1]["layout"]["content"]["title"] == "初稿"
 
 
-def test_agent_runs_at_most_five_revision_rounds_and_returns_best_version():
+def test_agent_runs_at_most_three_revision_rounds_and_returns_best_version():
     client = FakeAgentClient(
-        reviews=[review(score=70), review(score=72), review(score=74), review(score=76), review(score=78), review(score=77)],
-        revisions=[layout_payload(title=f"修订 {index}") for index in range(1, 6)],
+        reviews=[review(score=70), review(score=72), review(score=74), review(score=73)],
+        revisions=[layout_payload(title=f"修订 {index}") for index in range(1, 4)],
     )
 
     result = JournalAgent(client, FakeRenderer()).generate(generation_request())
 
-    assert len(client.revision_inputs) == 5
-    assert len(client.review_inputs) == 6
-    assert result.layout.content.title == "修订 4"
-    assert result.score == 78
-    assert result.revision_round == 4
+    assert len(client.revision_inputs) == 3
+    assert len(client.review_inputs) == 4
+    assert result.layout.content.title == "修订 2"
+    assert result.score == 74
+    assert result.revision_round == 2
     assert result.passed is False
 
 

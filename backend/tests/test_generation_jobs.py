@@ -75,7 +75,7 @@ def test_create_and_read_generation_job(client):
     assert job["status"] == "queued"
     assert job["stage"] == "queued"
     assert job["revisionRound"] == 0
-    assert job["maxRevisionRounds"] == 5
+    assert job["maxRevisionRounds"] == 3
     assert job["journalId"] is None
     assert client.submitted_job_ids == [job["id"]]
     assert read_response.status_code == 200

@@ -380,7 +380,7 @@ def test_openai_client_sends_targeted_revision_request(monkeypatch):
 
     content = captured["json"]["messages"][0]["content"]
     assert captured["json"]["model"] == "gpt-5.5"
-    assert "第 2/5 轮修订" in content[0]["text"]
+    assert "第 2/3 轮修订" in content[0]["text"]
     assert "当前最佳得分：84" in content[0]["text"]
     assert content[1] == {"type": "image_url", "image_url": {"url": "data:image/webp;base64,screenshot"}}
     assert layout["content"]["title"] == "慢下来的周末"
