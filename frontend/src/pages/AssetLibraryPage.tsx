@@ -64,12 +64,7 @@ export default function AssetLibraryPage() {
         <FilterRow label="标签" options={tags} value={tag} onChange={setTag} />
       </div>
 
-      {isLoading ? (
-        <div className="komorebi-loading-state">
-          <span className="komorebi-loading-dot" aria-hidden="true" />
-          <p>正在加载素材...</p>
-        </div>
-      ) : null}
+      {isLoading ? <p className="text-sm text-[#172c66]">正在加载素材...</p> : null}
       {error instanceof Error ? <p className="text-sm font-semibold text-[#f582ae]">{error.message}</p> : null}
       {!isLoading && filteredAssets.length === 0 ? <p className="text-sm text-[#172c66]">没有符合筛选条件的素材。</p> : null}
 

@@ -2,7 +2,6 @@ import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { login, register } from "../api/auth";
-import { Button } from "../components/ui/button";
 
 type RegisterPageProps = {
   onAuthenticated?: () => void;
@@ -49,9 +48,9 @@ export default function RegisterPage({ onAuthenticated }: RegisterPageProps) {
         />
       </label>
       {error ? <p className="form-error">{error}</p> : null}
-      <Button type="submit" disabled={isSubmitting}>
+      <button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "注册中..." : "注册"}
-      </Button>
+      </button>
     </form>
   );
 }
