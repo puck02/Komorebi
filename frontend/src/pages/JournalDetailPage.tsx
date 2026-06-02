@@ -220,7 +220,10 @@ export default function JournalDetailPage() {
   if (isLoading) {
     return (
       <section className="journal-detail-page">
-        <p className="text-sm font-semibold text-[#001858]">正在加载手帐...</p>
+        <div className="komorebi-loading-state">
+          <span className="komorebi-loading-dot" aria-hidden="true" />
+          <p>正在加载手帐...</p>
+        </div>
       </section>
     );
   }

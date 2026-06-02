@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { login } from "../api/auth";
+import { Button } from "../components/ui/button";
 
 type LoginPageProps = {
   onAuthenticated?: () => void;
@@ -59,9 +60,9 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
         <Link className="auth-switch-link login-register-link" to="/register">
           注册
         </Link>
-        <button className="auth-submit-glow login-submit" type="submit" disabled={isSubmitting}>
+        <Button className="auth-submit-glow login-submit" type="submit" disabled={isSubmitting}>
           {isSubmitting ? "登录中..." : "登录"}
-        </button>
+        </Button>
       </form>
     </section>
   );

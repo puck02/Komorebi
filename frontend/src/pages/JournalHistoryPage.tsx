@@ -33,7 +33,10 @@ export default function JournalHistoryPage() {
   if (journalsQuery.isLoading) {
     return (
       <section className="history-page">
-        <p className="text-sm font-semibold text-[#001858]">正在加载历史手帐...</p>
+        <div className="komorebi-loading-state">
+          <span className="komorebi-loading-dot" aria-hidden="true" />
+          <p>正在加载历史手帐...</p>
+        </div>
       </section>
     );
   }
