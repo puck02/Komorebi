@@ -138,6 +138,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     else:
         layout["layout"]["decorations"] = []
 
+    normalize_sections(layout, request.images)
     layout["canvas"]["height"] = normalize_canvas_height(layout)
     return layout
 
@@ -211,6 +212,197 @@ def normalize_story_layout(layout: dict[str, Any], request_images: list[JournalI
         title,
         *normalize_body_texts(layout["layout"].get("texts", []), body, image_placements, title),
     ]
+
+
+def normalize_sections(layout: dict[str, Any], request_images: list[JournalImageInput]) -> None:
+    content_sections = normalize_content_sections(layout, request_images)
+    layout["content"]["sections"] = content_sections
+    layout["layout"]["sections"] = normalize_layout_sections(layout, content_sections)
+
+
+def normalize_content_sections(layout: dict[str, Any], request_images: list[JournalImageInput]) -> list[dict[str, Any]]:
+    image_ids = [image.id for image in request_images]
+    image_id_set = set(image_ids)
+    raw_sections = layout["content"].get("sections")
+    sections: list[dict[str, Any]] = []
+
+    if isinstance(raw_sections, list):
+        for index, raw_section in enumerate(raw_sections):
+            if not isinstance(raw_section, dict):
+                continue
+            raw_image_ids = raw_section.get("imageIds")
+            if raw_image_ids is None:
+                raw_image_ids = raw_section.get("image_ids")
+            section_image_ids = [str(image_id) for image_id in raw_image_ids or [] if str(image_id) in image_id_set]
+            if not section_image_ids:
+                continue
+            body = str(raw_section.get("body") or section_body_fallback(layout, index)).strip()
+            if not body:
+                body = "这一组照片也想好好留下。"
+            title = str(raw_section.get("title") or f"片段 {index + 1}").strip()
+            mood = raw_section.get("mood")
+            sections.append(
+                {
+                    "id": str(raw_section.get("id") or f"section_{len(sections) + 1}"),
+                    "title": title or f"片段 {index + 1}",
+                    "imageIds": section_image_ids,
+                    "body": body,
+                    "mood": [str(item) for item in mood] if isinstance(mood, list) else [],
+                }
+            )
+
+    if sections:
+        return sections
+    return build_content_sections_from_flat_layout(layout, image_ids)
+
+
+def section_body_fallback(layout: dict[str, Any], index: int) -> str:
+    body = layout["content"].get("body", [])
+    if isinstance(body, list) and index < len(body):
+        return str(body[index])
+    return ""
+
+
+def build_content_sections_from_flat_layout(layout: dict[str, Any], image_ids: list[str]) -> list[dict[str, Any]]:
+    body = layout["content"].get("body", [])
+    paragraphs = [str(paragraph).strip() for paragraph in body if str(paragraph).strip()]
+    section_count = max(len(paragraphs), min(ceil(len(image_ids) / 3), 4), 1)
+    image_groups = split_evenly(image_ids, section_count)
+    sections: list[dict[str, Any]] = []
+
+    for index in range(section_count):
+        section_image_ids = image_groups[index] if index < len(image_groups) else []
+        if not section_image_ids:
+            continue
+        body_text = paragraphs[index] if index < len(paragraphs) else "这一组照片也想好好留下。"
+        sections.append(
+            {
+                "id": f"section_{len(sections) + 1}",
+                "title": section_title_from_body(body_text, len(sections) + 1),
+                "imageIds": section_image_ids,
+                "body": body_text,
+                "mood": layout["theme"].get("mood", []) if isinstance(layout.get("theme"), dict) else [],
+            }
+        )
+    return sections
+
+
+def section_title_from_body(body: str, index: int) -> str:
+    text = body.strip()
+    if not text:
+        return f"片段 {index}"
+    title = text.split("，", 1)[0].split("。", 1)[0].strip()
+    return title[:12] or f"片段 {index}"
+
+
+def normalize_layout_sections(layout: dict[str, Any], content_sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    raw_sections = layout["layout"].get("sections")
+    raw_by_id = {
+        str(section.get("sectionId") or section.get("section_id")): section
+        for section in raw_sections
+        if isinstance(raw_sections, list) and isinstance(section, dict)
+    } if isinstance(raw_sections, list) else {}
+    images = layout["layout"].get("images", [])
+    texts = layout["layout"].get("texts", [])
+    decorations = layout["layout"].get("decorations", [])
+    layout_sections: list[dict[str, Any]] = []
+
+    for index, content_section in enumerate(content_sections):
+        section_id = content_section["id"]
+        section_image_ids = set(content_section["imageIds"])
+        source = raw_by_id.get(section_id, {})
+        section_images = normalize_section_images(source.get("images"), images, section_image_ids)
+        section_texts = normalize_section_texts(source.get("texts"), texts, index)
+        section_decorations = normalize_section_decorations(source.get("decorations"), decorations, section_images)
+        y = positive_number(source.get("y"), section_y(section_images, section_texts, section_decorations, index))
+        height = positive_number(source.get("height"), section_height(section_images, section_texts, section_decorations, y))
+        layout_sections.append(
+            {
+                "sectionId": section_id,
+                "variant": str(source.get("variant") or layout["layout"].get("variant") or "long_collage"),
+                "y": y,
+                "height": max(height, 1),
+                "images": section_images,
+                "texts": section_texts,
+                "decorations": section_decorations,
+            }
+        )
+    return layout_sections
+
+
+def normalize_section_images(
+    source_images: Any,
+    fallback_images: list[dict[str, Any]],
+    section_image_ids: set[str],
+) -> list[dict[str, Any]]:
+    candidates = source_images if isinstance(source_images, list) else fallback_images
+    images: list[dict[str, Any]] = []
+    for image in candidates:
+        if not isinstance(image, dict):
+            continue
+        normalize_id_alias(image, "imageId")
+        if image.get("imageId") in section_image_ids:
+            images.append(image)
+    if images:
+        return images
+    return [image for image in fallback_images if image.get("imageId") in section_image_ids]
+
+
+def normalize_section_texts(source_texts: Any, fallback_texts: list[dict[str, Any]], section_index: int) -> list[dict[str, Any]]:
+    if isinstance(source_texts, list):
+        texts = [text for text in source_texts if isinstance(text, dict) and text.get("role") in {"body", "caption"}]
+        if texts:
+            return texts
+    body_texts = [text for text in fallback_texts if text.get("role") == "body"]
+    if section_index < len(body_texts):
+        return [body_texts[section_index]]
+    return []
+
+
+def normalize_section_decorations(
+    source_decorations: Any,
+    fallback_decorations: list[dict[str, Any]],
+    section_images: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if isinstance(source_decorations, list):
+        decorations = [decoration for decoration in source_decorations if isinstance(decoration, dict)]
+        if decorations:
+            return decorations
+    if not section_images:
+        return []
+    top = min(positive_number(image.get("y"), 0) for image in section_images) - 96
+    bottom = max(positive_number(image.get("y"), 0) + positive_number(image.get("height"), 0) for image in section_images) + 160
+    return [
+        decoration
+        for decoration in fallback_decorations
+        if top <= positive_number(decoration.get("y"), 0) <= bottom
+    ]
+
+
+def section_y(
+    images: list[dict[str, Any]],
+    texts: list[dict[str, Any]],
+    decorations: list[dict[str, Any]],
+    index: int,
+) -> float:
+    ys = [
+        positive_number(item.get("y"), 0)
+        for item in [*images, *texts, *decorations]
+        if isinstance(item, dict)
+    ]
+    return min(ys, default=TITLE_Y + SECTION_GAP + index * 640)
+
+
+def section_height(
+    images: list[dict[str, Any]],
+    texts: list[dict[str, Any]],
+    decorations: list[dict[str, Any]],
+    y: float,
+) -> float:
+    image_bottom = max_placement_bottom(images, "height")
+    decoration_bottom = max_placement_bottom(decorations, "height")
+    text_bottom = max_placement_bottom(texts, "fontSize")
+    return max(image_bottom, decoration_bottom, text_bottom, y + 320) - y
 
 
 def normalize_title_text(title: dict[str, Any] | None) -> dict[str, Any]:

@@ -19,6 +19,15 @@ export type JournalContent = {
   title: string;
   body: string[];
   captions: JournalCaption[];
+  sections?: JournalContentSection[];
+};
+
+export type JournalContentSection = {
+  id: string;
+  title: string;
+  imageIds: string[];
+  body: string;
+  mood: string[];
 };
 
 export type JournalImagePlacement = {
@@ -49,6 +58,17 @@ export type JournalDecoration = {
 
 export type JournalLayoutLayer = {
   variant: string;
+  images: JournalImagePlacement[];
+  texts: JournalTextPlacement[];
+  decorations: JournalDecoration[];
+  sections?: JournalLayoutSection[];
+};
+
+export type JournalLayoutSection = {
+  sectionId: string;
+  variant: string;
+  y: number;
+  height: number;
   images: JournalImagePlacement[];
   texts: JournalTextPlacement[];
   decorations: JournalDecoration[];

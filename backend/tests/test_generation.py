@@ -277,6 +277,55 @@ def test_generator_adds_missing_image_placements_for_long_collage():
     assert layout.canvas.height > 1600
 
 
+def test_generator_builds_sections_for_long_collage():
+    payload = valid_model_json()
+    payload["content"]["body"] = ["第一组照片轻轻展开。", "第二组照片留出呼吸感。"]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    assert len(layout.content.sections) == 2
+    assert [section.id for section in layout.content.sections] == ["section_1", "section_2"]
+    assert [image_id for section in layout.content.sections for image_id in section.image_ids] == ["img_1", "img_2", "img_3"]
+    assert [section.section_id for section in layout.layout.sections] == ["section_1", "section_2"]
+    assert all(section.variant for section in layout.layout.sections)
+    assert all(section.height > 0 for section in layout.layout.sections)
+
+
+def test_generator_filters_model_sections_to_provided_images():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {
+            "id": "custom_section",
+            "title": "照片小组",
+            "imageIds": ["img_1", "missing_image"],
+            "body": "这里是模型给出的章节。",
+            "mood": ["日常"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "custom_section",
+            "variant": "hero_note",
+            "y": 160,
+            "height": 520,
+            "images": [
+                {"imageId": "img_1", "x": 92, "y": 210, "width": 420, "height": 320, "rotation": -3},
+                {"imageId": "missing_image", "x": 520, "y": 210, "width": 420, "height": 320, "rotation": 2},
+            ],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    assert layout.content.sections[0].id == "custom_section"
+    assert layout.content.sections[0].image_ids == ["img_1"]
+    assert [image.image_id for image in layout.layout.sections[0].images] == ["img_1"]
+
+
 def test_generator_normalizes_common_model_field_variants():
     payload = valid_model_json()
     payload["canvas"]["background"] = {"type": "solid", "color": "#fff7ef"}
@@ -336,6 +385,14 @@ def test_openai_client_uses_configured_base_url(monkeypatch):
     assert captured["json"]["model"] == "gpt-5.5"
     assert captured["json"]["response_format"] == {"type": "json_object"}
     assert captured["trust_env"] is True
+
+
+def test_generation_prompt_requests_section_structure():
+    prompt = build_generation_prompt(generation_request(images=three_images()))
+
+    assert "content.sections" in prompt
+    assert "layout.sections" in prompt
+    assert "只允许把相邻图片合并成章节" in prompt
 
 
 def test_openai_client_sends_visual_review_request_with_screenshot_and_images(monkeypatch):

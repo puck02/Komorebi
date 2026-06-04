@@ -29,10 +29,21 @@ class JournalCaption(BaseModel):
     text: str = Field(min_length=1)
 
 
+class JournalContentSection(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    image_ids: list[str] = Field(alias="imageIds", min_length=1)
+    body: str = Field(min_length=1)
+    mood: list[str] = Field(default_factory=list)
+
+
 class JournalContent(BaseModel):
     title: str = Field(min_length=1)
     body: list[str] = Field(min_length=1)
     captions: list[JournalCaption] = Field(default_factory=list)
+    sections: list[JournalContentSection] = Field(default_factory=list)
 
 
 class JournalImagePlacement(BaseModel):
@@ -67,11 +78,24 @@ class JournalDecoration(BaseModel):
     rotation: float = 0
 
 
+class JournalLayoutSection(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    section_id: str = Field(alias="sectionId", min_length=1)
+    variant: str = Field(min_length=1)
+    y: float
+    height: float = Field(gt=0)
+    images: list[JournalImagePlacement] = Field(default_factory=list)
+    texts: list[JournalTextPlacement] = Field(default_factory=list)
+    decorations: list[JournalDecoration] = Field(default_factory=list)
+
+
 class JournalLayoutLayer(BaseModel):
     variant: str = Field(min_length=1)
     images: list[JournalImagePlacement] = Field(default_factory=list)
     texts: list[JournalTextPlacement] = Field(default_factory=list)
     decorations: list[JournalDecoration] = Field(default_factory=list)
+    sections: list[JournalLayoutSection] = Field(default_factory=list)
 
 
 class JournalLayout(BaseModel):

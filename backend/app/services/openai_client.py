@@ -132,6 +132,15 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
             "title": "慢下来的周末",
             "body": ["咖啡和阳光是一组，像把早晨轻轻摊开。", "散步的照片放在一起，留下慢下来的路。"],
             "captions": [{"imageId": images[0]["id"] if images else "image_id", "text": "照片说明"}],
+            "sections": [
+                {
+                    "id": "section_1",
+                    "title": "窗边的下午",
+                    "imageIds": [images[0]["id"] if images else "image_id"],
+                    "body": "咖啡和阳光是一组，像把早晨轻轻摊开。",
+                    "mood": ["温柔", "日常"],
+                }
+            ],
         },
         "layout": {
             "variant": "long_collage",
@@ -160,6 +169,26 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
                     "rotation": -8,
                 }
             ],
+            "sections": [
+                {
+                    "sectionId": "section_1",
+                    "variant": "hero_note",
+                    "y": 180,
+                    "height": 620,
+                    "images": [
+                        {
+                            "imageId": images[0]["id"] if images else "image_id",
+                            "x": 92,
+                            "y": 210,
+                            "width": 420,
+                            "height": 320,
+                            "rotation": -3,
+                        }
+                    ],
+                    "texts": [{"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}],
+                    "decorations": [],
+                }
+            ],
         },
     }
     return (
@@ -171,6 +200,9 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "不要写成 AI 总结，不要写宣传文案，不要堆砌“被温柔包裹”“治愈”“仪式感”“把时光收藏”等套话。"
         "图片数组顺序就是用户上传或拖拽排序后的顺序，必须尊重这个顺序，不要自行重排。"
         "生成文字时要结合图片实际可见内容和用户描述；每段正文、每条 caption 都要和对应照片或照片组对得上，不能张冠李戴。"
+        "必须输出 content.sections 和 layout.sections。只允许把相邻图片合并成章节，禁止把不相邻的图片强行放进同一章节。"
+        "content.sections 每项字段为 id、title、imageIds、body、mood；每章绑定 1 到 3 张图片，body 为 30 到 80 字自然日记。"
+        "layout.sections 每项字段为 sectionId、variant、y、height、images、texts、decorations；sectionId 必须对应 content.sections 的 id。"
         "content.body 必须是字符串数组，不能只写一大段；请按照片主题、场景或时间分成 2 到 4 段短文字，每段 1 到 2 句。"
         "如果照片天然能分成几类，就让 content.body 的段落数量尽量对应这些类别。content.captions 必须使用 imageId 和 text。"
         "content.captions 的顺序应尽量跟图片 order 一致，caption 只能描述对应 imageId 的照片内容。"

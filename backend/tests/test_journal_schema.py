@@ -27,6 +27,36 @@ def test_valid_journal_layout_accepts_legacy_canvas_height():
     assert layout.layout.decorations[0].asset_id == "tape_warm_grid_01"
 
 
+def test_valid_journal_layout_accepts_section_structure():
+    payload = valid_layout()
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "海边的傍晚",
+            "imageIds": ["img_1"],
+            "body": "风吹过来的时候，照片里那一点傍晚颜色很好看。",
+            "mood": ["温柔"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 180,
+            "height": 560,
+            "images": payload["layout"]["images"],
+            "texts": payload["layout"]["texts"],
+            "decorations": payload["layout"]["decorations"],
+        }
+    ]
+
+    layout = JournalLayout.model_validate(payload)
+
+    assert layout.content.sections[0].image_ids == ["img_1"]
+    assert layout.layout.sections[0].section_id == "section_1"
+    assert layout.layout.sections[0].variant == "hero_note"
+
+
 def test_journal_layout_rejects_unsupported_canvas_width():
     payload = valid_layout()
     payload["canvas"]["width"] = 1200
