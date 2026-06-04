@@ -28,8 +28,29 @@ const sectionLayers = getJournalRenderLayers(sectionLayout);
 assertEqual(sectionLayers.usesSections, true);
 assertDeepEqual(sectionLayers.images.map((image) => image.imageId), ["img_1", "img_2"]);
 assertDeepEqual(sectionLayers.bodyTexts.map((text) => text.placement.y), [590, 1180]);
-assertDeepEqual(sectionLayers.decorations.map((decoration) => decoration.assetId), ["paper_note", "sticker_star", "sticker_global"]);
-assertDeepEqual(getJournalAssetIds(sectionLayout), ["paper_note", "sticker_star", "sticker_global"]);
+assertDeepEqual(sectionLayers.decorations.map((decoration) => decoration.assetId), ["paper_note", "sticker_star"]);
+assertDeepEqual(getJournalAssetIds(sectionLayout), ["paper_note", "sticker_star"]);
+
+const repeatedSectionLayout = makeLayout({
+  sections: [
+    {
+      sectionId: "section_1",
+      variant: "hero_note",
+      y: 180,
+      height: 760,
+      images: [{ imageId: "img_1", x: 92, y: 220, width: 420, height: 320, rotation: 0 }],
+      texts: [
+        { role: "body", x: 112, y: 590, width: 820, fontSize: 32 },
+        { role: "caption", x: 112, y: 720, width: 820, fontSize: 28 },
+        { role: "body", x: 112, y: 860, width: 820, fontSize: 32 }
+      ],
+      decorations: [{ assetId: "paper_note", x: 80, y: 550, width: 880, height: 180, rotation: -1 }]
+    }
+  ]
+});
+const repeatedSectionLayers = getJournalRenderLayers(repeatedSectionLayout);
+assertDeepEqual(repeatedSectionLayers.bodyTexts.map((text) => text.paragraph), ["第一段正文。"]);
+assertDeepEqual(repeatedSectionLayers.decorations.map((decoration) => decoration.assetId), ["paper_note"]);
 
 const legacyLayout = makeLayout({ sections: [] });
 const legacyLayers = getJournalRenderLayers(legacyLayout);

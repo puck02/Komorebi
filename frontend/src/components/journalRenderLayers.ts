@@ -27,27 +27,21 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
     const bodyTexts = sortedSections.flatMap((section, sectionIndex) => {
       const contentSection = contentBySectionId.get(section.sectionId);
       const paragraph = contentSection?.body ?? layout.content.body[sectionIndex] ?? "";
-      return section.texts
-        .filter((text) => text.role === "body" || text.role === "caption")
-        .map((placement, textIndex) => ({
-          key: `${section.sectionId}-${placement.role}-${textIndex}`,
-          paragraph,
-          placement
-        }));
+      const placement = section.texts.find((text) => text.role === "body");
+      if (!placement) {
+        return [];
+      }
+      return [{ key: `${section.sectionId}-body`, paragraph, placement }];
     });
 
     const sectionDecorations = sortedSections.flatMap((section) => section.decorations);
-    const sectionAssetIds = new Set(sectionDecorations.map((decoration) => decoration.assetId));
-    const globalDecorations = layout.layout.decorations.filter(
-      (decoration) => !sectionAssetIds.has(decoration.assetId)
-    );
 
     return {
       usesSections: true,
       titlePlacement: layout.layout.texts.find((text) => text.role === "title"),
       images: sortedSections.flatMap((section) => section.images),
       bodyTexts,
-      decorations: [...sectionDecorations, ...globalDecorations]
+      decorations: sectionDecorations.length > 0 ? sectionDecorations : layout.layout.decorations
     };
   }
 
