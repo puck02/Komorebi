@@ -563,7 +563,13 @@ def test_review_and_revision_prompts_check_asset_richness(monkeypatch):
 
     assert "素材丰富度" in captured[0]
     assert "外部素材" in captured[0]
+    assert "视觉焦点" in captured[0]
+    assert "章节正文是否对应章节图片" in captured[0]
+    assert "装饰是否有功能" in captured[0]
+    assert "像电子手账" in captured[0]
     assert "可新增装饰" in captured[1]
+    assert "只处理视觉评审 issues 中列出的 3 到 6 个主要问题" in captured[1]
+    assert "不要改变未被点名的问题区域" in captured[1]
 
 
 def test_layout_rules_report_sparse_repetitive_or_external_poor_decorations():
