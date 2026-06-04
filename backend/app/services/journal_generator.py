@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from app.schemas.journal import JournalLayout
 from app.services.assets import AssetItem
-from app.services.decoration_placement import overlaps_photo_safe_area, place_decorations
+from app.services.decoration_placement import place_decorations
 from app.services.layout_variants import ALLOWED_SECTION_VARIANTS, build_section_layout
 
 CANVAS_WIDTH = 1080
@@ -28,15 +28,6 @@ PHOTO_LEFT_X = 92
 PHOTO_RIGHT_X = 568
 PHOTO_ROW_GAP = 56
 LONG_BODY_SPLIT_TARGET = 58
-MAX_DECORATIONS = 22
-MIN_DECORATIONS = 12
-MIN_EXTERNAL_STICKERS = 2
-DECORATION_CATEGORY_LIMITS = {
-    "paper": 4,
-    "sticker": 8,
-    "tape": 8,
-    "texture": 2,
-}
 
 
 class GenerationError(RuntimeError):
@@ -759,84 +750,9 @@ def normalize_decorations(
 
 
 def check_layout_rules(layout: JournalLayout, request: JournalGenerationRequest) -> list[dict[str, Any]]:
-    issues: list[dict[str, Any]] = []
-    expected_image_ids = [image.id for image in request.images]
-    actual_image_ids = [image.image_id for image in layout.layout.images]
-    if actual_image_ids != expected_image_ids:
-        issues.append(rule_issue("imageOrder", "high", actual_image_ids, "图片集合或顺序与用户确认结果不一致"))
+    from app.services.layout_rules import check_layout_rules as check_rules
 
-    image_rects = [(image.x, image.y, image.width, image.height) for image in layout.layout.images]
-    title = layout.content.title
-    body_index = 0
-    for text in layout.layout.texts:
-        content = title
-        if text.role == "body":
-            content = layout.content.body[body_index] if body_index < len(layout.content.body) else ""
-            body_index += 1
-        text_rect = (text.x, text.y, text.width, estimate_paragraph_height(content, text.font_size, text.width))
-        if any(rects_overlap(text_rect, image_rect) for image_rect in image_rects):
-            issues.append(rule_issue("readability", "high", [text.role], "文字与照片发生重叠"))
-
-    asset_by_id = {asset.id: asset for asset in request.assets if asset.quality_status == "approved"}
-    category_counts: dict[str, int] = {}
-    asset_counts: dict[str, int] = {}
-    sticker_count = 0
-    external_sticker_count = 0
-    image_dicts = [image.model_dump(by_alias=True) for image in layout.layout.images]
-    for decoration in layout.layout.decorations:
-        asset = asset_by_id.get(decoration.asset_id)
-        if asset is None:
-            issues.append(rule_issue("asset", "high", [decoration.asset_id], "使用了未审核或不存在的素材"))
-            continue
-        asset_counts[asset.id] = asset_counts.get(asset.id, 0) + 1
-        category_counts[asset.category] = category_counts.get(asset.category, 0) + 1
-        if asset.category == "sticker":
-            sticker_count += 1
-            if asset.source != "internal":
-                external_sticker_count += 1
-        if not rect_inside_canvas((decoration.x, decoration.y, decoration.width, decoration.height), layout.canvas.height):
-            issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "素材超出画布范围"))
-        decoration_dict = decoration.model_dump(by_alias=True)
-        if asset.category == "sticker" and overlaps_photo_safe_area(decoration_dict, image_dicts):
-            issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "贴纸覆盖照片主体安全区"))
-        if asset.category == "tape" and not overlaps_any_photo_edge(decoration_dict, image_dicts):
-            issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "胶带没有贴近照片边缘"))
-
-    if len(layout.layout.decorations) > MAX_DECORATIONS:
-        issues.append(rule_issue("decorationDensity", "high", [], "装饰总数超过限制"))
-    if len(asset_by_id) >= MIN_DECORATIONS and len(layout.layout.decorations) < MIN_DECORATIONS:
-        issues.append(rule_issue("decorationDensity", "medium", [], "装饰数量偏少，画面丰富度不足"))
-    repeated_asset_ids = [asset_id for asset_id, count in asset_counts.items() if count > 1]
-    if repeated_asset_ids and len(asset_by_id) > len(asset_counts):
-        issues.append(rule_issue("decorationVariety", "medium", repeated_asset_ids, "素材重复使用过多，画面变化不足"))
-    external_sticker_candidates = [
-        asset for asset in asset_by_id.values() if asset.category == "sticker" and asset.source != "internal"
-    ]
-    if len(external_sticker_candidates) >= MIN_EXTERNAL_STICKERS and sticker_count >= 4 and external_sticker_count < MIN_EXTERNAL_STICKERS:
-        issues.append(rule_issue("decorationVariety", "medium", [], "外部素材使用偏少，素材库丰富度没有体现出来"))
-    for category, count in category_counts.items():
-        if count > DECORATION_CATEGORY_LIMITS.get(category, 1):
-            issues.append(rule_issue("decorationDensity", "high", [category], f"{category} 类素材数量超过限制"))
-    return issues
-
-
-def rule_issue(issue_type: str, severity: str, target_ids: list[str], description: str) -> dict[str, Any]:
-    return {"type": issue_type, "severity": severity, "targetIds": target_ids, "description": description}
-
-
-def rect_inside_canvas(rect: tuple[float, float, float, float], canvas_height: float) -> bool:
-    x, y, width, height = rect
-    return x >= 0 and y >= 0 and x + width <= CANVAS_WIDTH and y + height <= canvas_height
-
-
-def overlaps_any_photo_edge(decoration: dict[str, Any], image_placements: list[dict[str, Any]]) -> bool:
-    decoration_rect = rect_from_item(decoration)
-    for image in image_placements:
-        image_x, image_y, image_width, image_height = rect_from_item(image)
-        expanded_image = (image_x - 48, image_y - 48, image_width + 96, image_height + 96)
-        if rects_overlap(decoration_rect, expanded_image):
-            return True
-    return False
+    return check_rules(layout, request)
 
 
 def rect_from_item(item: dict[str, Any]) -> tuple[float, float, float, float]:

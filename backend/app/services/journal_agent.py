@@ -3,7 +3,8 @@ from typing import Any, Callable, Protocol
 
 from app.schemas.journal import JournalLayout
 from app.services.agent_observability import issue_summary, layout_observability_summary, log_agent_event
-from app.services.journal_generator import JournalGenerationRequest, check_layout_rules, sanitize_model_layout
+from app.services.journal_generator import JournalGenerationRequest, sanitize_model_layout
+from app.services.layout_rules import check_layout_rules
 
 QUALITY_THRESHOLD = 85
 MAX_REVISION_ROUNDS = 3

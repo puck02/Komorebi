@@ -1,0 +1,239 @@
+from app.schemas.journal import JournalLayout
+from app.services.assets import AssetItem
+from app.services.journal_agent import JournalAgent
+from app.services.journal_generator import JournalGenerationRequest, JournalImageInput
+from app.services.layout_rules import check_layout_rules
+
+
+def test_layout_rules_report_image_order_mismatch():
+    layout = JournalLayout.model_validate(layout_payload(image_ids=["img_2", "img_1"]))
+
+    issues = check_layout_rules(layout, generation_request(images=two_images()))
+
+    assert has_issue(issues, "imageOrder", "high", "图片集合或顺序与用户确认结果不一致")
+
+
+def test_layout_rules_report_text_photo_overlap_and_decoration_overflow():
+    payload = layout_payload()
+    payload["layout"]["texts"].append({"role": "body", "x": 120, "y": 230, "width": 300, "fontSize": 32})
+    payload["layout"]["decorations"].append(
+        {"assetId": "sticker_approved", "x": 1030, "y": 1520, "width": 120, "height": 120, "rotation": 0}
+    )
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(assets=[asset_item("sticker_approved", "sticker")]))
+
+    assert has_issue(issues, "readability", "high", "文字与照片发生重叠")
+    assert has_issue(issues, "decorationPlacement", "high", "素材超出画布范围")
+
+
+def test_layout_rules_report_tape_not_attached_to_edge():
+    payload = layout_payload()
+    payload["layout"]["decorations"].append(
+        {"assetId": "tape_approved", "x": 800, "y": 900, "width": 180, "height": 52, "rotation": 0}
+    )
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(assets=[asset_item("tape_approved", "tape")]))
+
+    assert has_issue(issues, "decorationPlacement", "high", "胶带没有贴近照片边缘")
+
+
+def test_layout_rules_report_section_spacing_and_section_image_gap():
+    payload = layout_payload()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []},
+        {"id": "section_2", "title": "第二段", "imageIds": ["img_2"], "body": "第二段正文。", "mood": []},
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "staggered_collage",
+            "y": 200,
+            "height": 520,
+            "images": [
+                {"imageId": "img_1", "x": 100, "y": 240, "width": 360, "height": 280, "rotation": 0},
+                {"imageId": "img_2", "x": 430, "y": 250, "width": 360, "height": 280, "rotation": 0},
+            ],
+            "texts": [],
+            "decorations": [],
+        },
+        {
+            "sectionId": "section_2",
+            "variant": "hero_note",
+            "y": 680,
+            "height": 420,
+            "images": [{"imageId": "img_2", "x": 120, "y": 720, "width": 360, "height": 280, "rotation": 0}],
+            "texts": [],
+            "decorations": [],
+        },
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=two_images()))
+
+    assert has_issue(issues, "sectionSpacing", "medium", "章节之间间距不足")
+    assert has_issue(issues, "imageSpacing", "medium", "章节内图片间距不足")
+
+
+def test_layout_rules_report_section_content_beyond_declared_height():
+    payload = layout_payload()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 200,
+            "height": 300,
+            "images": [{"imageId": "img_1", "x": 100, "y": 240, "width": 360, "height": 420, "rotation": 0}],
+            "texts": [],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert has_issue(issues, "sectionBounds", "high", "章节高度没有覆盖内部内容")
+
+
+def test_agent_revises_when_default_layout_rules_report_hard_failure():
+    bad_layout = layout_payload()
+    bad_layout["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    bad_layout["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 200,
+            "height": 300,
+            "images": [{"imageId": "img_1", "x": 100, "y": 240, "width": 360, "height": 420, "rotation": 0}],
+            "texts": [],
+            "decorations": [],
+        }
+    ]
+    fixed_layout = layout_payload(title="修复后")
+    fixed_layout["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    fixed_layout["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 200,
+            "height": 620,
+            "images": [{"imageId": "img_1", "x": 100, "y": 240, "width": 360, "height": 320, "rotation": 0}],
+            "texts": [],
+            "decorations": [],
+        }
+    ]
+    client = FakeAgentClient(
+        reviews=[review(score=95, passed=True), review(score=92, passed=True)],
+        layouts=[bad_layout],
+        revisions=[fixed_layout],
+    )
+
+    result = JournalAgent(client, FakeRenderer()).generate(generation_request())
+
+    assert len(client.revision_inputs) == 1
+    assert client.review_inputs[0]["rule_issues"]
+    assert result.layout.content.title == "修复后"
+    assert result.passed is True
+
+
+def has_issue(issues, issue_type, severity, description):
+    return any(
+        issue["type"] == issue_type and issue["severity"] == severity and issue["description"] == description
+        for issue in issues
+    )
+
+
+def generation_request(images=None, assets=None):
+    return JournalGenerationRequest(
+        description="周末一起散步。",
+        images=images or [JournalImageInput(id="img_1", width=640, height=480)],
+        assets=assets if assets is not None else [],
+    )
+
+
+def two_images():
+    return [
+        JournalImageInput(id="img_1", width=640, height=480),
+        JournalImageInput(id="img_2", width=900, height=1200),
+    ]
+
+
+def asset_item(asset_id, category, source="internal"):
+    return AssetItem(
+        id=asset_id,
+        name=asset_id,
+        category=category,
+        tags=["daily"],
+        style=["soft-collage"],
+        colors=["#fef6e4"],
+        file=f"{asset_id}.svg",
+        license="internal",
+        source=source,
+        quality_status="approved",
+    )
+
+
+class FakeAgentClient:
+    def __init__(self, reviews, layouts, revisions):
+        self.reviews = list(reviews)
+        self.layouts = list(layouts)
+        self.revisions = list(revisions)
+        self.review_inputs = []
+        self.revision_inputs = []
+
+    def generate_layout(self, request):
+        return self.layouts.pop(0)
+
+    def review_layout(self, request, layout, screenshot_data_url, rule_issues):
+        self.review_inputs.append({"layout": layout, "rule_issues": rule_issues})
+        return self.reviews.pop(0)
+
+    def revise_layout(self, request, layout, screenshot_data_url, review, revision_round, best_score):
+        self.revision_inputs.append({"layout": layout, "review": review, "revision_round": revision_round})
+        return self.revisions.pop(0)
+
+
+class FakeRenderer:
+    def render(self, layout, request):
+        return "data:image/webp;base64,screenshot"
+
+
+def review(score, passed=False):
+    return {
+        "score": score,
+        "passed": passed,
+        "scores": {"layout": 20, "photoTextMatch": 20, "decorationPlacement": 15, "readability": 15, "coherence": 8},
+        "issues": [],
+        "summary": "调整细节。",
+    }
+
+
+def layout_payload(title="初稿", image_ids=None):
+    image_ids = image_ids or ["img_1"]
+    return {
+        "canvas": {"width": 1080, "height": 1600, "background": "#fef6e4"},
+        "theme": {"style": "soft-collage", "palette": ["#fef6e4"], "mood": ["温柔"]},
+        "content": {
+            "title": title,
+            "body": ["今天走了很久，回来时刚好喝到一杯热咖啡。"],
+            "captions": [{"imageId": image_ids[0], "text": "今天的照片"}],
+        },
+        "layout": {
+            "variant": "long_collage",
+            "images": [
+                {"imageId": image_id, "x": 92 + index * 476, "y": 210, "width": 420, "height": 320, "rotation": 0}
+                for index, image_id in enumerate(image_ids)
+            ],
+            "texts": [{"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56}],
+            "decorations": [],
+            "sections": [],
+        },
+    }
