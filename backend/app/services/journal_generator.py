@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from app.schemas.journal import JournalLayout
 from app.services.assets import AssetItem
+from app.services.layout_variants import ALLOWED_SECTION_VARIANTS, build_section_layout
 
 CANVAS_WIDTH = 1080
 DEFAULT_CANVAS_HEIGHT = 1440
@@ -218,7 +219,7 @@ def normalize_story_layout(layout: dict[str, Any], request_images: list[JournalI
 def normalize_sections(layout: dict[str, Any], request_images: list[JournalImageInput]) -> None:
     content_sections = normalize_content_sections(layout, request_images)
     layout["content"]["sections"] = content_sections
-    layout["layout"]["sections"] = normalize_layout_sections(layout, content_sections)
+    layout["layout"]["sections"] = normalize_layout_sections(layout, content_sections, request_images)
 
 
 def normalize_image_understanding(layout: dict[str, Any], request_images: list[JournalImageInput]) -> None:
@@ -354,7 +355,11 @@ def section_title_from_body(body: str, index: int) -> str:
     return title[:12] or f"片段 {index}"
 
 
-def normalize_layout_sections(layout: dict[str, Any], content_sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def normalize_layout_sections(
+    layout: dict[str, Any],
+    content_sections: list[dict[str, Any]],
+    request_images: list[JournalImageInput],
+) -> list[dict[str, Any]]:
     raw_sections = layout["layout"].get("sections")
     raw_by_id = {
         str(section.get("sectionId") or section.get("section_id")): section
@@ -365,20 +370,46 @@ def normalize_layout_sections(layout: dict[str, Any], content_sections: list[dic
     texts = layout["layout"].get("texts", [])
     decorations = layout["layout"].get("decorations", [])
     layout_sections: list[dict[str, Any]] = []
+    next_y = fallback_first_section_y(layout)
 
     for index, content_section in enumerate(content_sections):
         section_id = content_section["id"]
         section_image_ids = set(content_section["imageIds"])
         source = raw_by_id.get(section_id, {})
-        section_images = normalize_section_images(source.get("images"), images, section_image_ids)
-        section_texts = normalize_section_texts(source.get("texts"), texts, index)
+        suggested_variant = source.get("variant") if source.get("variant") in ALLOWED_SECTION_VARIANTS else None
+        generated_section = build_section_layout(
+            content_section,
+            request_images=request_images,
+            image_understanding=layout["content"].get("imageUnderstanding", []),
+            section_index=index,
+            total_sections=len(content_sections),
+            start_y=next_y,
+            suggested_variant=suggested_variant,
+        )
+        section_images = (
+            normalize_section_images(source.get("images"), images, section_image_ids)
+            if isinstance(source.get("images"), list)
+            else generated_section["images"]
+        )
+        section_texts = (
+            normalize_section_texts(source.get("texts"), texts, index)
+            if isinstance(source.get("texts"), list)
+            else generated_section["texts"]
+        )
         section_decorations = normalize_section_decorations(source.get("decorations"), decorations, section_images)
-        y = positive_number(source.get("y"), section_y(section_images, section_texts, section_decorations, index))
-        height = positive_number(source.get("height"), section_height(section_images, section_texts, section_decorations, y))
+        y = positive_number(source.get("y"), generated_section["y"])
+        height = positive_number(
+            source.get("height"),
+            max(
+                generated_section["height"],
+                section_height(section_images, section_texts, section_decorations, y),
+            ),
+        )
+        variant = source.get("variant") if source.get("variant") in ALLOWED_SECTION_VARIANTS else generated_section["variant"]
         layout_sections.append(
             {
                 "sectionId": section_id,
-                "variant": str(source.get("variant") or layout["layout"].get("variant") or "long_collage"),
+                "variant": str(variant),
                 "y": y,
                 "height": max(height, 1),
                 "images": section_images,
@@ -386,7 +417,15 @@ def normalize_layout_sections(layout: dict[str, Any], content_sections: list[dic
                 "decorations": section_decorations,
             }
         )
+        next_y = y + max(height, 1) + SECTION_GAP
     return layout_sections
+
+
+def fallback_first_section_y(layout: dict[str, Any]) -> float:
+    title = next((text for text in layout["layout"].get("texts", []) if text.get("role") == "title"), None)
+    if not isinstance(title, dict):
+        return TITLE_Y + SECTION_GAP
+    return positive_number(title.get("y"), TITLE_Y) + estimate_text_height(title, layout["content"]) + SECTION_GAP
 
 
 def normalize_section_images(
@@ -614,7 +653,21 @@ def normalize_canvas_height(layout: dict[str, Any]) -> int:
     placement_bottom = max_placement_bottom(layout["layout"].get("images", []), "height") + CANVAS_BOTTOM_PADDING
     decoration_bottom = max_placement_bottom(layout["layout"].get("decorations", []), "height") + CANVAS_BOTTOM_PADDING
     text_bottom = max_text_bottom(layout["layout"].get("texts", []), layout["content"]) + CANVAS_BOTTOM_PADDING
-    return ceil(max(DEFAULT_CANVAS_HEIGHT, canvas_height, placement_bottom, decoration_bottom, text_bottom))
+    section_bottom = max_section_bottom(layout["layout"].get("sections", []), layout["content"]) + CANVAS_BOTTOM_PADDING
+    return ceil(max(DEFAULT_CANVAS_HEIGHT, canvas_height, placement_bottom, decoration_bottom, text_bottom, section_bottom))
+
+
+def max_section_bottom(sections: list[dict[str, Any]], content: dict[str, Any]) -> float:
+    bottoms: list[float] = []
+    for section in sections:
+        if not isinstance(section, dict):
+            continue
+        y = positive_number(section.get("y"), 0)
+        bottoms.append(y + positive_number(section.get("height"), 0))
+        bottoms.append(max_placement_bottom(section.get("images", []), "height"))
+        bottoms.append(max_placement_bottom(section.get("decorations", []), "height"))
+        bottoms.append(max_text_bottom(section.get("texts", []), content))
+    return max(bottoms, default=0)
 
 
 def max_placement_bottom(placements: list[dict[str, Any]], height_key: str) -> float:

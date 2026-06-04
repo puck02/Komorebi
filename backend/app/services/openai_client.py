@@ -214,6 +214,8 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "必须输出 content.sections 和 layout.sections。只允许把相邻图片合并成章节，禁止把不相邻的图片强行放进同一章节。"
         "content.sections 每项字段为 id、title、imageIds、body、mood；每章绑定 1 到 3 张图片，body 为 30 到 80 字自然日记。"
         "layout.sections 每项字段为 sectionId、variant、y、height、images、texts、decorations；sectionId 必须对应 content.sections 的 id。"
+        "layout.sections[].variant 只能从 hero_note、staggered_collage、timeline_strip、photo_wall、magazine_whitespace、ticket_memo 中选择；"
+        "单张主图适合 hero_note，错落多图适合 staggered_collage，过程顺序适合 timeline_strip，相似照片组适合 photo_wall，安静留白适合 magazine_whitespace，咖啡展览票据类适合 ticket_memo。"
         "content.body 必须是字符串数组，不能只写一大段；请按照片主题、场景或时间分成 2 到 4 段短文字，每段 1 到 2 句。"
         "如果照片天然能分成几类，就让 content.body 的段落数量尽量对应这些类别。content.captions 必须使用 imageId 和 text。"
         "content.captions 的顺序应尽量跟图片 order 一致，caption 只能描述对应 imageId 的照片内容。"

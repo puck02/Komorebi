@@ -440,6 +440,7 @@ def test_generation_prompt_requests_section_structure():
     assert "imageUnderstanding" in prompt
     assert "先逐张理解图片" in prompt
     assert "只允许把相邻图片合并成章节" in prompt
+    assert "hero_note、staggered_collage、timeline_strip、photo_wall、magazine_whitespace、ticket_memo" in prompt
 
 
 def test_openai_client_sends_visual_review_request_with_screenshot_and_images(monkeypatch):
