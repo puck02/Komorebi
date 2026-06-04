@@ -118,6 +118,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     for caption in captions:
         normalize_id_alias(caption, "imageId")
     layout["content"]["captions"] = [caption for caption in captions if caption.get("imageId") in image_ids]
+    normalize_image_understanding(layout, request.images)
 
     normalize_story_layout(layout, request.images)
 
@@ -220,6 +221,41 @@ def normalize_sections(layout: dict[str, Any], request_images: list[JournalImage
     layout["layout"]["sections"] = normalize_layout_sections(layout, content_sections)
 
 
+def normalize_image_understanding(layout: dict[str, Any], request_images: list[JournalImageInput]) -> None:
+    raw_items = layout["content"].get("imageUnderstanding")
+    if raw_items is None:
+        raw_items = layout["content"].get("image_understanding")
+    raw_by_id: dict[str, dict[str, Any]] = {}
+    if isinstance(raw_items, list):
+        for raw_item in raw_items:
+            if not isinstance(raw_item, dict):
+                continue
+            normalize_id_alias(raw_item, "imageId")
+            image_id = raw_item.get("imageId")
+            if isinstance(image_id, str):
+                raw_by_id[image_id] = raw_item
+
+    normalized: list[dict[str, Any]] = []
+    for index, image in enumerate(request_images):
+        raw_item = raw_by_id.get(image.id, {})
+        normalized.append(
+            {
+                "imageId": image.id,
+                "summary": str(raw_item.get("summary") or f"第 {index + 1} 张照片的生活片段").strip(),
+                "scene": str(raw_item.get("scene") or "").strip(),
+                "subjects": normalize_string_list(raw_item.get("subjects")),
+                "mood": normalize_string_list(raw_item.get("mood")),
+            }
+        )
+    layout["content"]["imageUnderstanding"] = normalized
+
+
+def normalize_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
 def normalize_content_sections(layout: dict[str, Any], request_images: list[JournalImageInput]) -> list[dict[str, Any]]:
     image_ids = [image.id for image in request_images]
     image_id_set = set(image_ids)
@@ -241,19 +277,42 @@ def normalize_content_sections(layout: dict[str, Any], request_images: list[Jour
                 body = "这一组照片也想好好留下。"
             title = str(raw_section.get("title") or f"片段 {index + 1}").strip()
             mood = raw_section.get("mood")
-            sections.append(
-                {
-                    "id": str(raw_section.get("id") or f"section_{len(sections) + 1}"),
-                    "title": title or f"片段 {index + 1}",
-                    "imageIds": section_image_ids,
-                    "body": body,
-                    "mood": [str(item) for item in mood] if isinstance(mood, list) else [],
-                }
-            )
+            raw_section_id = str(raw_section.get("id") or f"section_{len(sections) + 1}")
+            adjacent_groups = split_adjacent_image_ids(section_image_ids, image_ids)
+            for group_index, adjacent_group in enumerate(adjacent_groups):
+                section_id = raw_section_id if len(adjacent_groups) == 1 else f"{raw_section_id}_{group_index + 1}"
+                sections.append(
+                    {
+                        "id": section_id,
+                        "title": title or f"片段 {index + 1}",
+                        "imageIds": adjacent_group,
+                        "body": body,
+                        "mood": normalize_string_list(mood),
+                    }
+                )
 
     if sections:
         return sections
     return build_content_sections_from_flat_layout(layout, image_ids)
+
+
+def split_adjacent_image_ids(section_image_ids: list[str], ordered_image_ids: list[str]) -> list[list[str]]:
+    order_by_id = {image_id: index for index, image_id in enumerate(ordered_image_ids)}
+    ordered_ids = sorted(section_image_ids, key=lambda image_id: order_by_id[image_id])
+    groups: list[list[str]] = []
+    current_group: list[str] = []
+    previous_order: int | None = None
+    for image_id in ordered_ids:
+        current_order = order_by_id[image_id]
+        if previous_order is None or (current_order == previous_order + 1 and len(current_group) < 3):
+            current_group.append(image_id)
+        else:
+            groups.append(current_group)
+            current_group = [image_id]
+        previous_order = current_order
+    if current_group:
+        groups.append(current_group)
+    return groups
 
 
 def section_body_fallback(layout: dict[str, Any], index: int) -> str:

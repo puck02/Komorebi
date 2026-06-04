@@ -326,6 +326,51 @@ def test_generator_filters_model_sections_to_provided_images():
     assert [image.image_id for image in layout.layout.sections[0].images] == ["img_1"]
 
 
+def test_generator_splits_non_adjacent_model_sections():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {
+            "id": "mixed_section",
+            "title": "模型乱分组",
+            "imageIds": ["img_1", "img_3"],
+            "body": "模型把不相邻的图片放在了一起。",
+            "mood": ["日常"],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    assert [section.image_ids for section in layout.content.sections] == [["img_1"], ["img_3"]]
+
+
+def test_generator_normalizes_image_understanding_to_provided_images():
+    payload = valid_model_json()
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "窗边咖啡",
+            "scene": "咖啡店",
+            "subjects": ["咖啡", "窗边"],
+            "mood": ["轻松"],
+        },
+        {
+            "imageId": "missing_image",
+            "summary": "不存在的照片",
+            "scene": "未知",
+            "subjects": ["未知"],
+            "mood": ["未知"],
+        },
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    assert [item.image_id for item in layout.content.image_understanding] == ["img_1", "img_2", "img_3"]
+    assert layout.content.image_understanding[0].summary == "窗边咖啡"
+    assert layout.content.image_understanding[1].summary == "第 2 张照片的生活片段"
+
+
 def test_generator_normalizes_common_model_field_variants():
     payload = valid_model_json()
     payload["canvas"]["background"] = {"type": "solid", "color": "#fff7ef"}
@@ -392,6 +437,8 @@ def test_generation_prompt_requests_section_structure():
 
     assert "content.sections" in prompt
     assert "layout.sections" in prompt
+    assert "imageUnderstanding" in prompt
+    assert "先逐张理解图片" in prompt
     assert "只允许把相邻图片合并成章节" in prompt
 
 

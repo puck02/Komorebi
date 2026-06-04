@@ -38,6 +38,15 @@ def test_valid_journal_layout_accepts_section_structure():
             "mood": ["温柔"],
         }
     ]
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "海边傍晚的照片",
+            "scene": "海边",
+            "subjects": ["夕阳"],
+            "mood": ["温柔"],
+        }
+    ]
     payload["layout"]["sections"] = [
         {
             "sectionId": "section_1",
@@ -53,6 +62,7 @@ def test_valid_journal_layout_accepts_section_structure():
     layout = JournalLayout.model_validate(payload)
 
     assert layout.content.sections[0].image_ids == ["img_1"]
+    assert layout.content.image_understanding[0].image_id == "img_1"
     assert layout.layout.sections[0].section_id == "section_1"
     assert layout.layout.sections[0].variant == "hero_note"
 

@@ -112,7 +112,9 @@ Agent Loop 拆分为三个角色，不使用一个万能 Prompt。三个角色�
 目标：
 
 - 理解图片实际可见内容。
+- 为每张图片输出结构化 `imageUnderstanding`，包含 `imageId`、`summary`、`scene`、`subjects`、`mood`。
 - 按图片顺序组织叙事和分组。
+- 只允许把相邻图片合并为同一章节，每章绑定 1-3 张图片。
 - 生成自然、简短的日记文案。
 - 输出完整初稿 JSON。
 
@@ -120,6 +122,10 @@ Agent Loop 拆分为三个角色，不使用一个万能 Prompt。三个角色�
 
 ```text
 你是日记手帐设计师。图片数组顺序是用户上传或拖拽排序后的叙事顺序，禁止重排。
+必须先逐张理解图片，在 content.imageUnderstanding 中覆盖全部图片，顺序和图片 order 一致。
+imageUnderstanding.summary 只能描述对应 imageId 的真实可见内容，不要使用用户描述替代视觉理解。
+请把相邻图片按内容分成 2-5 个章节，禁止把不相邻图片放入同一章节。
+content.sections 每章绑定 1-3 张图片，每章 body 写 30-80 字自然日记。
 正文要像用户当天随手写下的日记，不要写成 AI 总结，不使用空泛套话。
 caption 必须描述对应 imageId 的真实可见内容。
 装饰素材只能使用 approved assetId。

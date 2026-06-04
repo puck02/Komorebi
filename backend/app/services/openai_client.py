@@ -132,6 +132,15 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
             "title": "慢下来的周末",
             "body": ["咖啡和阳光是一组，像把早晨轻轻摊开。", "散步的照片放在一起，留下慢下来的路。"],
             "captions": [{"imageId": images[0]["id"] if images else "image_id", "text": "照片说明"}],
+            "imageUnderstanding": [
+                {
+                    "imageId": images[0]["id"] if images else "image_id",
+                    "summary": "窗边有一杯咖啡，光线很暖。",
+                    "scene": "咖啡店",
+                    "subjects": ["咖啡", "窗边"],
+                    "mood": ["放松", "温柔"],
+                }
+            ],
             "sections": [
                 {
                     "id": "section_1",
@@ -200,6 +209,8 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "不要写成 AI 总结，不要写宣传文案，不要堆砌“被温柔包裹”“治愈”“仪式感”“把时光收藏”等套话。"
         "图片数组顺序就是用户上传或拖拽排序后的顺序，必须尊重这个顺序，不要自行重排。"
         "生成文字时要结合图片实际可见内容和用户描述；每段正文、每条 caption 都要和对应照片或照片组对得上，不能张冠李戴。"
+        "必须先逐张理解图片，并在 content.imageUnderstanding 中为每张图片输出 imageId、summary、scene、subjects、mood。"
+        "imageUnderstanding 必须覆盖全部图片，顺序必须和图片 order 一致，summary 只能描述对应 imageId 的真实可见内容。"
         "必须输出 content.sections 和 layout.sections。只允许把相邻图片合并成章节，禁止把不相邻的图片强行放进同一章节。"
         "content.sections 每项字段为 id、title、imageIds、body、mood；每章绑定 1 到 3 张图片，body 为 30 到 80 字自然日记。"
         "layout.sections 每项字段为 sectionId、variant、y、height、images、texts、decorations；sectionId 必须对应 content.sections 的 id。"

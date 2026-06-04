@@ -29,6 +29,16 @@ class JournalCaption(BaseModel):
     text: str = Field(min_length=1)
 
 
+class JournalImageUnderstanding(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    image_id: str = Field(alias="imageId", min_length=1)
+    summary: str = Field(min_length=1)
+    scene: str = ""
+    subjects: list[str] = Field(default_factory=list)
+    mood: list[str] = Field(default_factory=list)
+
+
 class JournalContentSection(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -43,6 +53,7 @@ class JournalContent(BaseModel):
     title: str = Field(min_length=1)
     body: list[str] = Field(min_length=1)
     captions: list[JournalCaption] = Field(default_factory=list)
+    image_understanding: list[JournalImageUnderstanding] = Field(default_factory=list, alias="imageUnderstanding")
     sections: list[JournalContentSection] = Field(default_factory=list)
 
 

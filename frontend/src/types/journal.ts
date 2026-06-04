@@ -19,7 +19,16 @@ export type JournalContent = {
   title: string;
   body: string[];
   captions: JournalCaption[];
+  imageUnderstanding?: JournalImageUnderstanding[];
   sections?: JournalContentSection[];
+};
+
+export type JournalImageUnderstanding = {
+  imageId: string;
+  summary: string;
+  scene: string;
+  subjects: string[];
+  mood: string[];
 };
 
 export type JournalContentSection = {
