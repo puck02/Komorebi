@@ -2,6 +2,8 @@ import type { Asset } from "../types/asset";
 import type { JournalLayout } from "../types/journal";
 import type { Ref } from "react";
 
+import { getJournalRenderLayers } from "./journalRenderLayers";
+
 type JournalCanvasImage = {
   id: string;
   src: string;
@@ -20,14 +22,14 @@ type Props = {
 export default function JournalCanvas({ assets, canvasRef, images, layout, onImageClick, scale = 0.42 }: Props) {
   const imageMap = new Map(images.map((image) => [image.id, image]));
   const assetMap = new Map(assets.map((asset) => [asset.id, asset]));
-  const titlePlacement = layout.layout.texts.find((text) => text.role === "title");
-  const bodyPlacements = layout.layout.texts.filter((text) => text.role === "body");
+  const renderLayers = getJournalRenderLayers(layout);
+  const titlePlacement = renderLayers.titlePlacement;
   const scaledWidth = layout.canvas.width * scale;
   const scaledHeight = layout.canvas.height * scale;
-  const backgroundDecorations = layout.layout.decorations.filter((decoration) =>
+  const backgroundDecorations = renderLayers.decorations.filter((decoration) =>
     isBackgroundDecoration(assetMap.get(decoration.assetId)?.category)
   );
-  const foregroundDecorations = layout.layout.decorations.filter(
+  const foregroundDecorations = renderLayers.decorations.filter(
     (decoration) => !isBackgroundDecoration(assetMap.get(decoration.assetId)?.category)
   );
 
@@ -52,35 +54,37 @@ export default function JournalCanvas({ assets, canvasRef, images, layout, onIma
           />
         ))}
 
-        {layout.layout.images.map((placement) => {
-          const image = imageMap.get(placement.imageId);
+        <div className={renderLayers.usesSections ? "journal-section-layer" : undefined}>
+          {renderLayers.images.map((placement) => {
+            const image = imageMap.get(placement.imageId);
 
-          return (
-            <figure
-              aria-hidden={image ? undefined : "true"}
-              className={`journal-photo ${image ? "" : "journal-photo-placeholder"}`}
-              key={placement.imageId}
-              onClick={image ? () => onImageClick?.(placement.imageId) : undefined}
-              onKeyDown={(event) => {
-                if (image && (event.key === "Enter" || event.key === " ")) {
-                  event.preventDefault();
-                  onImageClick?.(placement.imageId);
-                }
-              }}
-              role={image && onImageClick ? "button" : undefined}
-              style={{
-                height: placement.height,
-                left: placement.x,
-                top: placement.y,
-                transform: `rotate(${placement.rotation}deg)`,
-                width: placement.width
-              }}
-              tabIndex={image && onImageClick ? 0 : undefined}
-            >
-              {image ? <img alt={image.alt ?? ""} src={image.src} /> : <span>加载中</span>}
-            </figure>
-          );
-        })}
+            return (
+              <figure
+                aria-hidden={image ? undefined : "true"}
+                className={`journal-photo ${image ? "" : "journal-photo-placeholder"}`}
+                key={placement.imageId}
+                onClick={image ? () => onImageClick?.(placement.imageId) : undefined}
+                onKeyDown={(event) => {
+                  if (image && (event.key === "Enter" || event.key === " ")) {
+                    event.preventDefault();
+                    onImageClick?.(placement.imageId);
+                  }
+                }}
+                role={image && onImageClick ? "button" : undefined}
+                style={{
+                  height: placement.height,
+                  left: placement.x,
+                  top: placement.y,
+                  transform: `rotate(${placement.rotation}deg)`,
+                  width: placement.width
+                }}
+                tabIndex={image && onImageClick ? 0 : undefined}
+              >
+                {image ? <img alt={image.alt ?? ""} src={image.src} /> : <span>加载中</span>}
+              </figure>
+            );
+          })}
+        </div>
 
         {foregroundDecorations.map((decoration) => (
           <JournalDecorationImage
@@ -102,25 +106,20 @@ export default function JournalCanvas({ assets, canvasRef, images, layout, onIma
           {layout.content.title}
         </section>
 
-        {layout.content.body.map((paragraph, index) => {
-          const placement = bodyPlacements[index];
-          const fallbackTop = (bodyPlacements[0]?.y ?? 1040) + index * 180;
-
-          return (
-            <section
-              className="journal-body"
-              key={`${index}-${paragraph}`}
-              style={{
-                fontSize: placement?.fontSize ?? 28,
-                left: placement?.x ?? 80,
-                top: placement?.y ?? fallbackTop,
-                width: placement?.width ?? 760
-              }}
-            >
-              <p>{paragraph}</p>
-            </section>
-          );
-        })}
+        {renderLayers.bodyTexts.map(({ key, paragraph, placement }) => (
+          <section
+            className="journal-body"
+            key={key}
+            style={{
+              fontSize: placement.fontSize,
+              left: placement.x,
+              top: placement.y,
+              width: placement.width
+            }}
+          >
+            <p>{paragraph}</p>
+          </section>
+        ))}
       </div>
     </div>
   );

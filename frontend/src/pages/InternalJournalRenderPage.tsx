@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { getAssets } from "../api/assets";
 import JournalCanvas from "../components/JournalCanvas";
+import { getJournalAssetIds } from "../components/journalRenderLayers";
 import type { Asset } from "../types/asset";
 import type { JournalLayout } from "../types/journal";
 
@@ -37,8 +38,8 @@ export default function InternalJournalRenderPage() {
       }
       setDraft(draftResponse);
       setAssets(assetList);
-      const assetUrls = draftResponse.layout.layout.decorations
-        .map((decoration) => assetList.find((asset) => asset.id === decoration.assetId)?.file_url)
+      const assetUrls = getJournalAssetIds(draftResponse.layout)
+        .map((assetId) => assetList.find((asset) => asset.id === assetId)?.file_url)
         .filter((url): url is string => Boolean(url));
       await Promise.all([
         document.fonts.ready,

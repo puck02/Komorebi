@@ -828,6 +828,11 @@ body {
   stroke-width: 2;
 }
 
+.journal-section-layer {
+  position: absolute;
+  inset: 0;
+}
+
 .journal-photo,
 .journal-decoration,
 .journal-title,
