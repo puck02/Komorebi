@@ -7,12 +7,12 @@ from pydantic import ValidationError
 
 from app.schemas.journal import JournalLayout
 from app.services.assets import AssetItem
+from app.services.decoration_placement import overlaps_photo_safe_area, place_decorations
 from app.services.layout_variants import ALLOWED_SECTION_VARIANTS, build_section_layout
 
 CANVAS_WIDTH = 1080
 DEFAULT_CANVAS_HEIGHT = 1440
 CANVAS_BOTTOM_PADDING = 80
-PHOTO_SAFE_INSET_RATIO = 0.18
 TITLE_X = 80
 TITLE_Y = 72
 TITLE_WIDTH = 760
@@ -28,10 +28,6 @@ PHOTO_LEFT_X = 92
 PHOTO_RIGHT_X = 568
 PHOTO_ROW_GAP = 56
 LONG_BODY_SPLIT_TARGET = 58
-TAPE_MAX_WIDTH = 260
-TAPE_MAX_HEIGHT = 70
-TAPE_MIN_WIDTH = 150
-TAPE_MIN_HEIGHT = 38
 MAX_DECORATIONS = 22
 MIN_DECORATIONS = 12
 MIN_EXTERNAL_STICKERS = 2
@@ -135,6 +131,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
         layout["layout"]["decorations"] = normalize_decorations(
             normalized_decorations,
             layout["layout"].get("images", []),
+            layout["layout"].get("texts", []),
             asset_by_id,
         )
     else:
@@ -755,90 +752,10 @@ def normalize_decoration_asset(
 def normalize_decorations(
     decorations: list[dict[str, Any]],
     image_placements: list[dict[str, Any]],
+    text_placements: list[dict[str, Any]],
     asset_by_id: dict[str, AssetItem],
 ) -> list[dict[str, Any]]:
-    normalized: list[dict[str, Any]] = []
-    for decoration in decorations:
-        asset = asset_by_id.get(str(decoration.get("assetId")))
-        category = asset.category if asset is not None else ""
-        if category == "tape":
-            normalized.append(snap_tape_to_photo_edge(decoration, image_placements))
-            continue
-        if category == "sticker" and overlaps_any_photo_safe_area(decoration, image_placements):
-            continue
-        normalized.append(clamp_decoration_to_canvas(decoration))
-    return limit_decoration_density(normalized, asset_by_id)
-
-
-def limit_decoration_density(decorations: list[dict[str, Any]], asset_by_id: dict[str, AssetItem]) -> list[dict[str, Any]]:
-    limited: list[dict[str, Any]] = []
-    category_counts: dict[str, int] = {}
-    for decoration in decorations:
-        asset = asset_by_id.get(str(decoration.get("assetId")))
-        category = asset.category if asset is not None else "unknown"
-        category_limit = DECORATION_CATEGORY_LIMITS.get(category, 1)
-        if category_counts.get(category, 0) >= category_limit:
-            continue
-        if len(limited) >= MAX_DECORATIONS:
-            break
-        category_counts[category] = category_counts.get(category, 0) + 1
-        limited.append(decoration)
-    return limited
-
-
-def snap_tape_to_photo_edge(decoration: dict[str, Any], image_placements: list[dict[str, Any]]) -> dict[str, Any]:
-    if not image_placements:
-        return clamp_decoration_to_canvas(decoration)
-
-    target = nearest_image_placement(decoration, image_placements)
-    tape_width = min(max(positive_number(decoration.get("width"), 210), TAPE_MIN_WIDTH), TAPE_MAX_WIDTH)
-    tape_height = min(max(positive_number(decoration.get("height"), 52), TAPE_MIN_HEIGHT), TAPE_MAX_HEIGHT)
-    image_x = positive_number(target.get("x"), 0)
-    image_y = positive_number(target.get("y"), 0)
-    image_width = positive_number(target.get("width"), 1)
-    image_height = positive_number(target.get("height"), 1)
-    decoration_center_x = positive_number(decoration.get("x"), image_x) + tape_width / 2
-    decoration_center_y = positive_number(decoration.get("y"), image_y) + tape_height / 2
-    image_center_x = image_x + image_width / 2
-    image_center_y = image_y + image_height / 2
-    use_left_anchor = decoration_center_x <= image_center_x
-    use_top_anchor = decoration_center_y <= image_center_y
-
-    next_decoration = dict(decoration)
-    next_decoration["width"] = tape_width
-    next_decoration["height"] = tape_height
-    next_decoration["x"] = image_x + (image_width * 0.12 if use_left_anchor else image_width * 0.68 - tape_width)
-    next_decoration["y"] = image_y - tape_height * 0.45 if use_top_anchor else image_y + image_height - tape_height * 0.55
-    fallback_rotation = -8 if use_left_anchor else 8
-    next_decoration["rotation"] = clamp_number(positive_number(decoration.get("rotation"), fallback_rotation), -12, 12)
-    return clamp_decoration_to_canvas(next_decoration)
-
-
-def nearest_image_placement(decoration: dict[str, Any], image_placements: list[dict[str, Any]]) -> dict[str, Any]:
-    decoration_center_x = positive_number(decoration.get("x"), 0) + positive_number(decoration.get("width"), 0) / 2
-    decoration_center_y = positive_number(decoration.get("y"), 0) + positive_number(decoration.get("height"), 0) / 2
-
-    def distance_squared(image: dict[str, Any]) -> float:
-        image_center_x = positive_number(image.get("x"), 0) + positive_number(image.get("width"), 0) / 2
-        image_center_y = positive_number(image.get("y"), 0) + positive_number(image.get("height"), 0) / 2
-        return (decoration_center_x - image_center_x) ** 2 + (decoration_center_y - image_center_y) ** 2
-
-    return min(image_placements, key=distance_squared)
-
-
-def overlaps_any_photo_safe_area(decoration: dict[str, Any], image_placements: list[dict[str, Any]]) -> bool:
-    decoration_rect = rect_from_item(decoration)
-    return any(rects_overlap(decoration_rect, photo_safe_rect(image)) for image in image_placements)
-
-
-def photo_safe_rect(image: dict[str, Any]) -> tuple[float, float, float, float]:
-    x = positive_number(image.get("x"), 0)
-    y = positive_number(image.get("y"), 0)
-    width = positive_number(image.get("width"), 0)
-    height = positive_number(image.get("height"), 0)
-    inset_x = width * PHOTO_SAFE_INSET_RATIO
-    inset_y = height * PHOTO_SAFE_INSET_RATIO
-    return (x + inset_x, y + inset_y, width - inset_x * 2, height - inset_y * 2)
+    return place_decorations(decorations, image_placements, text_placements, asset_by_id)
 
 
 def check_layout_rules(layout: JournalLayout, request: JournalGenerationRequest) -> list[dict[str, Any]]:
@@ -880,7 +797,7 @@ def check_layout_rules(layout: JournalLayout, request: JournalGenerationRequest)
         if not rect_inside_canvas((decoration.x, decoration.y, decoration.width, decoration.height), layout.canvas.height):
             issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "素材超出画布范围"))
         decoration_dict = decoration.model_dump(by_alias=True)
-        if asset.category == "sticker" and overlaps_any_photo_safe_area(decoration_dict, image_dicts):
+        if asset.category == "sticker" and overlaps_photo_safe_area(decoration_dict, image_dicts):
             issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "贴纸覆盖照片主体安全区"))
         if asset.category == "tape" and not overlaps_any_photo_edge(decoration_dict, image_dicts):
             issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "胶带没有贴近照片边缘"))
@@ -940,14 +857,6 @@ def rects_overlap(first: tuple[float, float, float, float], second: tuple[float,
         and first_y < second_y + second_height
         and first_y + first_height > second_y
     )
-
-
-def clamp_decoration_to_canvas(decoration: dict[str, Any]) -> dict[str, Any]:
-    next_decoration = dict(decoration)
-    width = positive_number(next_decoration.get("width"), 1)
-    next_decoration["x"] = clamp_number(positive_number(next_decoration.get("x"), 0), 0, max(CANVAS_WIDTH - width, 0))
-    next_decoration["y"] = max(positive_number(next_decoration.get("y"), 0), 0)
-    return next_decoration
 
 
 def clamp_number(value: float, minimum: float, maximum: float) -> float:

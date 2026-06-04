@@ -6,6 +6,7 @@ import httpx
 
 from app.schemas.journal import JournalLayout
 from app.services.assets import AssetItem, get_approved_assets, load_assets
+from app.services.decoration_placement import overlaps_photo_safe_area
 from app.services.journal_generator import (
     GenerationError,
     JournalGenerationRequest,
@@ -153,7 +154,7 @@ def test_generator_snaps_tape_to_photo_edge():
     assert -12 <= tape.rotation <= 12
 
 
-def test_generator_removes_stickers_covering_photo_center():
+def test_generator_moves_stickers_away_from_photo_center():
     payload = valid_model_json()
     payload["layout"]["decorations"] = [
         {
@@ -177,7 +178,10 @@ def test_generator_removes_stickers_covering_photo_center():
 
     layout = generator.generate(generation_request(assets=load_assets()))
 
-    assert [decoration.asset_id for decoration in layout.layout.decorations] == ["sticker_cloud_02"]
+    assert {decoration.asset_id for decoration in layout.layout.decorations} == {"sticker_sun_01", "sticker_cloud_02"}
+    image_dicts = [image.model_dump(by_alias=True) for image in layout.layout.images]
+    for decoration in layout.layout.decorations:
+        assert not overlaps_photo_safe_area(decoration.model_dump(by_alias=True), image_dicts)
 
 
 def test_generator_limits_decoration_density():
