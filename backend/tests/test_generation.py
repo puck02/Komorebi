@@ -13,6 +13,7 @@ from app.services.journal_generator import (
     JournalGenerator,
     JournalImageInput,
     check_layout_rules,
+    normalize_canvas_height,
 )
 from app.services.openai_client import (
     OpenAIConfigurationError,
@@ -37,24 +38,35 @@ def test_generator_returns_valid_journal_layout():
     assert layout.content.title == "慢下来的周末"
 
 
-def test_generator_expands_canvas_to_fit_long_placements():
+def test_generator_expands_canvas_to_fit_long_section_placements():
     payload = valid_model_json()
     payload["canvas"]["height"] = 1500
-    payload["layout"]["images"].append(
+    payload["content"]["sections"] = [
         {
-            "imageId": "img_1",
-            "x": 110,
-            "y": 1720,
-            "width": 760,
-            "height": 520,
-            "rotation": 2,
+            "id": "section_1",
+            "title": "走到很远的地方",
+            "imageIds": ["img_1"],
+            "body": "今天的照片排得很长，画布也要跟着延伸。",
+            "mood": ["日常"],
         }
-    )
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 1720,
+            "height": 760,
+            "images": [{"imageId": "img_1", "x": 110, "y": 1720, "width": 760, "height": 520, "rotation": 2}],
+            "texts": [{"role": "body", "x": 112, "y": 2300, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
     generator = JournalGenerator(FakeClient(payload))
 
     layout = generator.generate(generation_request())
 
-    assert layout.canvas.height >= 2320
+    section = layout.layout.sections[0]
+    assert layout.canvas.height >= section.y + section.height + 80
 
 
 def test_generator_keeps_only_provided_image_ids():
@@ -265,8 +277,10 @@ def test_generator_places_each_body_block_away_from_photos():
     for index, text in enumerate(body_texts):
         text_rect = (text.x, text.y, text.width, estimated_paragraph_height(layout.content.body[index], text.font_size, text.width))
         assert all(not overlaps(text_rect, (image.x, image.y, image.width, image.height)) for image in layout.layout.images)
-    assert layout.canvas.height >= body_texts[-1].y + estimated_paragraph_height(
-        layout.content.body[-1], body_texts[-1].font_size, body_texts[-1].width
+    section_texts = [text for section in layout.layout.sections for text in section.texts if text.role == "body"]
+    last_section_text = max(section_texts, key=lambda text: text.y)
+    assert layout.canvas.height >= last_section_text.y + estimated_paragraph_height(
+        layout.content.sections[-1].body, last_section_text.font_size, last_section_text.width
     )
 
 
@@ -348,6 +362,61 @@ def test_generator_trims_excess_section_height_to_section_content_bottom():
     section = layout.layout.sections[0]
     assert section.height < 900
     assert layout.canvas.height < 1800
+
+
+def test_generator_ignores_global_decorations_for_section_canvas_height_when_sections_have_decorations():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "慢慢坐一会儿",
+            "imageIds": ["img_1"],
+            "body": "咖啡还热着，下午也慢慢亮着。",
+            "mood": ["安静"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 720,
+            "images": [{"imageId": "img_1", "x": 92, "y": 280, "width": 560, "height": 420, "rotation": -2}],
+            "texts": [{"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}],
+            "decorations": [{"assetId": "paper_note_cream_01", "x": 88, "y": 708, "width": 900, "height": 170, "rotation": 0}],
+        }
+    ]
+    payload["layout"]["decorations"] = [
+        {"assetId": "paper_torn_09", "x": 56, "y": 2200, "width": 500, "height": 640, "rotation": 0}
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    assert layout.canvas.height < 1800
+
+
+def test_canvas_height_ignores_global_decorations_when_sections_have_decorations():
+    layout = valid_model_json()
+    layout["content"]["sections"] = [
+        {"id": "section_1", "title": "小猫", "imageIds": ["img_1"], "body": "小猫一直在门口绕着我走。", "mood": ["温柔"]}
+    ]
+    layout["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 760,
+            "images": [{"imageId": "img_1", "x": 92, "y": 280, "width": 560, "height": 420, "rotation": -2}],
+            "texts": [{"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}],
+            "decorations": [{"assetId": "paper_note_cream_01", "x": 88, "y": 708, "width": 900, "height": 170, "rotation": 0}],
+        }
+    ]
+    layout["layout"]["decorations"] = [
+        {"assetId": "paper_torn_09", "x": 56, "y": 2200, "width": 500, "height": 640, "rotation": 0}
+    ]
+
+    assert normalize_canvas_height(layout) < 1800
 
 
 def test_generator_filters_model_sections_to_provided_images():

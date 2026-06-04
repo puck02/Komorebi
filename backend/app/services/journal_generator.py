@@ -644,6 +644,26 @@ def estimate_paragraph_height(paragraph: str, font_size: float, width: float) ->
 
 
 def normalize_canvas_height(layout: dict[str, Any]) -> int:
+    if layout["layout"].get("sections"):
+        title_bottom = max_text_bottom(
+            [text for text in layout["layout"].get("texts", []) if isinstance(text, dict) and text.get("role") == "title"],
+            layout["content"],
+        ) + CANVAS_BOTTOM_PADDING
+        section_decorations = [
+            decoration
+            for section in layout["layout"].get("sections", [])
+            if isinstance(section, dict)
+            for decoration in section.get("decorations", [])
+            if isinstance(decoration, dict)
+        ]
+        fallback_decoration_bottom = (
+            max_placement_bottom(layout["layout"].get("decorations", []), "height") + CANVAS_BOTTOM_PADDING
+            if not section_decorations
+            else 0
+        )
+        section_bottom = max_section_bottom(layout["layout"].get("sections", []), layout["content"]) + CANVAS_BOTTOM_PADDING
+        return ceil(max(DEFAULT_CANVAS_HEIGHT, title_bottom, section_bottom, fallback_decoration_bottom))
+
     placement_bottom = max_placement_bottom(layout["layout"].get("images", []), "height") + CANVAS_BOTTOM_PADDING
     decoration_bottom = max_placement_bottom(layout["layout"].get("decorations", []), "height") + CANVAS_BOTTOM_PADDING
     text_bottom = max_text_bottom(layout["layout"].get("texts", []), layout["content"]) + CANVAS_BOTTOM_PADDING
