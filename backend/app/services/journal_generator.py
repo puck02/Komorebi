@@ -386,12 +386,9 @@ def normalize_layout_sections(
         )
         section_decorations = normalize_section_decorations(source.get("decorations"), decorations, section_images)
         y = positive_number(source.get("y"), generated_section["y"])
-        height = positive_number(
-            source.get("height"),
-            max(
-                generated_section["height"],
-                section_height(section_images, section_texts, section_decorations, y),
-            ),
+        height = max(
+            min_section_height(generated_section),
+            section_height(section_images, section_texts, section_decorations, y),
         )
         variant = source.get("variant") if source.get("variant") in ALLOWED_SECTION_VARIANTS else generated_section["variant"]
         layout_sections.append(
@@ -489,6 +486,16 @@ def section_height(
     decoration_bottom = max_placement_bottom(decorations, "height")
     text_bottom = max_placement_bottom(texts, "fontSize")
     return max(image_bottom, decoration_bottom, text_bottom, y + 320) - y
+
+
+def min_section_height(generated_section: dict[str, Any]) -> float:
+    generated_y = positive_number(generated_section.get("y"), 0)
+    return section_height(
+        generated_section.get("images", []),
+        generated_section.get("texts", []),
+        generated_section.get("decorations", []),
+        generated_y,
+    )
 
 
 def normalize_title_text(title: dict[str, Any] | None) -> dict[str, Any]:
@@ -637,12 +644,11 @@ def estimate_paragraph_height(paragraph: str, font_size: float, width: float) ->
 
 
 def normalize_canvas_height(layout: dict[str, Any]) -> int:
-    canvas_height = positive_number(layout["canvas"].get("height"), DEFAULT_CANVAS_HEIGHT)
     placement_bottom = max_placement_bottom(layout["layout"].get("images", []), "height") + CANVAS_BOTTOM_PADDING
     decoration_bottom = max_placement_bottom(layout["layout"].get("decorations", []), "height") + CANVAS_BOTTOM_PADDING
     text_bottom = max_text_bottom(layout["layout"].get("texts", []), layout["content"]) + CANVAS_BOTTOM_PADDING
     section_bottom = max_section_bottom(layout["layout"].get("sections", []), layout["content"]) + CANVAS_BOTTOM_PADDING
-    return ceil(max(DEFAULT_CANVAS_HEIGHT, canvas_height, placement_bottom, decoration_bottom, text_bottom, section_bottom))
+    return ceil(max(DEFAULT_CANVAS_HEIGHT, placement_bottom, decoration_bottom, text_bottom, section_bottom))
 
 
 def max_section_bottom(sections: list[dict[str, Any]], content: dict[str, Any]) -> float:

@@ -151,7 +151,11 @@ def test_generator_expands_canvas_to_fit_section_layout():
 
     layout = generator.generate(generation_request())
 
-    assert layout.canvas.height >= 2720
+    section = layout.layout.sections[0]
+    text = section.texts[0]
+    text_bottom = text.y + estimated_paragraph_height(payload["content"]["sections"][0]["body"], text.font_size, text.width)
+    image_bottom = section.images[0].y + section.images[0].height
+    assert layout.canvas.height >= max(image_bottom, text_bottom) + 80
 
 
 def test_generator_places_fallback_sections_below_title_area():
@@ -176,6 +180,12 @@ def content_section(section_id: str, image_ids: list[str], body: str, mood: list
         "body": body,
         "mood": mood or ["日常"],
     }
+
+
+def estimated_paragraph_height(paragraph: str, font_size: float, width: float) -> float:
+    characters_per_line = max(int(width / max(font_size, 1)), 1)
+    line_count = max((len(paragraph) + characters_per_line - 1) // characters_per_line, 1)
+    return line_count * font_size * 1.8
 
 
 def generation_request():

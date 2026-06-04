@@ -9,11 +9,13 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_db
-from app.api.routes.journals import get_journal_generator
+from app.api.routes.journals import get_journal_generator, normalized_journal_layout
 from app.core.config import get_settings
 from app.db.base import Base
 from app.main import app
 from app.models import asset, image, journal, user  # noqa: F401
+from app.models.image import Image as ImageModel
+from app.models.journal import Journal
 from app.schemas.journal import JournalLayout
 from app.services.journal_generator import GenerationError
 
@@ -150,6 +152,32 @@ def test_generate_journal_saves_and_lists_only_current_users_journals(client):
     assert client.fake_generator.request.images[0].data_url.startswith("data:image/webp;base64,")
     assert list_response.status_code == 200
     assert [item["id"] for item in list_response.json()] == [owner_response.json()["id"]]
+
+
+def test_normalized_journal_layout_trims_saved_excess_canvas_height():
+    image = ImageModel(
+        id="img_1",
+        user_id="user_1",
+        original_path="/tmp/original.png",
+        thumbnail_path="/tmp/thumb.webp",
+        content_type="image/png",
+        width=64,
+        height=48,
+    )
+    layout = layout_payload(image.id)
+    layout["canvas"]["height"] = 3200
+    journal = Journal(
+        user_id="user_1",
+        title="慢下来的周末",
+        input_text="周末一起散步",
+        mood_tags=[],
+        layout_json=layout,
+        images=[image],
+    )
+
+    normalized = normalized_journal_layout(journal)
+
+    assert normalized["canvas"]["height"] == 1440
 
 
 def test_journal_detail_enforces_ownership(client):

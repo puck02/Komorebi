@@ -30,7 +30,10 @@ def test_generator_returns_valid_journal_layout():
 
     assert isinstance(layout, JournalLayout)
     assert layout.canvas.width == 1080
-    assert layout.canvas.height == 1600
+    body_text = next(text for text in layout.layout.texts if text.role == "body")
+    body_bottom = body_text.y + estimated_paragraph_height(layout.content.body[0], body_text.font_size, body_text.width)
+    assert layout.canvas.height == 1440
+    assert layout.canvas.height >= body_bottom + 80
     assert layout.content.title == "慢下来的周末"
 
 
@@ -294,6 +297,57 @@ def test_generator_builds_sections_for_long_collage():
     assert [section.section_id for section in layout.layout.sections] == ["section_1", "section_2"]
     assert all(section.variant for section in layout.layout.sections)
     assert all(section.height > 0 for section in layout.layout.sections)
+
+
+def test_generator_trims_excess_canvas_height_to_content_bottom():
+    payload = valid_model_json()
+    payload["canvas"]["height"] = 3200
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    content_bottom = max(
+        image.y + image.height for image in layout.layout.images
+    )
+    text_bottom = max(
+        text.y + estimated_paragraph_height(layout.content.body[0], text.font_size, text.width)
+        for text in layout.layout.texts
+        if text.role == "body"
+    )
+    assert layout.canvas.height < 1800
+    assert layout.canvas.height >= max(content_bottom, text_bottom) + 80
+
+
+def test_generator_trims_excess_section_height_to_section_content_bottom():
+    payload = valid_model_json()
+    payload["canvas"]["height"] = 3600
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "慢慢坐一会儿",
+            "imageIds": ["img_1"],
+            "body": "咖啡还热着，下午也慢慢亮着。",
+            "mood": ["安静"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 2600,
+            "images": [{"imageId": "img_1", "x": 92, "y": 280, "width": 560, "height": 420, "rotation": -2}],
+            "texts": [{"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    section = layout.layout.sections[0]
+    assert section.height < 900
+    assert layout.canvas.height < 1800
 
 
 def test_generator_filters_model_sections_to_provided_images():
