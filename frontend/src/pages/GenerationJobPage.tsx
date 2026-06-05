@@ -42,6 +42,12 @@ export default function GenerationJobPage() {
   return (
     <section className="generation-page">
       <div className="generation-panel">
+        <div className="generation-paper-preview" aria-hidden="true">
+          <span className="generation-paper-tape" />
+          <span className="generation-paper-photo" />
+          <span className="generation-paper-line" />
+          <span className="generation-paper-line is-short" />
+        </div>
         <div className="generation-mark" aria-hidden="true">
           <Sparkles size={26} />
         </div>
@@ -58,6 +64,7 @@ export default function GenerationJobPage() {
           </>
         ) : (
           <>
+            <p className="generation-eyebrow">Binding journal</p>
             <h1>{stageLabel}{revisionLabel}</h1>
             <p>照片、文字和小元素正在逐步调整，完成后会自动打开手帐。</p>
             <div className="generation-progress" aria-label="正在生成">

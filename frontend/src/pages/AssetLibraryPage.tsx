@@ -44,14 +44,22 @@ export default function AssetLibraryPage() {
 
   return (
     <section className="asset-library-page">
+      <header className="asset-page-heading">
+        <div>
+          <p className="eyebrow">Material drawer</p>
+          <h1>素材库</h1>
+          <p>统一管理贴纸、纸张和装饰元素，生成手帐时会从这里取用。</p>
+        </div>
+        <div className="asset-count">
+          <strong>{filteredAssets.length}</strong> / {assets.length} assets
+        </div>
+      </header>
+
       <div className="asset-library-header">
         <div className="asset-status-strip">
           <span data-status="approved">approved {statusCounts.approved}</span>
           <span data-status="draft">draft {statusCounts.draft}</span>
           <span data-status="rejected">rejected {statusCounts.rejected}</span>
-        </div>
-        <div className="asset-count">
-          <strong>{filteredAssets.length}</strong> / {assets.length} assets
         </div>
       </div>
 

@@ -25,8 +25,11 @@ export default function AccountPage({ onLogout }: AccountPageProps) {
   return (
     <section className="account-page">
       <header className="account-header">
-        <p className="eyebrow">Account</p>
-        <h1>账号</h1>
+        <div>
+          <p className="eyebrow">Studio pass</p>
+          <h1>账号</h1>
+          <p>管理当前工作室身份和登录状态。</p>
+        </div>
       </header>
 
       <div className="account-panel">
@@ -43,6 +46,9 @@ export default function AccountPage({ onLogout }: AccountPageProps) {
               {userQuery.data.email}
             </p>
           ) : null}
+        </div>
+        <div className="account-stamp" aria-hidden="true">
+          Komorebi
         </div>
         <Button className="account-logout" type="button" variant="outline" onClick={handleLogout}>
           <LogOut size={17} />

@@ -30,25 +30,21 @@ export default function JournalHistoryPage() {
     };
   }, [thumbnailsQuery.data]);
 
-  if (journalsQuery.isLoading) {
-    return (
-      <section className="history-page">
-        <p className="text-sm font-semibold text-[#001858]">正在加载历史手帐...</p>
-      </section>
-    );
-  }
-
-  if (journalsQuery.error instanceof Error) {
-    return (
-      <section className="history-page">
-        <p className="form-error">{journalsQuery.error.message}</p>
-      </section>
-    );
-  }
-
   return (
     <section className="history-page">
-      {journals.length === 0 ? (
+      <header className="history-header">
+        <div>
+          <p className="eyebrow">Archive drawer</p>
+          <h1>手帐档案</h1>
+          <p>每一页生成完成后，都会收进这里，方便重新查看和下载。</p>
+        </div>
+        <span>{journals.length} pages</span>
+      </header>
+
+      {journalsQuery.isLoading ? <p className="history-state-text">正在加载历史手帐...</p> : null}
+      {journalsQuery.error instanceof Error ? <p className="form-error">{journalsQuery.error.message}</p> : null}
+
+      {!journalsQuery.isLoading && !journalsQuery.error && journals.length === 0 ? (
         <div className="history-empty">
           <NotebookPen size={28} />
           <h2>还没有保存过手帐</h2>
@@ -57,7 +53,9 @@ export default function JournalHistoryPage() {
             <Link to="/">去创建</Link>
           </Button>
         </div>
-      ) : (
+      ) : null}
+
+      {journals.length > 0 ? (
         <div className="history-grid">
           {journals.map((journal) => (
             <JournalHistoryCard
@@ -67,7 +65,7 @@ export default function JournalHistoryPage() {
             />
           ))}
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
