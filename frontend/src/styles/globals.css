@@ -1552,6 +1552,41 @@ body {
   gap: 12px;
 }
 
+.asset-card-title-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.asset-manage-trigger {
+  flex-shrink: 0;
+  min-height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  padding: 0 10px;
+  color: var(--color-ink);
+  background: var(--color-paper);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.asset-manage-trigger:hover:not(:disabled),
+.asset-manage-trigger[aria-expanded="true"] {
+  border-color: #c8ad99;
+  background: var(--color-paper-strong);
+}
+
+.asset-manage-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 .asset-status-pill {
   display: inline-flex;
   flex-shrink: 0;
@@ -1665,6 +1700,7 @@ body {
 
 .asset-meta-list dd {
   margin: 0;
+  min-width: 0;
   overflow: hidden;
   color: var(--color-ink);
   font-weight: 750;

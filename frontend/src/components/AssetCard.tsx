@@ -37,33 +37,30 @@ export default function AssetCard({ asset, canManage = false, isUpdating = false
   const StatusIcon = status.icon;
 
   return (
-    <Card
-      className={`asset-card ${canManage ? "is-manageable" : ""}`}
-      onClick={() => {
-        if (canManage) {
-          setIsStatusMenuOpen((isOpen) => !isOpen);
-        }
-      }}
-      onKeyDown={(event) => {
-        if (!canManage || (event.key !== "Enter" && event.key !== " ")) {
-          return;
-        }
-        event.preventDefault();
-        setIsStatusMenuOpen((isOpen) => !isOpen);
-      }}
-      role={canManage ? "button" : undefined}
-      tabIndex={canManage ? 0 : undefined}
-    >
+    <Card className={`asset-card ${canManage ? "is-manageable" : ""}`}>
       <div className="asset-card-preview">
         <img src={asset.file_url} alt={asset.name} />
       </div>
       <CardHeader>
         <div className="asset-card-title-row">
-          <CardTitle>{asset.name}</CardTitle>
-          <span className={`asset-status-pill ${status.tone}`}>
-            <StatusIcon size={13} />
-            {status.label}
-          </span>
+          <div className="asset-card-title-group">
+            <CardTitle>{asset.name}</CardTitle>
+            <span className={`asset-status-pill ${status.tone}`}>
+              <StatusIcon size={13} />
+              {status.label}
+            </span>
+          </div>
+          {canManage ? (
+            <button
+              aria-expanded={isStatusMenuOpen}
+              className="asset-manage-trigger"
+              disabled={isUpdating}
+              onClick={() => setIsStatusMenuOpen((isOpen) => !isOpen)}
+              type="button"
+            >
+              更改状态
+            </button>
+          ) : null}
         </div>
         <p className="asset-category">{asset.category}</p>
       </CardHeader>
@@ -74,13 +71,11 @@ export default function AssetCard({ asset, canManage = false, isUpdating = false
             <div>
               {statusOptions.map((option) => (
                 <button
+                  aria-pressed={asset.quality_status === option}
                   className={asset.quality_status === option ? "is-selected" : ""}
                   disabled={isUpdating || asset.quality_status === option}
                   key={option}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onStatusChange?.(option);
-                  }}
+                  onClick={() => onStatusChange?.(option)}
                   type="button"
                 >
                   {isUpdating && asset.quality_status !== option ? "更新中..." : option}

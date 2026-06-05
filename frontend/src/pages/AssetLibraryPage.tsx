@@ -94,6 +94,7 @@ function FilterRow({ label, options, value, onChange }: FilterRowProps) {
       <div>
         {options.map((option) => (
           <Button
+            aria-pressed={value === option}
             key={option}
             size="sm"
             type="button"
