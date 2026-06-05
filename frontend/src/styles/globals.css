@@ -7,28 +7,30 @@
 }
 
 :root {
-  --color-background: #fffaf1;
-  --color-headline: #001858;
-  --color-paragraph: #172c66;
-  --color-button: #f582ae;
-  --color-main: #f8e2d6;
-  --color-highlight: #fffdf8;
-  --color-secondary: #8bd3dd;
-  --color-tertiary: #f582ae;
-  --color-stroke: #001858;
+  --color-background: #f5efe5;
+  --color-headline: #332319;
+  --color-paragraph: #6f5645;
+  --color-button: #b86f5b;
+  --color-main: #ead8c8;
+  --color-highlight: #fffaf2;
+  --color-secondary: #b9c8a9;
+  --color-tertiary: #8d6a56;
+  --color-stroke: #332319;
   --color-peach-light: var(--color-background);
   --color-peach: var(--color-main);
   --color-rose: var(--color-secondary);
-  --color-mauve: var(--color-tertiary);
+  --color-mauve: var(--color-button);
   --color-ink: var(--color-headline);
   --color-paper: var(--color-highlight);
-  --color-paper-strong: var(--color-highlight);
-  --color-border: var(--color-main);
-  --shadow-soft: 0 14px 36px rgb(0 24 88 / 12%);
+  --color-paper-strong: #fffdf8;
+  --color-border: #dcc7b6;
+  --shadow-soft: 0 18px 42px rgb(67 46 31 / 12%);
+  --shadow-paper: 0 10px 28px rgb(67 46 31 / 10%);
+  --focus-ring: 0 0 0 3px rgb(184 111 91 / 22%);
   color: var(--color-paragraph);
-  background: var(--color-peach-light);
+  background: var(--color-background);
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
 }
 
@@ -36,21 +38,35 @@
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 10% 8%, rgb(248 226 214 / 24%), transparent 28%),
-    linear-gradient(135deg, #fffdf8 0%, #fffaf1 58%, #dff8fb 100%);
+    radial-gradient(circle at 12% 8%, rgb(255 250 242 / 72%), transparent 30%),
+    radial-gradient(circle at 86% 14%, rgb(185 200 169 / 22%), transparent 28%),
+    repeating-linear-gradient(-8deg, rgb(67 46 31 / 2%) 0 1px, transparent 1px 18px),
+    linear-gradient(135deg, #fffaf2 0%, #f5efe5 58%, #ead8c8 100%);
+}
+
+:focus-visible {
+  outline: 0;
+  box-shadow: var(--focus-ring);
 }
 
 .app-shell {
+  position: relative;
+  min-height: 100vh;
   padding-top: 88px;
   background:
-    radial-gradient(circle at 10% 0%, rgb(248 226 214 / 22%), transparent 32%),
-    radial-gradient(circle at 90% 18%, rgb(245 130 174 / 12%), transparent 28%),
-    linear-gradient(135deg, #fffdf8 0%, #fffaf1 58%, #fbede5 100%);
+    radial-gradient(circle at 8% 0%, rgb(255 250 242 / 78%), transparent 30%),
+    radial-gradient(circle at 92% 18%, rgb(185 200 169 / 18%), transparent 26%),
+    repeating-linear-gradient(90deg, rgb(67 46 31 / 2%) 0 1px, transparent 1px 22px),
+    linear-gradient(135deg, #fffaf2 0%, #f5efe5 62%, #ead8c8 100%);
 }
 
 .top-nav {
@@ -64,58 +80,42 @@ body {
   gap: 24px;
   width: min(1120px, calc(100% - 32px));
   margin: 0;
-  overflow: hidden;
-  isolation: isolate;
-  border: 1px solid rgb(254 246 228 / 42%);
-  border-radius: 999px;
-  padding: 10px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 10px 14px;
   background:
-    linear-gradient(135deg, rgb(254 246 228 / 26%), rgb(243 210 193 / 14%) 54%, rgb(139 211 221 / 12%)),
-    rgb(254 246 228 / 14%);
+    linear-gradient(135deg, rgb(255 253 248 / 92%), rgb(255 250 242 / 82%)),
+    var(--color-paper);
   box-shadow:
-    inset 0 1px 0 rgb(254 246 228 / 54%),
-    inset 0 -1px 0 rgb(0 24 88 / 5%),
-    0 18px 42px rgb(0 24 88 / 12%);
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    0 16px 36px rgb(67 46 31 / 12%);
   transform: translateX(-50%);
-  backdrop-filter: blur(24px) saturate(170%);
-  -webkit-backdrop-filter: blur(24px) saturate(170%);
-}
-
-.top-nav::before {
-  position: absolute;
-  inset: 1px;
-  z-index: -1;
-  border-radius: inherit;
-  background:
-    radial-gradient(circle at 12% 0%, rgb(254 246 228 / 36%), transparent 32%),
-    radial-gradient(circle at 86% 10%, rgb(139 211 221 / 18%), transparent 38%),
-    linear-gradient(180deg, rgb(254 246 228 / 22%), rgb(254 246 228 / 4%) 72%);
-  content: "";
-  pointer-events: none;
-}
-
-.top-nav::after {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background:
-    linear-gradient(90deg, rgb(254 246 228 / 10%), transparent 28% 72%, rgb(254 246 228 / 10%)),
-    repeating-linear-gradient(90deg, rgb(254 246 228 / 5%) 0 1px, transparent 1px 18px);
-  content: "";
-  mix-blend-mode: soft-light;
-  pointer-events: none;
 }
 
 .brand-link {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border-radius: 8px;
+  padding: 0 10px;
   color: var(--color-ink);
   font-weight: 900;
+  letter-spacing: 0.01em;
   text-decoration: none;
 }
 
+.brand-link::before {
+  position: absolute;
+  inset: 6px 4px 5px;
+  z-index: -1;
+  border-radius: 6px;
+  background: rgb(234 216 200 / 62%);
+  content: "";
+  transform: rotate(-1.2deg);
+}
+
 .nav-actions {
-  position: relative;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -124,7 +124,6 @@ body {
 }
 
 .nav-link {
-  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -133,24 +132,35 @@ body {
   padding: 0 10px;
   color: var(--color-ink);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
   text-decoration: none;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
-.nav-link:hover,
+.nav-link:hover {
+  background: rgb(255 253 248 / 78%);
+  box-shadow: inset 0 0 0 1px rgb(220 199 182 / 60%);
+}
+
 .nav-link.is-active {
-  color: var(--color-ink);
-  background: rgb(254 246 228 / 28%);
-  box-shadow:
-    inset 0 1px 0 rgb(254 246 228 / 44%),
-    0 6px 18px rgb(0 24 88 / 10%);
+  color: #fffdf8;
+  background: var(--color-button);
+  box-shadow: 0 8px 18px rgb(184 111 91 / 22%);
+}
+
+.nav-link:active {
+  transform: translateY(1px);
 }
 
 @media (max-width: 520px) {
   .top-nav {
     left: 12px;
     width: calc(100% - 24px);
-    gap: 12px;
+    gap: 10px;
     padding: 10px 12px;
     transform: none;
   }
