@@ -239,7 +239,7 @@ body {
 
 .create-panel {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 20px;
