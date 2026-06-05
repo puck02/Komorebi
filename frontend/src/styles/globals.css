@@ -183,18 +183,21 @@ body {
 }
 
 .eyebrow {
-  margin: 0 0 12px;
-  color: var(--color-mauve);
-  font-size: 14px;
-  font-weight: 700;
+  margin: 0 0 10px;
+  color: var(--color-tertiary);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .hero-panel h1 {
   max-width: 760px;
   margin: 0;
+  color: var(--color-ink);
   font-size: clamp(40px, 7vw, 82px);
   line-height: 1.02;
+  text-wrap: balance;
 }
 
 .hero-copy {
@@ -209,7 +212,7 @@ body {
   width: 100%;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 54px 20px 80px;
+  padding: 54px 20px 84px;
 }
 
 .create-header {
@@ -224,21 +227,40 @@ body {
   color: var(--color-ink);
   font-size: clamp(34px, 5vw, 58px);
   line-height: 1.04;
+  text-wrap: balance;
 }
 
 .create-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 440px);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1.08fr) minmax(340px, 440px);
+  gap: 22px;
   align-items: start;
 }
 
 .create-panel {
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 18px;
-  background: var(--color-paper-strong);
-  box-shadow: var(--shadow-soft);
+  border-radius: 12px;
+  padding: 20px;
+  background:
+    linear-gradient(135deg, rgb(255 253 248 / 94%), rgb(255 250 242 / 82%)),
+    var(--color-paper);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    var(--shadow-soft);
+}
+
+.create-panel::before {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(-7deg, rgb(67 46 31 / 2%) 0 1px, transparent 1px 16px);
+  content: "";
+  pointer-events: none;
+}
+
+.create-panel > * {
+  position: relative;
 }
 
 .create-form-panel {
@@ -251,7 +273,7 @@ body {
   gap: 8px;
   color: var(--color-ink);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 850;
 }
 
 .field-label span {
@@ -265,18 +287,25 @@ body {
   min-height: 180px;
   resize: vertical;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 12px;
   color: var(--color-ink);
   background: var(--color-paper-strong);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 78%);
   font: inherit;
   font-weight: 500;
   line-height: 1.65;
   outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .textarea-field:focus {
-  border-color: var(--color-mauve);
+  border-color: var(--color-button);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 78%),
+    var(--focus-ring);
 }
 
 .field-grid {
@@ -301,15 +330,25 @@ body {
   color: var(--color-ink);
   background: var(--color-paper-strong);
   font: inherit;
-  font-weight: 700;
+  font-weight: 800;
   text-align: left;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .mood-picker-trigger:hover,
 .mood-picker-trigger[aria-expanded="true"] {
-  border-color: var(--color-mauve);
-  box-shadow: 0 8px 22px rgb(245 130 174 / 14%);
+  border-color: var(--color-button);
+  background: #fffdf8;
+  box-shadow: var(--focus-ring);
+}
+
+.mood-picker-trigger:active {
+  transform: translateY(1px);
 }
 
 .mood-picker {
@@ -321,31 +360,41 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   width: 100%;
-  border: 1px solid rgb(243 210 193 / 80%);
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
   padding: 10px;
-  background:
-    linear-gradient(135deg, rgb(254 246 228 / 92%), rgb(243 210 193 / 54%)),
-    var(--color-paper);
-  box-shadow: 0 18px 44px rgb(0 24 88 / 16%);
+  background: var(--color-paper);
+  box-shadow: 0 18px 42px rgb(67 46 31 / 16%);
 }
 
 .mood-picker button {
   min-height: 34px;
-  border: 1px solid rgb(0 24 88 / 8%);
-  border-radius: 8px;
+  border: 1px solid rgb(220 199 182 / 82%);
+  border-radius: 7px;
   color: var(--color-ink);
-  background: rgb(254 246 228 / 72%);
+  background: rgb(255 253 248 / 78%);
   font: inherit;
-  font-weight: 800;
+  font-weight: 850;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
-.mood-picker button:hover,
+.mood-picker button:hover {
+  border-color: var(--color-button);
+}
+
 .mood-picker button.is-selected {
   border-color: var(--color-button);
+  color: #fffdf8;
   background: var(--color-button);
-  box-shadow: 0 8px 18px rgb(245 130 174 / 22%);
+}
+
+.mood-picker button:active {
+  transform: translateY(1px);
 }
 
 .create-submit {
@@ -681,7 +730,7 @@ body {
 
 .upload-hint {
   margin: -6px 0 0;
-  color: rgb(23 44 102 / 72%);
+  color: rgb(111 86 69 / 82%);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -692,15 +741,33 @@ body {
   display: grid;
   place-items: center;
   width: 100%;
-  min-height: 140px;
-  border: 1px dashed var(--color-mauve);
-  border-radius: 8px;
+  min-height: 146px;
+  border: 1px dashed var(--color-button);
+  border-radius: 12px;
   color: var(--color-ink);
-  background: var(--color-paper-strong);
+  background:
+    repeating-linear-gradient(-10deg, rgb(184 111 91 / 6%) 0 1px, transparent 1px 18px),
+    var(--color-paper-strong);
   font: inherit;
-  font-weight: 800;
+  font-weight: 850;
   text-align: center;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.upload-zone:hover {
+  background:
+    repeating-linear-gradient(-10deg, rgb(184 111 91 / 7%) 0 1px, transparent 1px 18px),
+    #fffdf8;
+  box-shadow: inset 0 0 0 1px rgb(184 111 91 / 12%);
+}
+
+.upload-zone:active {
+  transform: translateY(1px);
 }
 
 .upload-zone.is-disabled {
@@ -743,12 +810,21 @@ body {
   -webkit-touch-callout: none;
 }
 
+.upload-grid figure:nth-child(3n + 1) img {
+  transform: rotate(-1.4deg);
+}
+
+.upload-grid figure:nth-child(3n + 2) img {
+  transform: rotate(1.2deg);
+}
+
 .upload-grid img {
   width: 100%;
   aspect-ratio: 1;
-  border: 1px solid rgb(0 24 88 / 8%);
-  border-radius: 8px;
-  box-shadow: 0 10px 26px rgb(0 24 88 / 10%);
+  border: 8px solid var(--color-paper-strong);
+  border-bottom-width: 16px;
+  border-radius: 7px;
+  box-shadow: 0 12px 24px rgb(67 46 31 / 16%);
   object-fit: cover;
   pointer-events: none;
   transition:
@@ -779,7 +855,7 @@ body {
   display: grid;
   width: var(--drag-width);
   margin: 0;
-  filter: saturate(1.06);
+  filter: saturate(1.04);
   pointer-events: none;
   touch-action: none;
   transform: translate3d(var(--drag-x, 0), var(--drag-y, 0), 0) scale(1.055) rotate(-1.5deg);
@@ -789,12 +865,13 @@ body {
 .upload-drag-ghost img {
   width: 100%;
   aspect-ratio: 1;
-  border-color: var(--color-button);
-  border-radius: 8px;
+  border: 8px solid var(--color-paper-strong);
+  border-bottom-width: 16px;
+  border-radius: 7px;
   object-fit: cover;
   box-shadow:
-    0 0 0 4px rgb(245 130 174 / 22%),
-    0 18px 42px rgb(0 24 88 / 22%);
+    0 0 0 4px rgb(184 111 91 / 20%),
+    0 18px 42px rgb(67 46 31 / 24%);
   user-select: none;
   -webkit-touch-callout: none;
   -webkit-user-drag: none;
@@ -803,11 +880,23 @@ body {
 .upload-grid button {
   min-height: 32px;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: 7px;
   color: var(--color-ink);
   background: var(--color-paper-strong);
   font: inherit;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.upload-grid button:hover {
+  border-color: var(--color-button);
+}
+
+.upload-grid button:active {
+  transform: translateY(1px);
 }
 
 .journal-canvas-frame {
