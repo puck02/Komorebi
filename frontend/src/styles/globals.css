@@ -1489,16 +1489,6 @@ body {
     transform 160ms ease;
 }
 
-.asset-card.is-manageable {
-  cursor: pointer;
-}
-
-.asset-card.is-manageable:hover {
-  border-color: #c8ad99;
-  box-shadow: 0 16px 36px rgb(67 46 31 / 14%);
-  transform: translateY(-2px);
-}
-
 .asset-card-preview {
   display: grid;
   aspect-ratio: 4 / 3;
