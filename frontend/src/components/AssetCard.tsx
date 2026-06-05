@@ -15,17 +15,17 @@ const statusMeta = {
   approved: {
     icon: BadgeCheck,
     label: "approved",
-    tone: "bg-[#fef6e4] text-[#001858]"
+    tone: "is-approved"
   },
   draft: {
     icon: CircleDashed,
     label: "draft",
-    tone: "bg-[#f3d2c1] text-[#001858]"
+    tone: "is-draft"
   },
   rejected: {
     icon: CircleSlash,
     label: "rejected",
-    tone: "bg-[#8bd3dd] text-[#001858]"
+    tone: "is-rejected"
   }
 } satisfies Record<AssetQualityStatus, { icon: typeof BadgeCheck; label: string; tone: string }>;
 
@@ -38,7 +38,7 @@ export default function AssetCard({ asset, canManage = false, isUpdating = false
 
   return (
     <Card
-      className={`overflow-hidden ${canManage ? "cursor-pointer transition-transform hover:-translate-y-0.5" : ""}`}
+      className={`asset-card ${canManage ? "is-manageable" : ""}`}
       onClick={() => {
         if (canManage) {
           setIsStatusMenuOpen((isOpen) => !isOpen);
@@ -54,31 +54,27 @@ export default function AssetCard({ asset, canManage = false, isUpdating = false
       role={canManage ? "button" : undefined}
       tabIndex={canManage ? 0 : undefined}
     >
-      <div className="grid aspect-[4/3] place-items-center border-b border-[#f3d2c1] bg-[linear-gradient(135deg,#fef6e4,#f3d2c1)] p-5">
-        <img className="max-h-full max-w-full drop-shadow-[0_8px_14px_rgba(0,24,88,0.14)]" src={asset.file_url} alt={asset.name} />
+      <div className="asset-card-preview">
+        <img src={asset.file_url} alt={asset.name} />
       </div>
       <CardHeader>
-        <div className="flex items-start justify-between gap-3">
+        <div className="asset-card-title-row">
           <CardTitle>{asset.name}</CardTitle>
-          <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${status.tone}`}>
+          <span className={`asset-status-pill ${status.tone}`}>
             <StatusIcon size={13} />
             {status.label}
           </span>
         </div>
-        <p className="text-xs uppercase tracking-[0.18em] text-[#f582ae]">{asset.category}</p>
+        <p className="asset-category">{asset.category}</p>
       </CardHeader>
-      <CardContent className="grid gap-3">
+      <CardContent className="asset-card-content">
         {canManage && isStatusMenuOpen ? (
-          <div className="grid gap-2 rounded-md border border-[#f3d2c1] bg-[#fef6e4]/80 p-2">
-            <span className="text-xs font-semibold text-[#172c66]">状态</span>
-            <div className="flex gap-2">
+          <div className="asset-status-menu">
+            <span>状态</span>
+            <div>
               {statusOptions.map((option) => (
                 <button
-                  className={`min-h-8 flex-1 rounded-md border px-2 text-xs font-semibold ${
-                    asset.quality_status === option
-                      ? "border-[#f582ae] bg-[#f582ae] text-[#001858]"
-                      : "border-[#f3d2c1] bg-[#fef6e4] text-[#001858]"
-                  }`}
+                  className={asset.quality_status === option ? "is-selected" : ""}
                   disabled={isUpdating || asset.quality_status === option}
                   key={option}
                   onClick={(event) => {
@@ -93,21 +89,19 @@ export default function AssetCard({ asset, canManage = false, isUpdating = false
             </div>
           </div>
         ) : null}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="asset-tags">
           {asset.tags.slice(0, 5).map((tag) => (
-            <span key={tag} className="rounded-full bg-[#fef6e4]/60 px-2 py-1 text-xs text-[#001858]">
-              {tag}
-            </span>
+            <span key={tag}>{tag}</span>
           ))}
         </div>
-        <dl className="grid gap-1 text-xs text-[#172c66]">
-          <div className="flex justify-between gap-3">
+        <dl className="asset-meta-list">
+          <div>
             <dt>license</dt>
-            <dd className="truncate font-semibold">{asset.license}</dd>
+            <dd>{asset.license}</dd>
           </div>
-          <div className="flex justify-between gap-3">
+          <div>
             <dt>source</dt>
-            <dd className="truncate font-semibold">{asset.source}</dd>
+            <dd>{asset.source}</dd>
           </div>
         </dl>
       </CardContent>

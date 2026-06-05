@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Filter } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getAssetPermissions, getAssets, updateAssetQualityStatus } from "../api/assets";
@@ -44,31 +43,29 @@ export default function AssetLibraryPage() {
   });
 
   return (
-    <section className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-8">
-      <div className="flex flex-col gap-4 border-b border-[#f3d2c1] pb-5 md:flex-row md:items-end md:justify-between">
-        <div className="grid gap-2">
-          <div className="flex flex-wrap gap-2 text-xs font-semibold">
-            <span className="rounded-full bg-[#fef6e4] px-2.5 py-1 text-[#001858]">approved {statusCounts.approved}</span>
-            <span className="rounded-full bg-[#f3d2c1] px-2.5 py-1 text-[#001858]">draft {statusCounts.draft}</span>
-            <span className="rounded-full bg-[#8bd3dd] px-2.5 py-1 text-[#001858]">rejected {statusCounts.rejected}</span>
-          </div>
+    <section className="asset-library-page">
+      <div className="asset-library-header">
+        <div className="asset-status-strip">
+          <span data-status="approved">approved {statusCounts.approved}</span>
+          <span data-status="draft">draft {statusCounts.draft}</span>
+          <span data-status="rejected">rejected {statusCounts.rejected}</span>
         </div>
-        <div className="rounded-md border border-[#f3d2c1] bg-[#fef6e4] px-4 py-3 text-sm text-[#172c66]">
-          <strong className="text-[#f582ae]">{filteredAssets.length}</strong> / {assets.length} assets
+        <div className="asset-count">
+          <strong>{filteredAssets.length}</strong> / {assets.length} assets
         </div>
       </div>
 
-      <div className="grid gap-4 rounded-md border border-[#f3d2c1] bg-[#fef6e4] p-4">
+      <div className="asset-filter-panel">
         <FilterRow label="分类" options={categories} value={category} onChange={setCategory} />
         <FilterRow label="状态" options={statuses} value={status} onChange={setStatus} />
         <FilterRow label="标签" options={tags} value={tag} onChange={setTag} />
       </div>
 
-      {isLoading ? <p className="text-sm text-[#172c66]">正在加载素材...</p> : null}
-      {error instanceof Error ? <p className="text-sm font-semibold text-[#f582ae]">{error.message}</p> : null}
-      {!isLoading && filteredAssets.length === 0 ? <p className="text-sm text-[#172c66]">没有符合筛选条件的素材。</p> : null}
+      {isLoading ? <p className="asset-state-text">正在加载素材...</p> : null}
+      {error instanceof Error ? <p className="asset-state-text is-error">{error.message}</p> : null}
+      {!isLoading && filteredAssets.length === 0 ? <p className="asset-state-text">没有符合筛选条件的素材。</p> : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="asset-grid">
         {filteredAssets.map((asset) => (
           <AssetCard
             key={asset.id}
@@ -92,9 +89,9 @@ type FilterRowProps = {
 
 function FilterRow({ label, options, value, onChange }: FilterRowProps) {
   return (
-    <div className="grid gap-2 md:grid-cols-[72px_1fr] md:items-center">
-      <span className="text-sm font-semibold text-[#001858]">{label}</span>
-      <div className="flex flex-wrap gap-2">
+    <div className="asset-filter-row">
+      <span>{label}</span>
+      <div>
         {options.map((option) => (
           <Button
             key={option}
