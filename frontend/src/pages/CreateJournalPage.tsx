@@ -66,13 +66,45 @@ export default function CreateJournalPage() {
 
   return (
     <section className="create-page">
+      <header className="create-studio-hero">
+        <div className="create-studio-copy">
+          <p className="eyebrow">Komorebi studio</p>
+          <h1>
+            把今天摊开，<span>整理成一页手帐</span>
+          </h1>
+          <p>先放入几张照片，再写下当天的片段。Komorebi 会把这些素材整理成温柔的拼贴页面。</p>
+        </div>
+        <div className="create-preview-paper" aria-hidden="true">
+          <div className="preview-tape preview-tape-top" />
+          <div className="preview-paper-title" />
+          <div className="preview-photo-stack">
+            <span className="preview-photo is-main" />
+            <span className="preview-photo is-side" />
+          </div>
+          <div className="preview-note-lines">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="preview-sticker" />
+        </div>
+      </header>
+
       <form className="create-layout" onSubmit={handleSubmit(onSubmit)}>
-        <div className="create-panel">
+        <div className="create-panel create-photo-panel">
+          <div className="create-panel-heading">
+            <p>照片投放区</p>
+            <span>{images.length}/9</span>
+          </div>
           <ImageUploader onUploaded={setImages} />
           {imageError ? <p className="form-error">{imageError}</p> : null}
         </div>
 
-        <div className="create-panel create-form-panel">
+        <div className="create-panel create-form-panel create-note-panel">
+          <div className="create-panel-heading">
+            <p>记录纸</p>
+            <span>{selectedMood || "未选择心情"}</span>
+          </div>
           <label className="field-label">
             <span>描述</span>
             <textarea
