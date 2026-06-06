@@ -137,6 +137,15 @@ def test_small_sun_uses_smiling_mouth():
     assert "M65 78c8-8 22-8 30 0" not in svg
 
 
+def test_bow_sticker_uses_curved_fold_lines():
+    bow = next(asset for asset in load_assets() if asset.id == "sticker_bow_20")
+    svg = bow.file_path.read_text(encoding="utf-8")
+
+    assert "M57 79L36 63M103 79l21-16" not in svg
+    assert "M58 77C51 72 45 67 37 64" in svg
+    assert "M102 77C109 72 115 67 123 64" in svg
+
+
 def test_external_assets_include_license_metadata():
     external_assets = [asset for asset in load_assets() if asset.source.startswith("https://")]
 
