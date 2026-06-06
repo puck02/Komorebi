@@ -470,6 +470,8 @@ def test_generator_trims_excess_section_height_to_section_content_bottom():
     layout = generator.generate(generation_request())
 
     section = layout.layout.sections[0]
+    body_text = section.texts[0]
+    assert section.y + section.height >= body_text.y + body_text.font_size * 2.4
     assert section.height < 900
     assert layout.canvas.height < 1800
 

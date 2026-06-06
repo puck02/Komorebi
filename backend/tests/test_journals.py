@@ -17,7 +17,7 @@ from app.models import asset, image, journal, user  # noqa: F401
 from app.models.image import Image as ImageModel
 from app.models.journal import Journal
 from app.schemas.journal import JournalLayout
-from app.services.journal_generator import GenerationError
+from app.services.journal_generator import COMPACT_SECTION_CANVAS_HEIGHT, GenerationError
 
 
 @pytest.fixture
@@ -154,7 +154,7 @@ def test_generate_journal_saves_and_lists_only_current_users_journals(client):
     assert [item["id"] for item in list_response.json()] == [owner_response.json()["id"]]
 
 
-def test_normalized_journal_layout_trims_saved_excess_canvas_height():
+def test_normalized_journal_layout_trims_saved_single_section_to_compact_canvas_height():
     image = ImageModel(
         id="img_1",
         user_id="user_1",
@@ -177,7 +177,7 @@ def test_normalized_journal_layout_trims_saved_excess_canvas_height():
 
     normalized = normalized_journal_layout(journal)
 
-    assert normalized["canvas"]["height"] == 1440
+    assert normalized["canvas"]["height"] == COMPACT_SECTION_CANVAS_HEIGHT
 
 
 def test_journal_detail_enforces_ownership(client):

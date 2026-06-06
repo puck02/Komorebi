@@ -568,7 +568,14 @@ def section_height(
 ) -> float:
     image_bottom = max_placement_bottom(images, "height")
     decoration_bottom = max_placement_bottom(decorations, "height")
-    text_bottom = max_placement_bottom(texts, "fontSize")
+    text_bottom = max(
+        (
+            positive_number(text.get("y"), 0) + positive_number(text.get("fontSize"), BODY_FONT_SIZE) * 2.4
+            for text in texts
+            if isinstance(text, dict)
+        ),
+        default=0,
+    )
     return max(image_bottom, decoration_bottom, text_bottom, y + 320) - y
 
 

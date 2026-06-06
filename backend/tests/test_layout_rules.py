@@ -101,35 +101,8 @@ def test_layout_rules_report_section_content_beyond_declared_height():
 
 def test_agent_revises_when_default_layout_rules_report_hard_failure():
     bad_layout = layout_payload()
-    bad_layout["content"]["sections"] = [
-        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
-    ]
-    bad_layout["layout"]["sections"] = [
-        {
-            "sectionId": "section_1",
-            "variant": "hero_note",
-            "y": 200,
-            "height": 300,
-            "images": [{"imageId": "img_1", "x": 100, "y": 240, "width": 360, "height": 420, "rotation": 0}],
-            "texts": [],
-            "decorations": [],
-        }
-    ]
+    bad_layout["layout"]["texts"] = [{"role": "title", "x": 100, "y": 240, "width": 680, "fontSize": 56}]
     fixed_layout = layout_payload(title="修复后")
-    fixed_layout["content"]["sections"] = [
-        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
-    ]
-    fixed_layout["layout"]["sections"] = [
-        {
-            "sectionId": "section_1",
-            "variant": "hero_note",
-            "y": 200,
-            "height": 620,
-            "images": [{"imageId": "img_1", "x": 100, "y": 240, "width": 360, "height": 320, "rotation": 0}],
-            "texts": [],
-            "decorations": [],
-        }
-    ]
     client = FakeAgentClient(
         reviews=[review(score=95, passed=True), review(score=92, passed=True)],
         layouts=[bad_layout],
