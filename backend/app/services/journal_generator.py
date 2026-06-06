@@ -12,6 +12,7 @@ from app.services.layout_variants import ALLOWED_SECTION_VARIANTS, build_section
 
 CANVAS_WIDTH = 1080
 DEFAULT_CANVAS_HEIGHT = 1440
+COMPACT_SECTION_CANVAS_HEIGHT = 1120
 CANVAS_BOTTOM_PADDING = 80
 TITLE_X = 80
 TITLE_Y = 72
@@ -425,7 +426,18 @@ def normalize_section_decorations(
     if isinstance(source_decorations, list):
         decorations = [decoration for decoration in source_decorations if isinstance(decoration, dict)]
         if decorations:
-            return decorations
+            return place_decorations(
+                build_template_section_decorations(
+                    section_images,
+                    section_texts,
+                    asset_by_id,
+                    section_index,
+                    preferred_asset_ids=decoration_asset_ids(decorations, asset_by_id),
+                ),
+                section_images,
+                section_texts,
+                asset_by_id,
+            )
     if not section_images:
         return []
     top = min(positive_number(image.get("y"), 0) for image in section_images) - 96
@@ -450,14 +462,15 @@ def build_template_section_decorations(
     section_texts: list[dict[str, Any]],
     asset_by_id: dict[str, AssetItem],
     section_index: int,
+    preferred_asset_ids: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     if not section_images and not section_texts:
         return []
 
     decorations: list[dict[str, Any]] = []
-    paper_id = first_asset_id(asset_by_id, "paper", section_index)
-    tape_id = first_asset_id(asset_by_id, "tape", section_index)
-    sticker_id = first_asset_id(asset_by_id, "sticker", section_index)
+    paper_id = first_asset_id(asset_by_id, "paper", section_index, preferred_asset_ids)
+    tape_id = first_asset_id(asset_by_id, "tape", section_index, preferred_asset_ids)
+    sticker_id = first_asset_id(asset_by_id, "sticker", section_index, preferred_asset_ids)
     body_text = next((text for text in section_texts if text.get("role") == "body"), section_texts[0] if section_texts else None)
     first_image = section_images[0] if section_images else None
 
@@ -503,7 +516,30 @@ def build_template_section_decorations(
     return decorations
 
 
-def first_asset_id(asset_by_id: dict[str, AssetItem], category: str, offset: int) -> str | None:
+def decoration_asset_ids(decorations: list[dict[str, Any]], asset_by_id: dict[str, AssetItem]) -> list[str]:
+    asset_ids: list[str] = []
+    for decoration in decorations:
+        asset_id = str(decoration.get("assetId") or decoration.get("asset_id") or decoration.get("id") or "")
+        asset = asset_by_id.get(asset_id)
+        if asset is not None and asset.quality_status == "approved":
+            asset_ids.append(asset.id)
+    return asset_ids
+
+
+def first_asset_id(
+    asset_by_id: dict[str, AssetItem],
+    category: str,
+    offset: int,
+    preferred_asset_ids: list[str] | None = None,
+) -> str | None:
+    preferred_ids = [
+        asset_id
+        for asset_id in preferred_asset_ids or []
+        if (asset := asset_by_id.get(asset_id)) is not None and asset.category == category and asset.quality_status == "approved"
+    ]
+    if preferred_ids:
+        return preferred_ids[0]
+
     asset_ids = [asset.id for asset in asset_by_id.values() if asset.category == category and asset.quality_status == "approved"]
     if not asset_ids:
         return None
@@ -709,8 +745,10 @@ def normalize_canvas_height(layout: dict[str, Any]) -> int:
             if not section_decorations
             else 0
         )
-        section_bottom = max_section_bottom(layout["layout"].get("sections", []), layout["content"]) + CANVAS_BOTTOM_PADDING
-        return ceil(max(DEFAULT_CANVAS_HEIGHT, title_bottom, section_bottom, fallback_decoration_bottom))
+        sections = layout["layout"].get("sections", [])
+        minimum_height = COMPACT_SECTION_CANVAS_HEIGHT if len(sections) == 1 else DEFAULT_CANVAS_HEIGHT
+        section_bottom = max_section_bottom(sections, layout["content"]) + CANVAS_BOTTOM_PADDING
+        return ceil(max(minimum_height, title_bottom, section_bottom, fallback_decoration_bottom))
 
     placement_bottom = max_placement_bottom(layout["layout"].get("images", []), "height") + CANVAS_BOTTOM_PADDING
     decoration_bottom = max_placement_bottom(layout["layout"].get("decorations", []), "height") + CANVAS_BOTTOM_PADDING

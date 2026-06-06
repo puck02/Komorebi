@@ -31,10 +31,8 @@ def test_generator_returns_valid_journal_layout():
 
     assert isinstance(layout, JournalLayout)
     assert layout.canvas.width == 1080
-    body_text = next(text for text in layout.layout.texts if text.role == "body")
-    body_bottom = body_text.y + estimated_paragraph_height(layout.content.body[0], body_text.font_size, body_text.width)
-    assert layout.canvas.height == 1440
-    assert layout.canvas.height >= body_bottom + 80
+    assert layout.canvas.height == 1120
+    assert layout.canvas.height >= rendered_content_bottom(layout) + 80
     assert layout.content.title == "慢下来的周末"
 
 
@@ -394,6 +392,45 @@ def test_generator_adds_template_decorations_to_sections_without_model_decoratio
     assert paper.y <= body_text.y <= paper.y + paper.height
 
 
+def test_generator_repositions_model_section_decorations_around_template_content():
+    payload = valid_model_json()
+    payload["canvas"]["height"] = 3600
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "蓝色散步",
+            "imageIds": ["img_1"],
+            "body": "今天散步走到一片蓝蓝的光里，两个小朋友牵着手站在那里。",
+            "mood": ["安静"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 2600,
+            "images": [],
+            "texts": [],
+            "decorations": [
+                {"assetId": "paper_note_cream_01", "x": 118, "y": 1382, "width": 850, "height": 1110, "rotation": 1},
+                {"assetId": "tape_warm_grid_01", "x": 112, "y": 1266, "width": 220, "height": 54, "rotation": 8},
+            ],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(assets=[asset_item("paper_note_cream_01", "paper"), asset_item("tape_warm_grid_01", "tape")]))
+
+    section = layout.layout.sections[0]
+    paper = next(decoration for decoration in section.decorations if decoration.asset_id == "paper_note_cream_01")
+    body_text = section.texts[0]
+    assert paper.y <= body_text.y <= paper.y + paper.height
+    assert paper.height < 300
+    assert section.height < 1100
+    assert layout.canvas.height < 1300
+
+
 def test_generator_trims_excess_canvas_height_to_content_bottom():
     payload = valid_model_json()
     payload["canvas"]["height"] = 3200
@@ -401,16 +438,8 @@ def test_generator_trims_excess_canvas_height_to_content_bottom():
 
     layout = generator.generate(generation_request())
 
-    content_bottom = max(
-        image.y + image.height for image in layout.layout.images
-    )
-    text_bottom = max(
-        text.y + estimated_paragraph_height(layout.content.body[0], text.font_size, text.width)
-        for text in layout.layout.texts
-        if text.role == "body"
-    )
     assert layout.canvas.height < 1800
-    assert layout.canvas.height >= max(content_bottom, text_bottom) + 80
+    assert layout.canvas.height >= rendered_content_bottom(layout) + 80
 
 
 def test_generator_trims_excess_section_height_to_section_content_bottom():
@@ -888,6 +917,32 @@ def asset_item(asset_id, category, source="internal"):
 def estimated_paragraph_height(paragraph, font_size, width):
     characters_per_line = max(int(width / max(font_size, 1)), 1)
     return max((len(paragraph) + characters_per_line - 1) // characters_per_line, 1) * font_size * 1.8
+
+
+def rendered_content_bottom(layout):
+    if layout.layout.sections:
+        body_by_section_id = {section.id: section.body for section in layout.content.sections}
+        section_bottoms = []
+        for section in layout.layout.sections:
+            section_bottoms.extend(image.y + image.height for image in section.images)
+            section_bottoms.extend(decoration.y + decoration.height for decoration in section.decorations)
+            section_bottoms.extend(
+                text.y + estimated_paragraph_height(body_by_section_id.get(section.section_id, ""), text.font_size, text.width)
+                for text in section.texts
+                if text.role == "body"
+            )
+        return max(section_bottoms, default=0)
+
+    image_bottom = max((image.y + image.height for image in layout.layout.images), default=0)
+    text_bottom = max(
+        (
+            text.y + estimated_paragraph_height(layout.content.body[0], text.font_size, text.width)
+            for text in layout.layout.texts
+            if text.role == "body"
+        ),
+        default=0,
+    )
+    return max(image_bottom, text_bottom)
 
 
 def overlaps(first, second):
