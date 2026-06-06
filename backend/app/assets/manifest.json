@@ -2312,7 +2312,7 @@
     "file": "external/fluent-emoji-flat/fluent_camera.svg",
     "license": "MIT",
     "source": "https://icon-sets.iconify.design/fluent-emoji-flat/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_fluent_camera_with_flash",
@@ -2332,7 +2332,7 @@
     "file": "external/fluent-emoji-flat/fluent_camera_with_flash.svg",
     "license": "MIT",
     "source": "https://icon-sets.iconify.design/fluent-emoji-flat/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_fluent_movie_camera",
@@ -2372,7 +2372,7 @@
     "file": "external/fluent-emoji-flat/fluent_red_heart.svg",
     "license": "MIT",
     "source": "https://icon-sets.iconify.design/fluent-emoji-flat/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_fluent_pink_heart",
@@ -2392,7 +2392,7 @@
     "file": "external/fluent-emoji-flat/fluent_pink_heart.svg",
     "license": "MIT",
     "source": "https://icon-sets.iconify.design/fluent-emoji-flat/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_fluent_two_hearts",
@@ -2412,7 +2412,7 @@
     "file": "external/fluent-emoji-flat/fluent_two_hearts.svg",
     "license": "MIT",
     "source": "https://icon-sets.iconify.design/fluent-emoji-flat/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_fluent_sparkling_heart",
@@ -2672,7 +2672,7 @@
     "file": "external/fluent-emoji-flat/fluent_cloud.svg",
     "license": "MIT",
     "source": "https://icon-sets.iconify.design/fluent-emoji-flat/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_fluent_cloud_with_rain",
@@ -3632,7 +3632,7 @@
     "file": "external/fluent-emoji-flat/fluent_soft_ice_cream.svg",
     "license": "MIT",
     "source": "https://icon-sets.iconify.design/fluent-emoji-flat/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_fluent_face_blowing_a_kiss",
