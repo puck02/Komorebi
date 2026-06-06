@@ -4,11 +4,13 @@ from typing import Any
 import httpx
 
 from app.core.config import get_settings
+from app.services.agent_observability import log_agent_event
 from app.services.assets import AssetItem
 from app.services.journal_generator import GenerationError, JournalGenerationRequest
 
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
-OPENAI_TIMEOUT_SECONDS = 120
+OPENAI_TIMEOUT_SECONDS = 300
+OPENAI_MAX_ATTEMPTS = 2
 
 
 class OpenAIConfigurationError(RuntimeError):
@@ -68,26 +70,37 @@ class OpenAIJournalClient:
         return self._post_json(self.model, content)
 
     def _post_json(self, model: str, content: str | list[dict[str, Any]]) -> dict[str, Any]:
-        try:
-            response = httpx.post(
-                f"{self.base_url.rstrip('/')}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": model,
-                    "messages": [{"role": "user", "content": content}],
-                    "response_format": {"type": "json_object"},
-                },
-                timeout=OPENAI_TIMEOUT_SECONDS,
-                trust_env=True,
-            )
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise GenerationError(f"AI 服务返回 {exc.response.status_code}，请检查模型、Key 或第三方渠道配置") from exc
-        except httpx.RequestError as exc:
-            raise GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置") from exc
+        for attempt in range(1, OPENAI_MAX_ATTEMPTS + 1):
+            try:
+                response = httpx.post(
+                    f"{self.base_url.rstrip('/')}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "messages": [{"role": "user", "content": content}],
+                        "response_format": {"type": "json_object"},
+                    },
+                    timeout=OPENAI_TIMEOUT_SECONDS,
+                    trust_env=True,
+                )
+                response.raise_for_status()
+                break
+            except httpx.HTTPStatusError as exc:
+                raise GenerationError(f"AI 服务返回 {exc.response.status_code}，请检查模型、Key 或第三方渠道配置") from exc
+            except httpx.RequestError as exc:
+                log_agent_event(
+                    "openai.request_error",
+                    attempt=attempt,
+                    max_attempts=OPENAI_MAX_ATTEMPTS,
+                    model=model,
+                    error_type=exc.__class__.__name__,
+                    error_message=str(exc) or exc.__class__.__name__,
+                )
+                if attempt == OPENAI_MAX_ATTEMPTS:
+                    raise GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置") from exc
 
         payload = response.json()
         content = payload["choices"][0]["message"]["content"]

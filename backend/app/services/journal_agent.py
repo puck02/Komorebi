@@ -3,7 +3,7 @@ from typing import Any, Callable, Protocol
 
 from app.schemas.journal import JournalLayout
 from app.services.agent_observability import issue_summary, layout_observability_summary, log_agent_event
-from app.services.journal_generator import JournalGenerationRequest, sanitize_model_layout
+from app.services.journal_generator import GenerationError, JournalGenerationRequest, sanitize_model_layout
 from app.services.layout_rules import check_layout_rules
 
 QUALITY_THRESHOLD = 85
@@ -84,7 +84,10 @@ class JournalAgent:
         context = log_context or {}
         notify("generating_draft", 0, None)
         raw_layout = self.client.generate_layout(request)
-        current = self._review_candidate(raw_layout, request, 0, notify, context)
+        try:
+            current = self._review_candidate(raw_layout, request, 0, notify, context)
+        except GenerationError as exc:
+            return self._result_from_unreviewed_layout(raw_layout, request, 0, context, exc)
         best_any = current
         best_valid = current if not current.rule_issues else None
 
@@ -101,15 +104,27 @@ class JournalAgent:
                 base_score=base.score,
                 base_revision_round=base.revision_round,
             )
-            raw_layout = self.client.revise_layout(
-                request,
-                base.layout.model_dump(by_alias=True),
-                base.screenshot_data_url,
-                base.review,
-                revision_round,
-                base.score,
-            )
-            current = self._review_candidate(raw_layout, request, revision_round, notify, context)
+            try:
+                raw_layout = self.client.revise_layout(
+                    request,
+                    base.layout.model_dump(by_alias=True),
+                    base.screenshot_data_url,
+                    base.review,
+                    revision_round,
+                    base.score,
+                )
+                current = self._review_candidate(raw_layout, request, revision_round, notify, context)
+            except GenerationError as exc:
+                log_agent_event(
+                    "agent.refinement_unavailable",
+                    **context,
+                    revision_round=revision_round,
+                    best_score=base.score,
+                    best_revision_round=base.revision_round,
+                    error_type=exc.__class__.__name__,
+                    error_message=str(exc) or exc.__class__.__name__,
+                )
+                return result_from_candidate(base, passed=False)
             if current.score > best_any.score:
                 best_any = current
             if not current.rule_issues and (best_valid is None or current.score > best_valid.score):
@@ -149,6 +164,26 @@ class JournalAgent:
             **layout_observability_summary(layout, request.assets),
         )
         return JournalCandidate(layout, screenshot_data_url, review, score, revision_round, rule_issues)
+
+    def _result_from_unreviewed_layout(
+        self,
+        raw_layout: dict[str, Any],
+        request: JournalGenerationRequest,
+        revision_round: int,
+        log_context: dict[str, Any],
+        error: GenerationError,
+    ) -> JournalAgentResult:
+        cleaned = sanitize_model_layout(raw_layout, request)
+        layout = JournalLayout.model_validate(cleaned)
+        log_agent_event(
+            "agent.review_unavailable",
+            **log_context,
+            revision_round=revision_round,
+            error_type=error.__class__.__name__,
+            error_message=str(error) or error.__class__.__name__,
+            **layout_observability_summary(layout, request.assets),
+        )
+        return JournalAgentResult(layout, 0, revision_round, False)
 
     def _passes(self, candidate: JournalCandidate) -> bool:
         return not candidate.rule_issues and candidate.score >= self.quality_threshold and candidate.review.get("passed") is True

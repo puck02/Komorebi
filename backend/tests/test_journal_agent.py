@@ -5,7 +5,7 @@ import logging
 from app.schemas.journal import JournalLayout
 from app.services.assets import get_approved_assets
 from app.services.journal_agent import JournalAgent
-from app.services.journal_generator import JournalGenerationRequest, JournalImageInput
+from app.services.journal_generator import GenerationError, JournalGenerationRequest, JournalImageInput
 
 
 def test_agent_stops_after_first_review_when_quality_threshold_passes():
@@ -65,6 +65,35 @@ def test_agent_continues_when_program_rules_report_hard_failure():
     assert result.layout.content.title == "修复后"
 
 
+def test_agent_returns_best_candidate_when_revision_ai_connection_fails():
+    client = FakeAgentClient(
+        reviews=[review(score=74)],
+        revisions=[GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")],
+    )
+
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(generation_request())
+
+    assert result.layout.content.title == "初稿"
+    assert result.score == 74
+    assert result.revision_round == 0
+    assert result.passed is False
+    assert len(client.revision_inputs) == 1
+
+
+def test_agent_returns_draft_when_initial_review_ai_connection_fails():
+    client = FakeAgentClient(
+        reviews=[GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")],
+    )
+
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(generation_request())
+
+    assert result.layout.content.title == "初稿"
+    assert result.score == 0
+    assert result.revision_round == 0
+    assert result.passed is False
+    assert client.revision_inputs == []
+
+
 def test_agent_restores_user_image_order_after_revision():
     reversed_layout = layout_payload(title="修订后", image_ids=["img_2", "img_1"])
     client = FakeAgentClient(
@@ -115,7 +144,10 @@ class FakeAgentClient:
                 "rule_issues": deepcopy(rule_issues),
             }
         )
-        return self.reviews.pop(0)
+        review_result = self.reviews.pop(0)
+        if isinstance(review_result, Exception):
+            raise review_result
+        return review_result
 
     def revise_layout(self, request, layout, screenshot_data_url, review, revision_round, best_score):
         self.revision_inputs.append(
@@ -127,7 +159,10 @@ class FakeAgentClient:
                 "best_score": best_score,
             }
         )
-        return self.revisions.pop(0)
+        revision = self.revisions.pop(0)
+        if isinstance(revision, Exception):
+            raise revision
+        return revision
 
 
 class FakeRenderer:
