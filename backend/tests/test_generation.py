@@ -313,6 +313,46 @@ def test_generator_builds_sections_for_long_collage():
     assert all(section.height > 0 for section in layout.layout.sections)
 
 
+def test_generator_rebuilds_section_pixel_layout_from_templates():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "咖啡和散步",
+            "imageIds": ["img_1", "img_2", "img_3"],
+            "body": "咖啡还热着，路边的光也很好，适合把这些片段收成一页。",
+            "mood": ["温柔"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "photo_wall",
+            "y": 180,
+            "height": 520,
+            "images": [
+                {"imageId": "img_1", "x": 20, "y": 200, "width": 920, "height": 120, "rotation": 0},
+                {"imageId": "img_2", "x": 20, "y": 230, "width": 920, "height": 120, "rotation": 0},
+                {"imageId": "img_3", "x": 20, "y": 260, "width": 920, "height": 120, "rotation": 0},
+            ],
+            "texts": [{"role": "body", "x": 20, "y": 250, "width": 920, "fontSize": 48}],
+            "decorations": [],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    section = layout.layout.sections[0]
+    assert section.variant == "photo_wall"
+    assert [image.x for image in section.images] == [92, 412, 732]
+    assert [image.width for image in section.images] == [286, 286, 286]
+    body_text = section.texts[0]
+    assert body_text.x == 112
+    assert body_text.width == 820
+    assert body_text.y > max(image.y + image.height for image in section.images)
+
+
 def test_generator_trims_excess_canvas_height_to_content_bottom():
     payload = valid_model_json()
     payload["canvas"]["height"] = 3200

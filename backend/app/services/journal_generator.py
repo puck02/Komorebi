@@ -354,15 +354,12 @@ def normalize_layout_sections(
         for section in raw_sections
         if isinstance(raw_sections, list) and isinstance(section, dict)
     } if isinstance(raw_sections, list) else {}
-    images = layout["layout"].get("images", [])
-    texts = layout["layout"].get("texts", [])
     decorations = layout["layout"].get("decorations", [])
     layout_sections: list[dict[str, Any]] = []
     next_y = fallback_first_section_y(layout)
 
     for index, content_section in enumerate(content_sections):
         section_id = content_section["id"]
-        section_image_ids = set(content_section["imageIds"])
         source = raw_by_id.get(section_id, {})
         suggested_variant = source.get("variant") if source.get("variant") in ALLOWED_SECTION_VARIANTS else None
         generated_section = build_section_layout(
@@ -374,16 +371,8 @@ def normalize_layout_sections(
             start_y=next_y,
             suggested_variant=suggested_variant,
         )
-        section_images = (
-            normalize_section_images(source.get("images"), images, section_image_ids)
-            if isinstance(source.get("images"), list)
-            else generated_section["images"]
-        )
-        section_texts = (
-            normalize_section_texts(source.get("texts"), texts, index)
-            if isinstance(source.get("texts"), list)
-            else generated_section["texts"]
-        )
+        section_images = generated_section["images"]
+        section_texts = generated_section["texts"]
         section_decorations = normalize_section_decorations(source.get("decorations"), decorations, section_images)
         y = positive_number(source.get("y"), generated_section["y"])
         height = max(
@@ -411,35 +400,6 @@ def fallback_first_section_y(layout: dict[str, Any]) -> float:
     if not isinstance(title, dict):
         return TITLE_Y + SECTION_GAP
     return positive_number(title.get("y"), TITLE_Y) + estimate_text_height(title, layout["content"]) + SECTION_GAP
-
-
-def normalize_section_images(
-    source_images: Any,
-    fallback_images: list[dict[str, Any]],
-    section_image_ids: set[str],
-) -> list[dict[str, Any]]:
-    candidates = source_images if isinstance(source_images, list) else fallback_images
-    images: list[dict[str, Any]] = []
-    for image in candidates:
-        if not isinstance(image, dict):
-            continue
-        normalize_id_alias(image, "imageId")
-        if image.get("imageId") in section_image_ids:
-            images.append(image)
-    if images:
-        return images
-    return [image for image in fallback_images if image.get("imageId") in section_image_ids]
-
-
-def normalize_section_texts(source_texts: Any, fallback_texts: list[dict[str, Any]], section_index: int) -> list[dict[str, Any]]:
-    if isinstance(source_texts, list):
-        texts = [text for text in source_texts if isinstance(text, dict) and text.get("role") in {"body", "caption"}]
-        if texts:
-            return texts
-    body_texts = [text for text in fallback_texts if text.get("role") == "body"]
-    if section_index < len(body_texts):
-        return [body_texts[section_index]]
-    return []
 
 
 def normalize_section_decorations(
