@@ -353,6 +353,47 @@ def test_generator_rebuilds_section_pixel_layout_from_templates():
     assert body_text.y > max(image.y + image.height for image in section.images)
 
 
+def test_generator_adds_template_decorations_to_sections_without_model_decorations():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "咖啡和散步",
+            "imageIds": ["img_1", "img_2", "img_3"],
+            "body": "咖啡还热着，路边的光也很好，适合把这些片段收成一页。",
+            "mood": ["温柔"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "photo_wall",
+            "y": 180,
+            "height": 520,
+            "images": [],
+            "texts": [],
+            "decorations": [],
+        }
+    ]
+    payload["layout"]["decorations"] = []
+    assets = [
+        asset_item("paper_note_cream_01", "paper"),
+        asset_item("tape_warm_grid_01", "tape"),
+        asset_item("sticker_leaf_05", "sticker"),
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images(), assets=assets))
+
+    section = layout.layout.sections[0]
+    decoration_ids = {decoration.asset_id for decoration in section.decorations}
+    assert decoration_ids == {"paper_note_cream_01", "tape_warm_grid_01", "sticker_leaf_05"}
+    paper = next(decoration for decoration in section.decorations if decoration.asset_id == "paper_note_cream_01")
+    body_text = section.texts[0]
+    assert paper.x <= body_text.x <= paper.x + paper.width
+    assert paper.y <= body_text.y <= paper.y + paper.height
+
+
 def test_generator_trims_excess_canvas_height_to_content_bottom():
     payload = valid_model_json()
     payload["canvas"]["height"] = 3200

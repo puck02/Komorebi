@@ -128,7 +128,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     else:
         layout["layout"]["decorations"] = []
 
-    normalize_sections(layout, request.images)
+    normalize_sections(layout, request.images, asset_by_id)
     layout["canvas"]["height"] = normalize_canvas_height(layout)
     return layout
 
@@ -204,10 +204,14 @@ def normalize_story_layout(layout: dict[str, Any], request_images: list[JournalI
     ]
 
 
-def normalize_sections(layout: dict[str, Any], request_images: list[JournalImageInput]) -> None:
+def normalize_sections(
+    layout: dict[str, Any],
+    request_images: list[JournalImageInput],
+    asset_by_id: dict[str, AssetItem],
+) -> None:
     content_sections = normalize_content_sections(layout, request_images)
     layout["content"]["sections"] = content_sections
-    layout["layout"]["sections"] = normalize_layout_sections(layout, content_sections, request_images)
+    layout["layout"]["sections"] = normalize_layout_sections(layout, content_sections, request_images, asset_by_id)
 
 
 def normalize_image_understanding(layout: dict[str, Any], request_images: list[JournalImageInput]) -> None:
@@ -347,6 +351,7 @@ def normalize_layout_sections(
     layout: dict[str, Any],
     content_sections: list[dict[str, Any]],
     request_images: list[JournalImageInput],
+    asset_by_id: dict[str, AssetItem],
 ) -> list[dict[str, Any]]:
     raw_sections = layout["layout"].get("sections")
     raw_by_id = {
@@ -373,7 +378,14 @@ def normalize_layout_sections(
         )
         section_images = generated_section["images"]
         section_texts = generated_section["texts"]
-        section_decorations = normalize_section_decorations(source.get("decorations"), decorations, section_images)
+        section_decorations = normalize_section_decorations(
+            source.get("decorations"),
+            decorations,
+            section_images,
+            section_texts,
+            asset_by_id,
+            index,
+        )
         y = positive_number(source.get("y"), generated_section["y"])
         height = max(
             min_section_height(generated_section),
@@ -406,6 +418,9 @@ def normalize_section_decorations(
     source_decorations: Any,
     fallback_decorations: list[dict[str, Any]],
     section_images: list[dict[str, Any]],
+    section_texts: list[dict[str, Any]],
+    asset_by_id: dict[str, AssetItem],
+    section_index: int,
 ) -> list[dict[str, Any]]:
     if isinstance(source_decorations, list):
         decorations = [decoration for decoration in source_decorations if isinstance(decoration, dict)]
@@ -415,11 +430,84 @@ def normalize_section_decorations(
         return []
     top = min(positive_number(image.get("y"), 0) for image in section_images) - 96
     bottom = max(positive_number(image.get("y"), 0) + positive_number(image.get("height"), 0) for image in section_images) + 160
-    return [
+    fallback_matches = [
         decoration
         for decoration in fallback_decorations
         if top <= positive_number(decoration.get("y"), 0) <= bottom
     ]
+    if fallback_matches:
+        return fallback_matches
+    return place_decorations(
+        build_template_section_decorations(section_images, section_texts, asset_by_id, section_index),
+        section_images,
+        section_texts,
+        asset_by_id,
+    )
+
+
+def build_template_section_decorations(
+    section_images: list[dict[str, Any]],
+    section_texts: list[dict[str, Any]],
+    asset_by_id: dict[str, AssetItem],
+    section_index: int,
+) -> list[dict[str, Any]]:
+    if not section_images and not section_texts:
+        return []
+
+    decorations: list[dict[str, Any]] = []
+    paper_id = first_asset_id(asset_by_id, "paper", section_index)
+    tape_id = first_asset_id(asset_by_id, "tape", section_index)
+    sticker_id = first_asset_id(asset_by_id, "sticker", section_index)
+    body_text = next((text for text in section_texts if text.get("role") == "body"), section_texts[0] if section_texts else None)
+    first_image = section_images[0] if section_images else None
+
+    if paper_id is not None and body_text is not None:
+        decorations.append(
+            {
+                "assetId": paper_id,
+                "x": positive_number(body_text.get("x"), BODY_X) - 36,
+                "y": positive_number(body_text.get("y"), 0) - 30,
+                "width": positive_number(body_text.get("width"), BODY_WIDTH) + 72,
+                "height": 160,
+                "rotation": [-1.2, 1, -0.8][section_index % 3],
+            }
+        )
+
+    if tape_id is not None:
+        target = body_text or first_image
+        if target is not None:
+            decorations.append(
+                {
+                    "assetId": tape_id,
+                    "x": positive_number(target.get("x"), 80) + 72,
+                    "y": positive_number(target.get("y"), 0) - 42,
+                    "width": 220,
+                    "height": 54,
+                    "rotation": [-7, 6, -5][section_index % 3],
+                }
+            )
+
+    if sticker_id is not None:
+        target = first_image or body_text
+        if target is not None:
+            decorations.append(
+                {
+                    "assetId": sticker_id,
+                    "x": positive_number(target.get("x"), 80) + positive_number(target.get("width"), 200) + 22,
+                    "y": positive_number(target.get("y"), 0) + 24,
+                    "width": 112,
+                    "height": 112,
+                    "rotation": [5, -4, 3][section_index % 3],
+                }
+            )
+    return decorations
+
+
+def first_asset_id(asset_by_id: dict[str, AssetItem], category: str, offset: int) -> str | None:
+    asset_ids = [asset.id for asset in asset_by_id.values() if asset.category == category and asset.quality_status == "approved"]
+    if not asset_ids:
+        return None
+    return asset_ids[offset % len(asset_ids)]
 
 
 def section_y(
