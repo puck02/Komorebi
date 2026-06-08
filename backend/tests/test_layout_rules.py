@@ -596,6 +596,54 @@ def test_layout_rules_report_repeated_caption_copy():
     assert has_issue(issues, "copyQuality", "medium", "照片说明重复，手帐记录不够具体")
 
 
+def test_layout_rules_report_section_body_repeating_its_caption():
+    payload = layout_payload()
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "周末一起散步"}]
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "散步", "imageIds": ["img_1"], "body": "周末一起散步。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 620,
+            "images": [{"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert has_issue(issues, "copyQuality", "medium", "章节正文重复照片说明，手帐记录不够具体")
+
+
+def test_layout_rules_allow_section_body_expanding_on_caption():
+    payload = layout_payload()
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "周末一起散步"}]
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "散步", "imageIds": ["img_1"], "body": "周末一起散步，风从路口吹过来。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 620,
+            "images": [{"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert not has_issue(issues, "copyQuality", "medium", "章节正文重复照片说明，手帐记录不够具体")
+
+
 def test_layout_rules_report_numbered_caption_as_placeholder_copy():
     payload = layout_payload()
     payload["content"]["captions"] = [{"imageId": "img_1", "text": "第 2 张照片"}]

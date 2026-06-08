@@ -293,6 +293,8 @@ def check_copy_quality(layout: JournalLayout) -> list[dict[str, Any]]:
         return [rule_issue("copyQuality", "medium", [], "章节正文重复，手帐记录不够具体")]
     if has_repeated_caption_copy(caption_texts):
         return [rule_issue("copyQuality", "medium", [], "照片说明重复，手帐记录不够具体")]
+    if has_section_body_repeating_caption(layout):
+        return [rule_issue("copyQuality", "medium", [], "章节正文重复照片说明，手帐记录不够具体")]
     return []
 
 
@@ -318,6 +320,28 @@ def has_repeated_caption_copy(caption_texts: list[Any]) -> bool:
             return True
         seen.add(text)
     return False
+
+
+def has_section_body_repeating_caption(layout: JournalLayout) -> bool:
+    captions_by_image_id = {caption.image_id: copy_signal_text(caption.text) for caption in layout.content.captions}
+    for section in layout.content.sections:
+        body = copy_signal_text(section.body)
+        if len(body) < MIN_SECTION_BODY_CHARS:
+            continue
+        for image_id in section.image_ids:
+            caption = captions_by_image_id.get(image_id, "")
+            if len(caption) < MIN_CAPTION_SIGNAL_CHARS:
+                continue
+            if body == caption or body_is_thin_caption_repeat(body, caption):
+                return True
+    return False
+
+
+def body_is_thin_caption_repeat(body: str, caption: str) -> bool:
+    if not body.startswith(caption):
+        return False
+    extra = body[len(caption) :].strip(" 的和又在把成里。！？!?；;，,、")
+    return len(extra) <= 2
 
 
 def is_placeholder_copy(value: Any) -> bool:

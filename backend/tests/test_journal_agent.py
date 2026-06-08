@@ -201,8 +201,8 @@ def test_agent_fallback_layout_splits_large_image_sets_without_repeating_body():
         ["img_4"],
     ]
     assert [section.body for section in result.layout.content.sections] == [
-        "周末一起散步。",
-        "傍晚喝了咖啡，路口的灯亮起来。",
+        "周末一起散步，傍晚喝了咖啡。",
+        "路口的灯亮起来。",
     ]
 
 
@@ -221,8 +221,8 @@ def test_agent_fallback_layout_splits_single_sentence_into_human_section_notes()
     )
 
     assert [section.body for section in result.layout.content.sections] == [
-        "周末一起散步。",
-        "傍晚喝了咖啡，路口的灯亮起来。",
+        "周末一起散步，傍晚喝了咖啡。",
+        "路口的灯亮起来。",
     ]
 
 
