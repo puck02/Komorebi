@@ -57,6 +57,33 @@ const repeatedSectionLayers = getJournalRenderLayers(repeatedSectionLayout);
 assertDeepEqual(repeatedSectionLayers.bodyTexts.map((text) => text.paragraph), ["第一段正文。"]);
 assertDeepEqual(repeatedSectionLayers.decorations.map((decoration) => decoration.assetId), ["paper_note"]);
 
+const visualOrderCaptionLayout = makeLayout({
+  sections: [
+    {
+      sectionId: "section_1",
+      variant: "staggered_collage",
+      y: 180,
+      height: 760,
+      images: [
+        { imageId: "img_2", x: 92, y: 220, width: 420, height: 320, rotation: 0 },
+        { imageId: "img_1", x: 568, y: 260, width: 420, height: 320, rotation: 0 }
+      ],
+      texts: [
+        { role: "caption", x: 112, y: 550, width: 360, fontSize: 24 },
+        { role: "caption", x: 588, y: 590, width: 360, fontSize: 24 },
+        { role: "body", x: 112, y: 700, width: 820, fontSize: 32 }
+      ],
+      decorations: []
+    }
+  ]
+});
+const visualOrderCaptionLayers = getJournalRenderLayers(visualOrderCaptionLayout);
+assertDeepEqual(visualOrderCaptionLayers.images.map((image) => image.imageId), ["img_2", "img_1"]);
+assertDeepEqual(visualOrderCaptionLayers.captionTexts.map((text) => text.paragraph), [
+  "回程路上的云",
+  "窗边这杯咖啡"
+]);
+
 const legacyLayout = makeLayout({ sections: [] });
 const legacyLayers = getJournalRenderLayers(legacyLayout);
 assertEqual(legacyLayers.usesSections, false);

@@ -36,7 +36,7 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
       return [{ key: `${section.sectionId}-body`, paragraph, placement }];
     });
     const captionTexts = sortedSections.flatMap((section) => {
-      const sectionImageIds = contentBySectionId.get(section.sectionId)?.imageIds ?? section.images.map((image) => image.imageId);
+      const sectionImageIds = section.images.map((image) => image.imageId);
       return buildCaptionTexts(section.texts, layout.content.captions, sectionImageIds, section.sectionId);
     });
 
