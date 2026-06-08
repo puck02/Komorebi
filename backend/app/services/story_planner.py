@@ -22,6 +22,7 @@ def plan_content_sections(layout: dict[str, Any], image_ids: list[str]) -> list[
             adjacent_groups = split_adjacent_image_ids(section_image_ids, image_ids)
             for group_index, adjacent_group in enumerate(adjacent_groups):
                 section_id = raw_section_id if len(adjacent_groups) == 1 else f"{raw_section_id}_{group_index + 1}"
+                section_id = unique_section_id(section_id, sections)
                 sections.append(build_section(section_id, title, adjacent_group, body, mood, len(sections) + 1))
                 used_image_ids.update(adjacent_group)
 
@@ -131,6 +132,16 @@ def sort_sections_by_image_order(sections: list[dict[str, Any]], image_ids: list
         return min((order_by_id.get(image_id, len(image_ids)) for image_id in section_image_ids), default=len(image_ids))
 
     return sorted(sections, key=first_image_order)
+
+
+def unique_section_id(section_id: str, sections: list[dict[str, Any]]) -> str:
+    used_ids = {section.get("id") for section in sections}
+    if section_id not in used_ids:
+        return section_id
+    suffix = 2
+    while f"{section_id}_{suffix}" in used_ids:
+        suffix += 1
+    return f"{section_id}_{suffix}"
 
 
 def section_body(raw_section: dict[str, Any], layout: dict[str, Any], index: int) -> str:

@@ -773,6 +773,42 @@ def test_generator_splits_non_adjacent_model_sections():
     assert [section.image_ids for section in layout.content.sections] == [["img_1"], ["img_2"], ["img_3"]]
 
 
+def test_generator_makes_duplicate_section_ids_unique():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {
+            "id": "same_section",
+            "title": "第一组",
+            "imageIds": ["img_1"],
+            "body": "第一张照片的正文。",
+            "mood": ["日常"],
+        },
+        {
+            "id": "same_section",
+            "title": "第二组",
+            "imageIds": ["img_2"],
+            "body": "第二张照片的正文。",
+            "mood": ["日常"],
+        },
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(
+        generation_request(
+            images=[
+                JournalImageInput(id="img_1", width=640, height=480),
+                JournalImageInput(id="img_2", width=900, height=1200),
+            ]
+        )
+    )
+
+    content_section_ids = [section.id for section in layout.content.sections]
+    layout_section_ids = [section.section_id for section in layout.layout.sections]
+    assert content_section_ids == ["same_section", "same_section_2"]
+    assert layout_section_ids == content_section_ids
+    assert [section.body for section in layout.content.sections] == ["第一张照片的正文。", "第二张照片的正文。"]
+
+
 def test_generator_rewrites_split_section_body_to_match_section_images():
     payload = valid_model_json()
     payload["content"]["sections"] = [
