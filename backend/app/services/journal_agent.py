@@ -217,22 +217,26 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
     body = request.description.strip() or "今天的照片先放在这里。"
     caption = body.strip(" 。！？!?；;，,")[:18] or "今日小记"
     image_id = request.images[0].id if request.images else "img_1"
+    captions_by_image = [
+        {"imageId": image.id, "text": caption if index == 0 else f"第 {index + 1} 张照片"}
+        for index, image in enumerate(request.images)
+    ]
     return {
         "canvas": {"width": 1080, "height": 1440, "background": "#f8f1e8"},
         "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["日常"]},
         "content": {
             "title": "今日小记",
             "body": [body],
-            "captions": [{"imageId": image_id, "text": caption}],
+            "captions": captions_by_image or [{"imageId": image_id, "text": caption}],
             "imageUnderstanding": [
                 {
                     "imageId": image.id,
-                    "summary": caption,
+                    "summary": caption if index == 0 else f"第 {index + 1} 张照片",
                     "scene": "",
                     "subjects": [],
                     "mood": ["日常"],
                 }
-                for image in request.images
+                for index, image in enumerate(request.images)
             ],
         },
         "layout": {
