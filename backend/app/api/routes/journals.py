@@ -30,10 +30,7 @@ def get_journal_generator() -> JournalGenerator:
     try:
         return JournalGenerator(OpenAIJournalClient())
     except OpenAIConfigurationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="OPENAI_API_KEY is required to generate journals",
-        ) from exc
+        return JournalGenerator(UnavailableJournalClient(exc))
 
 
 @router.post("/generate", response_model=JournalRead, status_code=status.HTTP_201_CREATED)
@@ -54,7 +51,7 @@ def generate_journal(
     )
     try:
         layout = generator.generate(generation_request)
-    except GenerationError:
+    except (GenerationError, OpenAIConfigurationError):
         layout_json = sanitize_model_layout(build_fallback_layout(generation_request), generation_request)
         layout = JournalLayout.model_validate(layout_json)
 
@@ -72,6 +69,14 @@ def generate_journal(
     db.commit()
     db.refresh(journal)
     return journal_to_read(journal)
+
+
+class UnavailableJournalClient:
+    def __init__(self, error: OpenAIConfigurationError):
+        self.error = error
+
+    def generate_layout(self, request: JournalGenerationRequest) -> dict:
+        raise self.error
 
 
 @router.get("", response_model=list[JournalRead])
