@@ -32,7 +32,7 @@ def test_plan_sections_uses_image_understanding_when_body_runs_out():
     sections = plan_content_sections(layout, ["img_1", "img_2", "img_3", "img_4"])
 
     assert [section["imageIds"] for section in sections] == [["img_1", "img_2"], ["img_3", "img_4"]]
-    assert sections[1]["body"] == "海边蓝色遮阳伞、傍晚岸边的长椅，今天就记这一点。"
+    assert sections[1]["body"] == "海边蓝色遮阳伞，还有傍晚岸边的长椅。"
 
 
 def test_plan_sections_splits_non_adjacent_model_section():

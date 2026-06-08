@@ -65,6 +65,24 @@ def normalize_diary_blocks(
     return blocks or [fallback]
 
 
+def compose_observation_note(parts: list[str], *, fallback: str = "") -> str:
+    observations: list[str] = []
+    seen: set[str] = set()
+    for part in parts:
+        text = normalize_diary_text(part).strip(PUNCTUATION + "、 ")
+        if not text or text in seen:
+            continue
+        observations.append(text[:18])
+        seen.add(text)
+        if len(observations) >= 2:
+            break
+    if not observations:
+        return fallback
+    if len(observations) == 1:
+        return f"{observations[0]}。"
+    return f"{observations[0]}，还有{observations[1]}。"
+
+
 def normalize_title(value: Any, *, fallback: str = "今日小记", max_length: int = 12) -> str:
     title = normalize_diary_text(value)
     for phrase in TITLE_NOISE_PHRASES:

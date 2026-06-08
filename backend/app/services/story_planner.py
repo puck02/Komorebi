@@ -1,6 +1,8 @@
 from math import ceil
 from typing import Any
 
+from app.services.diary_copy import compose_observation_note
+
 
 def plan_content_sections(layout: dict[str, Any], image_ids: list[str]) -> list[dict[str, Any]]:
     image_id_set = set(image_ids)
@@ -168,7 +170,7 @@ def section_body_from_understanding(layout: dict[str, Any], image_ids: list[str]
     parts = [part for part in parts if part]
     if not parts:
         return "这一组照片也想好好留下。"
-    return f"{'、'.join(parts[:2])}，今天就记这一点。"
+    return compose_observation_note(parts, fallback="这一组照片也想好好留下。")
 
 
 def concrete_understanding_text(item: dict[str, Any]) -> str:

@@ -9,7 +9,13 @@ from pydantic import ValidationError
 from app.schemas.journal import JournalLayout
 from app.services.assets import AssetItem
 from app.services.decoration_placement import place_decorations
-from app.services.diary_copy import normalize_diary_blocks, normalize_diary_text, normalize_title, split_sentences
+from app.services.diary_copy import (
+    compose_observation_note,
+    normalize_diary_blocks,
+    normalize_diary_text,
+    normalize_title,
+    split_sentences,
+)
 from app.services.layout_variants import ALLOWED_SECTION_VARIANTS, build_section_layout
 from app.services.style_recipes import choose_asset_id, recipe_tags_for_section
 from app.services.story_planner import plan_content_sections, split_evenly
@@ -469,7 +475,7 @@ def normalize_section_body(section: dict[str, Any], understanding_by_id: dict[An
     concrete_parts = [summary for summary in summaries if not is_generic_caption(summary)]
     if not concrete_parts:
         return body
-    return f"{'、'.join(concrete_parts[:2])}，今天就记这一点。"
+    return compose_observation_note(concrete_parts, fallback=body)
 
 
 def is_generic_section_body(value: Any) -> bool:

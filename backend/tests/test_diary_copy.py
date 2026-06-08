@@ -1,4 +1,5 @@
 from app.services.diary_copy import (
+    compose_observation_note,
     has_cliche_copy,
     normalize_diary_blocks,
     normalize_diary_text,
@@ -80,6 +81,13 @@ def test_normalize_diary_blocks_removes_duplicate_blocks_after_cleanup():
     )
 
     assert result == ["咖啡还热着，窗边坐了一会儿。", "后来走到路口，云压得很低。"]
+
+
+def test_compose_observation_note_uses_concrete_short_phrases_without_template_tail():
+    result = compose_observation_note(["窗边咖啡和小票", "回程路上的云", "窗边咖啡和小票"])
+
+    assert result == "窗边咖啡和小票，还有回程路上的云。"
+    assert "今天就记这一点" not in result
 
 
 def test_normalize_title_shortens_long_ai_style_title():

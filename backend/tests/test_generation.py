@@ -830,9 +830,9 @@ def test_generator_rewrites_split_section_body_to_match_section_images():
     layout = generator.generate(generation_request(images=three_images()))
 
     assert [section.body for section in layout.content.sections] == [
-        "窗边咖啡和小票，今天就记这一点。",
-        "回程路上的云，今天就记这一点。",
-        "晚饭桌上的小碗，今天就记这一点。",
+        "窗边咖啡和小票。",
+        "回程路上的云。",
+        "晚饭桌上的小碗。",
     ]
 
 
@@ -843,7 +843,7 @@ def test_generator_replaces_generic_section_title_with_image_understanding():
             "id": "section_1",
             "title": "第一段",
             "imageIds": ["img_1"],
-            "body": "窗边咖啡和小票，今天就记这一点。",
+            "body": "窗边咖啡和小票。",
             "mood": ["日常"],
         }
     ]
@@ -887,7 +887,7 @@ def test_generator_replaces_generic_section_body_with_image_understanding():
 
     layout = generator.generate(generation_request())
 
-    assert layout.content.sections[0].body == "窗边咖啡和小票，今天就记这一点。"
+    assert layout.content.sections[0].body == "窗边咖啡和小票。"
 
 
 def test_generator_normalizes_image_understanding_to_provided_images():
