@@ -954,6 +954,42 @@ def test_generator_fills_missing_captions_from_image_understanding():
     ]
 
 
+def test_generator_drops_repeated_generated_captions():
+    payload = valid_model_json()
+    payload["content"]["captions"] = []
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "窗边咖啡",
+            "scene": "咖啡店",
+            "subjects": ["咖啡", "窗边"],
+            "mood": ["轻松"],
+        },
+        {
+            "imageId": "img_2",
+            "summary": "窗边咖啡",
+            "scene": "咖啡店",
+            "subjects": ["咖啡", "小票"],
+            "mood": ["轻松"],
+        },
+        {
+            "imageId": "img_3",
+            "summary": "回程路上的云",
+            "scene": "街边",
+            "subjects": ["云", "路灯"],
+            "mood": ["安静"],
+        },
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    assert [(caption.image_id, caption.text) for caption in layout.content.captions] == [
+        ("img_1", "窗边咖啡"),
+        ("img_3", "回程路上的云"),
+    ]
+
+
 def test_generator_replaces_generic_caption_with_image_understanding():
     payload = valid_model_json()
     payload["content"]["captions"] = [{"imageId": "img_1", "text": "今天的照片"}]

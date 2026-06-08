@@ -583,6 +583,19 @@ def test_layout_rules_report_repeated_section_body_copy():
     assert has_issue(issues, "copyQuality", "medium", "章节正文重复，手帐记录不够具体")
 
 
+def test_layout_rules_report_repeated_caption_copy():
+    payload = layout_payload(image_ids=["img_1", "img_2"])
+    payload["content"]["captions"] = [
+        {"imageId": "img_1", "text": "窗边咖啡"},
+        {"imageId": "img_2", "text": "窗边咖啡"},
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=two_images()))
+
+    assert has_issue(issues, "copyQuality", "medium", "照片说明重复，手帐记录不够具体")
+
+
 def test_layout_rules_report_numbered_caption_as_placeholder_copy():
     payload = layout_payload()
     payload["content"]["captions"] = [{"imageId": "img_1", "text": "第 2 张照片"}]

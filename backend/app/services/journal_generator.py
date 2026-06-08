@@ -450,6 +450,7 @@ def fill_missing_captions(
 ) -> list[dict[str, Any]]:
     captions_by_id = {caption.get("imageId"): caption for caption in captions}
     next_captions: list[dict[str, Any]] = []
+    used_generated_texts: set[str] = set()
     for item in image_understanding:
         image_id = item.get("imageId")
         if not isinstance(image_id, str):
@@ -457,12 +458,24 @@ def fill_missing_captions(
         caption = captions_by_id.get(image_id)
         if caption is not None:
             if is_generic_caption(caption.get("text")):
-                next_captions.append({"imageId": image_id, "text": caption_from_understanding(item)})
+                add_generated_caption(next_captions, used_generated_texts, image_id, caption_from_understanding(item))
             else:
                 next_captions.append(caption)
             continue
-        next_captions.append({"imageId": image_id, "text": caption_from_understanding(item)})
+        add_generated_caption(next_captions, used_generated_texts, image_id, caption_from_understanding(item))
     return next_captions
+
+
+def add_generated_caption(captions: list[dict[str, Any]], used_texts: set[str], image_id: str, text: str) -> None:
+    signal = generated_caption_signal(text)
+    if signal in used_texts:
+        return
+    used_texts.add(signal)
+    captions.append({"imageId": image_id, "text": text})
+
+
+def generated_caption_signal(text: Any) -> str:
+    return str(text or "").strip(" \n\t。！？!?；;，,、")
 
 
 def is_generic_caption(value: Any) -> bool:

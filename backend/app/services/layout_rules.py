@@ -10,6 +10,7 @@ MIN_DECORATIONS = 12
 MIN_EXTERNAL_STICKERS = 2
 MIN_SECTION_GAP = 80
 MIN_IMAGE_GAP = 32
+MIN_CAPTION_SIGNAL_CHARS = 3
 MIN_SECTION_BODY_CHARS = 6
 MAX_SECTION_BODY_CHARS = 100
 SECTION_RHYTHM_HEIGHT_EPSILON = 24
@@ -276,10 +277,11 @@ def section_text_height(text: Any, body: str) -> float:
 
 def check_copy_quality(layout: JournalLayout) -> list[dict[str, Any]]:
     section_bodies = [section.body for section in layout.content.sections]
+    caption_texts = [caption.text for caption in layout.content.captions]
     copy_parts = [
         layout.content.title,
         *layout.content.body,
-        *(caption.text for caption in layout.content.captions),
+        *caption_texts,
         *(section.title for section in layout.content.sections),
         *section_bodies,
     ]
@@ -289,6 +291,8 @@ def check_copy_quality(layout: JournalLayout) -> list[dict[str, Any]]:
         return [rule_issue("copyQuality", "medium", [], "正文存在占位式描述，手帐记录不够具体")]
     if has_repeated_section_body(section_bodies):
         return [rule_issue("copyQuality", "medium", [], "章节正文重复，手帐记录不够具体")]
+    if has_repeated_caption_copy(caption_texts):
+        return [rule_issue("copyQuality", "medium", [], "照片说明重复，手帐记录不够具体")]
     return []
 
 
@@ -297,6 +301,18 @@ def has_repeated_section_body(section_bodies: list[Any]) -> bool:
     for body in section_bodies:
         text = copy_signal_text(body)
         if len(text) < MIN_SECTION_BODY_CHARS:
+            continue
+        if text in seen:
+            return True
+        seen.add(text)
+    return False
+
+
+def has_repeated_caption_copy(caption_texts: list[Any]) -> bool:
+    seen: set[str] = set()
+    for caption in caption_texts:
+        text = copy_signal_text(caption)
+        if len(text) < MIN_CAPTION_SIGNAL_CHARS:
             continue
         if text in seen:
             return True
