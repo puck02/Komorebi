@@ -539,6 +539,30 @@ def test_layout_rules_report_section_body_too_short_for_human_journal():
     assert has_issue(issues, "sectionCopyAlignment", "medium", "章节正文过短，手帐记录不够具体")
 
 
+def test_layout_rules_report_section_body_too_long_for_human_journal():
+    payload = layout_payload()
+    long_body = "这是一段本来应该拆成几句短记的正文，" * 8
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "窗边", "imageIds": ["img_1"], "body": long_body, "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 980,
+            "images": [{"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert has_issue(issues, "sectionCopyAlignment", "medium", "章节正文过长，手帐记录应拆成短句")
+
+
 def test_layout_rules_report_multi_image_section_without_visual_focus():
     payload = layout_payload(image_ids=["img_1", "img_2", "img_3"])
     payload["content"]["sections"] = [

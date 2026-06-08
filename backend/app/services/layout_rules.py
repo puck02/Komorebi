@@ -11,6 +11,7 @@ MIN_EXTERNAL_STICKERS = 2
 MIN_SECTION_GAP = 80
 MIN_IMAGE_GAP = 32
 MIN_SECTION_BODY_CHARS = 6
+MAX_SECTION_BODY_CHARS = 100
 SECTION_RHYTHM_HEIGHT_EPSILON = 24
 SECTION_BOUNDS_EPSILON = 1
 CAPTION_BORDER_OFFSET = 64
@@ -193,8 +194,8 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
             issues.append(rule_issue("sectionReference", "high", [section.section_id], "版式章节没有对应的内容章节"))
         elif rendered_section_image_ids(section) != image_ids_by_section_id[section.section_id]:
             issues.append(rule_issue("sectionImageMatch", "high", [section.section_id], "版式章节图片与内容章节不一致"))
-        elif len(copy_signal_text(body_by_section_id[section.section_id])) < MIN_SECTION_BODY_CHARS:
-            issues.append(rule_issue("sectionCopyAlignment", "medium", [section.section_id], "章节正文过短，手帐记录不够具体"))
+        elif (section_copy_issue := check_section_copy_alignment(section.section_id, body_by_section_id[section.section_id])) is not None:
+            issues.append(section_copy_issue)
         issues.extend(check_section_caption_coverage(section, caption_image_ids))
         section_bottom = section.y + section.height
         content_bottom = max(
@@ -278,6 +279,15 @@ def is_placeholder_copy(value: Any) -> bool:
 
 def copy_signal_text(value: Any) -> str:
     return str(value or "").strip(" \n\t。！？!?；;，,、")
+
+
+def check_section_copy_alignment(section_id: str, body: Any) -> dict[str, Any] | None:
+    text = copy_signal_text(body)
+    if len(text) < MIN_SECTION_BODY_CHARS:
+        return rule_issue("sectionCopyAlignment", "medium", [section_id], "章节正文过短，手帐记录不够具体")
+    if len(text) > MAX_SECTION_BODY_CHARS:
+        return rule_issue("sectionCopyAlignment", "medium", [section_id], "章节正文过长，手帐记录应拆成短句")
+    return None
 
 
 def check_visual_focus(layout: JournalLayout) -> list[dict[str, Any]]:
