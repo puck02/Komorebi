@@ -471,15 +471,17 @@ def is_generic_caption(value: Any) -> bool:
 
 
 def caption_from_understanding(item: dict[str, Any]) -> str:
-    summary = normalize_diary_text(item.get("summary"))
+    summary = normalize_caption_text(item.get("summary"), fallback="")
     if summary and not summary.startswith("第 "):
-        return summary[:18]
+        return summary
     subjects = [str(subject).strip() for subject in item.get("subjects") or [] if str(subject).strip()]
     if subjects:
-        return "、".join(subjects[:2])[:18]
-    scene = normalize_diary_text(item.get("scene"))
+        return trim_caption_particles(normalize_diary_text("、".join(subjects[:2]), fallback="").strip(" 。！？!?；;，,"))[
+            :CAPTION_MAX_CHARS
+        ]
+    scene = normalize_caption_text(item.get("scene"), fallback="")
     if scene:
-        return scene[:18]
+        return scene
     return "今天的照片"
 
 

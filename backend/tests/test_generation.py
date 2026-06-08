@@ -973,6 +973,25 @@ def test_generator_replaces_generic_caption_with_image_understanding():
     assert layout.content.captions[0].text == "窗边咖啡和小票"
 
 
+def test_generator_shortens_generic_caption_replacement_from_understanding():
+    payload = valid_model_json()
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "今天的照片"}]
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "值得被记住的珍贵回忆，咖啡还热着，窗边坐了一会儿。",
+            "scene": "咖啡店",
+            "subjects": ["咖啡", "窗边"],
+            "mood": ["轻松"],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    assert layout.content.captions[0].text == "咖啡还热着"
+
+
 def test_generator_uses_subjects_when_understanding_summary_is_numbered_photo_label():
     payload = valid_model_json()
     payload["content"]["captions"] = [{"imageId": "img_1", "text": "今天的照片"}]
