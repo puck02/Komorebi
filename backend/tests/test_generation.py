@@ -928,6 +928,7 @@ def test_generator_normalizes_ai_style_copy():
     assert "把时光收藏" not in rendered_copy
     assert "收成一页" not in rendered_copy
     assert "珍贵回忆" not in rendered_copy
+    assert "刚刚好" not in rendered_copy
     assert "咖啡还热着" in rendered_copy
 
 

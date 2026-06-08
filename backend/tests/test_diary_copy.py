@@ -30,6 +30,15 @@ def test_normalize_diary_text_removes_ai_style_metaphors():
     assert "咖啡和散步" in result
 
 
+def test_normalize_diary_text_removes_generic_just_right_tail():
+    text = "咖啡、散步和好天气都刚刚好。"
+
+    result = normalize_diary_text(text)
+
+    assert "刚刚好" not in result
+    assert result == "咖啡、散步和好天气。"
+
+
 def test_normalize_diary_blocks_trims_and_splits_long_blocks():
     blocks = [
         "  ",
@@ -77,4 +86,5 @@ def test_normalize_title_falls_back_when_empty():
 def test_has_cliche_copy_detects_ai_like_phrases():
     assert has_cliche_copy("这是值得被记住的一天，也像被温柔包裹。") is True
     assert has_cliche_copy("照片里是被阳光放慢的一天，适合把这些片段收成一页。") is True
+    assert has_cliche_copy("咖啡、散步和好天气都刚刚好。") is True
     assert has_cliche_copy("咖啡还热着，窗边坐了一会儿。") is False

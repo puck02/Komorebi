@@ -7,6 +7,7 @@ CLICHE_PHRASES = (
     "把时光收藏",
     "把这些片段收成一页",
     "收成一页",
+    "都刚刚好",
     "珍贵回忆",
     "值得被记住",
     "治愈",
@@ -119,6 +120,7 @@ def tidy_text(text: str) -> str:
     text = text.replace("也很，", "").replace("充满，", "").replace("充满。", "")
     text = text.replace("照片里是的一天，", "").replace("照片里是的一天。", "")
     text = text.replace("是的一天，", "").replace("是的一天。", "")
+    text = text.replace("刚刚好", "")
     return text.strip(" ")
 
 
