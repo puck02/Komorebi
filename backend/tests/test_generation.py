@@ -1280,6 +1280,14 @@ def test_generation_prompt_requests_rich_and_varied_asset_usage():
     assert "外部素材" in prompt
 
 
+def test_generation_prompt_treats_stationery_assets_as_functional_layers():
+    prompt = build_generation_prompt(generation_request(images=three_images()))
+
+    assert "固定照片" in prompt
+    assert "承载文字" in prompt
+    assert "分隔层次" in prompt
+
+
 def test_review_and_revision_prompts_check_asset_richness(monkeypatch):
     captured = []
 
