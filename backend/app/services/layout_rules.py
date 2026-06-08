@@ -11,6 +11,7 @@ MIN_EXTERNAL_STICKERS = 2
 MIN_SECTION_GAP = 80
 MIN_IMAGE_GAP = 32
 SECTION_BOUNDS_EPSILON = 1
+CAPTION_BORDER_OFFSET = 64
 DECORATION_CATEGORY_LIMITS = {
     "paper": 4,
     "sticker": 8,
@@ -50,7 +51,7 @@ def check_readability(layout: JournalLayout) -> list[dict[str, Any]]:
             content = layout.content.body[body_index] if body_index < len(layout.content.body) else ""
             body_index += 1
         text_rect = (text.x, text.y, text.width, estimate_paragraph_height(content, text.font_size, text.width))
-        if any(rects_overlap(text_rect, image_rect) for image_rect in image_rects):
+        if any(text_overlaps_image(text.role, text_rect, image_rect) for image_rect in image_rects):
             issues.append(rule_issue("readability", "high", [text.role], "文字与照片发生重叠"))
     issues.extend(check_section_readability(layout))
     return issues
@@ -180,7 +181,7 @@ def check_section_readability(layout: JournalLayout) -> list[dict[str, Any]]:
                 text.width,
                 section_text_height(text, body_by_section_id.get(section.section_id, "")),
             )
-            if any(rects_overlap(text_rect, image_rect) for image_rect in image_rects):
+            if any(text_overlaps_image(text.role, text_rect, image_rect) for image_rect in image_rects):
                 issues.append(rule_issue("readability", "high", [section.section_id], "章节文字与照片发生重叠"))
     return issues
 
@@ -291,6 +292,24 @@ def rects_overlap(first: tuple[float, float, float, float], second: tuple[float,
         and first_y < second_y + second_height
         and first_y + first_height > second_y
     )
+
+
+def text_overlaps_image(
+    role: str,
+    text_rect: tuple[float, float, float, float],
+    image_rect: tuple[float, float, float, float],
+) -> bool:
+    if not rects_overlap(text_rect, image_rect):
+        return False
+    if role != "caption":
+        return True
+
+    _, text_y, _, text_height = text_rect
+    _, image_y, _, image_height = image_rect
+    image_bottom = image_y + image_height
+    overlap_top = max(text_y, image_y)
+    overlap_bottom = min(text_y + text_height, image_bottom)
+    return overlap_top < image_bottom - CAPTION_BORDER_OFFSET or overlap_bottom > image_bottom + SECTION_BOUNDS_EPSILON
 
 
 def estimate_paragraph_height(paragraph: str, font_size: float, width: float) -> float:

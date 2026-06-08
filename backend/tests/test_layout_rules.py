@@ -268,6 +268,33 @@ def test_layout_rules_report_section_text_photo_overlap():
     assert has_issue(issues, "readability", "high", "章节文字与照片发生重叠")
 
 
+def test_layout_rules_allow_caption_on_photo_border():
+    payload = layout_payload()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "午后的咖啡"}]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 200,
+            "height": 620,
+            "images": [{"imageId": "img_1", "x": 100, "y": 240, "width": 360, "height": 320, "rotation": 0}],
+            "texts": [
+                {"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32},
+                {"role": "caption", "x": 128, "y": 522, "width": 304, "fontSize": 22},
+            ],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert not has_issue(issues, "readability", "high", "章节文字与照片发生重叠")
+
+
 def test_layout_rules_use_actual_section_text_height_for_bounds():
     payload = layout_payload()
     long_body = "这是一段很长的正文，" * 30

@@ -111,6 +111,29 @@ def test_build_section_layout_places_images_and_text_inside_section():
     assert all(layout["y"] <= item["y"] <= layout["y"] + layout["height"] for item in [*layout["images"], *layout["texts"]])
 
 
+def test_build_section_layout_places_captions_on_photo_border():
+    images = [image("img_1", 640, 480), image("img_2", 900, 1200)]
+    section_data = content_section("section_1", ["img_1", "img_2"], body="两张照片各有一个短短的旁注。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="staggered_collage",
+    )
+
+    caption_texts = [text for text in layout["texts"] if text["role"] == "caption"]
+    assert len(caption_texts) == 2
+    assert [caption["y"] for caption in caption_texts] == [
+        image_placement["y"] + image_placement["height"] - 38 for image_placement in layout["images"]
+    ]
+    assert [caption["x"] for caption in caption_texts] == [image_placement["x"] + 28 for image_placement in layout["images"]]
+    assert layout["texts"][0]["role"] == "body"
+
+
 def test_photo_wall_layout_has_a_clear_primary_photo():
     images = [image("img_1", 640, 480), image("img_2", 640, 480), image("img_3", 640, 480)]
     section_data = content_section("section_1", ["img_1", "img_2", "img_3"], body="三张都是晚饭桌上的小记录。")
@@ -210,6 +233,20 @@ def test_generator_places_fallback_sections_below_title_area():
     layout = generator.generate(generation_request())
 
     assert layout.layout.sections[0].y >= 250
+
+
+def test_generator_adds_caption_text_placements_to_sections():
+    payload = valid_model_json()
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "午后的咖啡"}]
+    payload["content"]["sections"] = [content_section("section_1", ["img_1"], body="坐在咖啡店里慢慢聊天。")]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    section = layout.layout.sections[0]
+    caption_texts = [text for text in section.texts if text.role == "caption"]
+    assert len(caption_texts) == 1
+    assert caption_texts[0].y == section.images[0].y + section.images[0].height - 38
 
 
 def image(image_id: str, width: int, height: int) -> JournalImageInput:

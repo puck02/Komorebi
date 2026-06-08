@@ -5,6 +5,9 @@ CANVAS_WIDTH = 1080
 SECTION_SIDE_PADDING = 92
 SECTION_TEXT_WIDTH = 820
 SECTION_TEXT_FONT_SIZE = 32
+SECTION_CAPTION_FONT_SIZE = 22
+SECTION_CAPTION_SIDE_PADDING = 28
+SECTION_CAPTION_BOTTOM_OFFSET = 38
 SECTION_GAP = 104
 TEXT_PHOTO_GAP = 56
 IMAGE_GAP = 38
@@ -104,6 +107,7 @@ def build_section_layout(
     body = str(section.get("body") or "")
     text_bottom = text["y"] + estimate_paragraph_height(body, text["fontSize"], text["width"])
     section_bottom = max(image_bottom, text_bottom) + SECTION_GAP
+    caption_texts = build_caption_placements(image_placements)
 
     return {
         "sectionId": str(section["id"]),
@@ -111,7 +115,7 @@ def build_section_layout(
         "y": start_y,
         "height": max(section_bottom - start_y, 1),
         "images": image_placements,
-        "texts": [text],
+        "texts": [text, *caption_texts],
         "decorations": [],
     }
 
@@ -213,6 +217,19 @@ def placement(image: Any, x: float, y: float, width: float, index: int, rotation
         "height": photo_height_for_width(image, width),
         "rotation": rotation if rotation is not None else [-2, 2.5, -1.5, 1.5][index % 4],
     }
+
+
+def build_caption_placements(image_placements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "role": "caption",
+            "x": image["x"] + SECTION_CAPTION_SIDE_PADDING,
+            "y": image["y"] + image["height"] - SECTION_CAPTION_BOTTOM_OFFSET,
+            "width": max(image["width"] - SECTION_CAPTION_SIDE_PADDING * 2, 120),
+            "fontSize": SECTION_CAPTION_FONT_SIZE,
+        }
+        for image in image_placements
+    ]
 
 
 def section_keywords(section: dict[str, Any], image_understanding: list[dict[str, Any]]) -> str:
