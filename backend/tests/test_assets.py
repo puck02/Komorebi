@@ -98,7 +98,22 @@ def test_approved_internal_assets_cover_human_scrapbook_materials():
     ]
     covered_tags = {tag for asset in approved_internal_assets for tag in asset.tags}
 
-    assert {"pen", "checklist", "bus", "corner", "pressed", "movie", "shopping", "receipt"}.issubset(covered_tags)
+    assert {
+        "pen",
+        "checklist",
+        "bus",
+        "corner",
+        "pressed",
+        "movie",
+        "shopping",
+        "receipt",
+        "book",
+        "food",
+        "sea",
+        "commute",
+        "dog",
+        "plant",
+    }.issubset(covered_tags)
 
 
 def test_internal_scrapbook_ephemera_stickers_cover_common_journal_materials():
@@ -124,6 +139,12 @@ def test_internal_scrapbook_ephemera_stickers_cover_common_journal_materials():
         "lamp",
         "cat",
         "cake",
+        "book",
+        "food",
+        "sea",
+        "commute",
+        "dog",
+        "plant",
     }.issubset(covered_tags)
     assert any({"date", "stamp"}.issubset(asset.tags) for asset in approved_internal_stickers)
 

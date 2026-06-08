@@ -180,6 +180,60 @@ def test_recipe_tags_for_section_detects_birthday_cake():
     assert tags[:4] == ["cake", "birthday", "party", "gift"]
 
 
+def test_recipe_tags_for_section_detects_book_reading():
+    section = {"title": "读到这里", "body": "书页摊开，旁边夹着书签和几行笔记。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "摊开的书和书签", "scene": "书桌", "subjects": ["书", "书签"], "mood": ["安静"]}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["book", "quiet", "note", "home"]
+
+
+def test_recipe_tags_for_section_detects_table_food():
+    section = {"title": "晚饭桌上", "body": "餐桌上有盘子、面包和一张菜单卡。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "餐桌上的盘子和菜单", "scene": "餐桌", "subjects": ["盘子", "菜单"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["food", "table", "warm", "daily"]
+
+
+def test_recipe_tags_for_section_detects_seaside_memory():
+    section = {"title": "海边这段", "body": "海边的浪和贝壳都放进这一页。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "海边浪花和贝壳", "scene": "海边", "subjects": ["贝壳", "海浪"], "mood": ["放松"]}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["sea", "shell", "travel", "calm"]
+
+
+def test_recipe_tags_for_section_detects_commute_bus():
+    section = {"title": "早上通勤", "body": "公交车和站牌在路边，今天的路线也记一下。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "公交车和站牌", "scene": "公交站", "subjects": ["公交车", "站牌"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["commute", "bus", "travel", "daily"]
+
+
+def test_recipe_tags_for_section_detects_dog_pet():
+    section = {"title": "狗趴在地毯上", "body": "小狗睡着了，旁边还放着牵引绳。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "小狗和牵引绳", "scene": "家里", "subjects": ["狗"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["dog", "pet", "home", "daily"]
+
+
+def test_recipe_tags_for_section_detects_houseplant_home():
+    section = {"title": "窗边绿植", "body": "盆栽和叶子靠在窗边，光落在桌面上。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "窗边盆栽和绿植", "scene": "房间", "subjects": ["盆栽", "绿植"], "mood": ["安静"]}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["plant", "home", "calm", "nature"]
+
+
 def test_choose_asset_id_prefers_category_asset_with_matching_recipe_tag():
     assets = {
         "sticker_leaf_05": asset("sticker_leaf_05", "sticker", ["nature", "travel"]),

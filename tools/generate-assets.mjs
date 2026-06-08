@@ -275,6 +275,70 @@ function reviewedInternalAsset(asset) {
       `<circle cx="118" cy="69" r="3" fill="#c99562" opacity="0.45"/>`
     ]);
   }
+  if (asset.id === "sticker_bookmark_44") {
+    return cleanSvg(160, 160, [
+      `<path d="M39 42C59 35 102 35 123 43C119 74 120 103 128 129C103 124 76 124 38 132C45 101 46 70 39 42Z" fill="#fff7e7" stroke="#8f6f5b" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M66 39C61 69 61 101 66 128L80 112L96 129C90 100 90 70 96 40" fill="#f4dfbb" stroke="#8f6f5b" stroke-width="2.6" stroke-linejoin="round"/>`,
+      `<path d="M49 58C64 55 83 55 111 59M49 77C68 74 92 74 114 79M49 96C66 94 85 94 108 98" stroke="#8f6f5b" stroke-width="2.1" stroke-linecap="round" opacity="0.42"/>`,
+      `<path d="M74 51C80 47 88 48 92 54" stroke="#fffaf0" stroke-width="2.1" stroke-linecap="round" opacity="0.82"/>`,
+      `<path d="M36 132C63 139 100 137 130 128" stroke="#9c8063" stroke-width="2" stroke-linecap="round" opacity="0.22"/>`
+    ]);
+  }
+  if (asset.id === "sticker_table_plate_45") {
+    return cleanSvg(160, 160, [
+      `<ellipse cx="80" cy="90" rx="54" ry="39" fill="#fff2da" stroke="#b98465" stroke-width="3"/>`,
+      `<ellipse cx="80" cy="90" rx="31" ry="22" fill="#fffaf0" stroke="#b98465" stroke-width="2.3" opacity="0.72"/>`,
+      `<path d="M43 51C52 43 65 43 72 52C62 58 52 59 43 51Z" fill="#f0cfa8" stroke="#b98465" stroke-width="2.4" stroke-linejoin="round"/>`,
+      `<path d="M107 54C117 47 130 50 136 60C125 65 115 64 107 54Z" fill="#d9e2bf" stroke="#7f8d60" stroke-width="2.3" stroke-linejoin="round"/>`,
+      `<path d="M49 118C71 127 105 126 130 116" stroke="#ffffff" stroke-width="2.3" stroke-linecap="round" opacity="0.62"/>`,
+      `<path d="M53 84C64 78 77 77 92 84M67 99C78 104 91 104 104 98" stroke="#b98465" stroke-width="2" stroke-linecap="round" opacity="0.34"/>`,
+      `<circle cx="58" cy="94" r="3" fill="#d19a75" opacity="0.44"/>`,
+      `<circle cx="106" cy="87" r="2.5" fill="#d19a75" opacity="0.38"/>`
+    ]);
+  }
+  if (asset.id === "sticker_shell_46") {
+    return cleanSvg(160, 160, [
+      `<path d="M36 112C40 67 62 38 82 36C103 38 126 68 131 113C101 126 67 126 36 112Z" fill="#f7ead6" stroke="#7a9aa4" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M82 38C75 68 74 94 80 120M82 38C91 70 92 95 87 120M62 50C67 78 68 100 62 117M104 51C99 78 99 99 105 117M47 80C59 91 70 102 80 121M118 81C107 93 96 104 87 121" stroke="#7a9aa4" stroke-width="2.2" stroke-linecap="round" opacity="0.55"/>`,
+      `<path d="M36 112C61 119 101 119 131 113" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity="0.65"/>`,
+      `<path d="M41 132C66 139 101 138 127 130" stroke="#9c8063" stroke-width="2" stroke-linecap="round" opacity="0.22"/>`,
+      `<circle cx="83" cy="40" r="3" fill="#7a9aa4" opacity="0.34"/>`
+    ]);
+  }
+  if (asset.id === "sticker_bus_stop_47") {
+    return cleanSvg(160, 160, [
+      `<path d="M43 39C60 34 96 34 115 40C111 70 112 96 118 123C95 127 62 127 38 121C45 91 46 65 43 39Z" fill="#e6eef4" stroke="#5f7f9a" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M53 51h58v34H53z" fill="#fffaf0" stroke="#5f7f9a" stroke-width="2.3" stroke-linejoin="round"/>`,
+      `<path d="M62 58h16M87 58h16M62 71h41" stroke="#5f7f9a" stroke-width="2" stroke-linecap="round" opacity="0.55"/>`,
+      `<path d="M63 101C76 96 99 96 110 102V112C97 118 75 118 61 112Z" fill="#fffaf0" stroke="#5f7f9a" stroke-width="2.3" stroke-linejoin="round"/>`,
+      `<circle cx="70" cy="113" r="5" fill="#5f7f9a" opacity="0.42"/>`,
+      `<circle cx="101" cy="113" r="5" fill="#5f7f9a" opacity="0.42"/>`,
+      `<path d="M120 50h16M128 50v78" stroke="#5f7f9a" stroke-width="3" stroke-linecap="round" opacity="0.7"/>`,
+      `<path d="M117 129C91 136 61 134 36 126" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity="0.56"/>`
+    ]);
+  }
+  if (asset.id === "sticker_sleeping_dog_48") {
+    return cleanSvg(160, 160, [
+      `<path d="M37 101C44 72 69 58 100 62C124 65 140 82 137 108C109 123 66 123 37 101Z" fill="#ead4bd" stroke="#8b6b57" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M59 64C51 48 43 49 39 67C45 72 53 71 59 64Z" fill="#d2b292" stroke="#8b6b57" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M105 64C116 48 126 50 127 72C119 76 111 72 105 64Z" fill="#d2b292" stroke="#8b6b57" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M70 83c6 5 15 5 21 0M56 82c4 3 8 3 12 0M96 82c4 3 8 3 12 0" stroke="#8b6b57" stroke-width="2.3" stroke-linecap="round" opacity="0.58"/>`,
+      `<path d="M115 102C130 100 139 107 139 118C128 122 117 119 110 111" stroke="#8b6b57" stroke-width="3" stroke-linecap="round" fill="none"/>`,
+      `<path d="M46 107C70 115 101 115 128 106" stroke="#fff5e6" stroke-width="2.4" stroke-linecap="round" opacity="0.58"/>`,
+      `<path d="M43 132C72 139 107 138 133 130" stroke="#9c8063" stroke-width="2" stroke-linecap="round" opacity="0.22"/>`
+    ]);
+  }
+  if (asset.id === "sticker_houseplant_49") {
+    return cleanSvg(160, 160, [
+      `<path d="M57 93C76 88 104 88 123 94L116 130C96 137 72 136 51 128Z" fill="#f0d8b8" stroke="#6e7e55" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M78 92C70 65 48 55 36 65C42 83 58 92 78 92Z" fill="#edf0d2" stroke="#6e7e55" stroke-width="2.7" stroke-linejoin="round"/>`,
+      `<path d="M84 91C83 61 96 39 113 40C121 62 108 82 84 91Z" fill="#dfe8c0" stroke="#6e7e55" stroke-width="2.7" stroke-linejoin="round"/>`,
+      `<path d="M91 91C103 68 127 62 139 73C131 91 112 98 91 91Z" fill="#edf0d2" stroke="#6e7e55" stroke-width="2.7" stroke-linejoin="round"/>`,
+      `<path d="M80 93C78 76 76 61 72 46M84 92C94 72 102 58 113 43M90 92C107 84 121 77 136 73" stroke="#6e7e55" stroke-width="2.1" stroke-linecap="round" opacity="0.52"/>`,
+      `<path d="M55 119C73 126 97 126 116 119" stroke="#fff8df" stroke-width="2.2" stroke-linecap="round" opacity="0.62"/>`,
+      `<path d="M48 132C73 139 100 139 122 130" stroke="#9c8063" stroke-width="2" stroke-linecap="round" opacity="0.22"/>`
+    ]);
+  }
   return null;
 }
 

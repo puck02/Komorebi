@@ -1649,6 +1649,138 @@
     "qualityStatus": "approved"
   },
   {
+    "id": "sticker_bookmark_44",
+    "name": "Bookmark 44",
+    "category": "sticker",
+    "tags": [
+      "book",
+      "quiet",
+      "note"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#8f6f5b",
+      "#f4dfbb"
+    ],
+    "file": "stickers/sticker_bookmark_44.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_table_plate_45",
+    "name": "Table Plate 45",
+    "category": "sticker",
+    "tags": [
+      "food",
+      "table",
+      "warm"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#b98465",
+      "#fff2da"
+    ],
+    "file": "stickers/sticker_table_plate_45.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_shell_46",
+    "name": "Shell 46",
+    "category": "sticker",
+    "tags": [
+      "sea",
+      "shell",
+      "travel"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#7a9aa4",
+      "#f7ead6"
+    ],
+    "file": "stickers/sticker_shell_46.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_bus_stop_47",
+    "name": "Bus Stop 47",
+    "category": "sticker",
+    "tags": [
+      "commute",
+      "bus",
+      "travel"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#5f7f9a",
+      "#e6eef4"
+    ],
+    "file": "stickers/sticker_bus_stop_47.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_sleeping_dog_48",
+    "name": "Sleeping Dog 48",
+    "category": "sticker",
+    "tags": [
+      "dog",
+      "pet",
+      "home"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#8b6b57",
+      "#ead4bd"
+    ],
+    "file": "stickers/sticker_sleeping_dog_48.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_houseplant_49",
+    "name": "Houseplant 49",
+    "category": "sticker",
+    "tags": [
+      "plant",
+      "home",
+      "nature"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#6e7e55",
+      "#edf0d2"
+    ],
+    "file": "stickers/sticker_houseplant_49.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
     "id": "texture_dots_01",
     "name": "Warm Dots 01",
     "category": "texture",

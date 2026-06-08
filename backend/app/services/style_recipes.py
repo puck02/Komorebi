@@ -14,6 +14,12 @@ RAINY_KEYWORDS = {"雨天", "雨伞", "雨滴", "下雨", "淋雨", "雨衣", "�
 NIGHT_LAMP_KEYWORDS = {"夜晚", "夜里", "台灯", "小灯", "窗灯", "灯光", "卧室"}
 CAT_KEYWORDS = {"猫", "小猫", "猫咪", "喵"}
 CAKE_KEYWORDS = {"蛋糕", "蜡烛", "生日蛋糕", "许愿"}
+BOOK_KEYWORDS = {"读书", "阅读", "书", "书页", "书签", "书桌", "翻书", "摘抄"}
+FOOD_TABLE_KEYWORDS = {"餐桌", "饭", "晚饭", "午饭", "早餐", "盘子", "菜单", "面包", "餐厅", "料理", "便当"}
+SEASIDE_KEYWORDS = {"海边", "海浪", "浪花", "贝壳", "沙滩", "海岸"}
+COMMUTE_KEYWORDS = {"通勤", "公交车", "公交站", "站牌", "巴士", "早高峰", "地铁口"}
+DOG_KEYWORDS = {"狗", "小狗", "狗狗", "牵引绳"}
+HOUSEPLANT_KEYWORDS = {"盆栽", "绿植", "植物", "叶子", "花盆"}
 PHOTO_KEYWORDS = {"照片", "相片", "相册", "拍立得", "照片角", "冲印", "合影"}
 TICKET_KEYWORDS = {"票根", "门票", "车票", "入场券", "展览", "电影票", "小票", "收据", "小卡片"}
 NOTE_KEYWORDS = {"便签", "纸条", "手写", "记录", "笔记", "备忘", "小事"}
@@ -44,6 +50,22 @@ def recipe_tags_for_section(
         return ["cake", "birthday", "party", "gift"]
     if any(keyword in text for keyword in CAT_KEYWORDS):
         return ["cat", "pet", "home", "daily"]
+    if any(keyword in text for keyword in DOG_KEYWORDS):
+        return ["dog", "pet", "home", "daily"]
+    if any(keyword in text for keyword in BUS_TICKET_KEYWORDS) and any(keyword in text for keyword in TICKET_KEYWORDS):
+        return ["bus", "ticket", "travel", "memory"]
+    if any(keyword in text for keyword in PRESSED_NATURE_KEYWORDS):
+        return ["pressed", "nature", "calm"]
+    if any(keyword in text for keyword in BOOK_KEYWORDS):
+        return ["book", "quiet", "note", "home"]
+    if any(keyword in text for keyword in FOOD_TABLE_KEYWORDS):
+        return ["food", "table", "warm", "daily"]
+    if any(keyword in text for keyword in SEASIDE_KEYWORDS):
+        return ["sea", "shell", "travel", "calm"]
+    if any(keyword in text for keyword in COMMUTE_KEYWORDS):
+        return ["commute", "bus", "travel", "daily"]
+    if any(keyword in text for keyword in HOUSEPLANT_KEYWORDS):
+        return ["plant", "home", "calm", "nature"]
     if any(keyword in text for keyword in COFFEE_KEYWORDS) and any(keyword in text for keyword in TICKET_KEYWORDS):
         return ["ticket", "coffee", "warm", "memory"]
     if any(keyword in text for keyword in COFFEE_KEYWORDS):
@@ -54,16 +76,12 @@ def recipe_tags_for_section(
         return ["pet", "home", "daily"]
     if any(keyword in text for keyword in CHECKLIST_KEYWORDS):
         return ["checklist", "note", "pen", "daily"]
-    if any(keyword in text for keyword in BUS_TICKET_KEYWORDS) and any(keyword in text for keyword in TICKET_KEYWORDS):
-        return ["bus", "ticket", "travel", "memory"]
     if any(keyword in text for keyword in PEN_KEYWORDS):
         return ["pen", "hand", "note", "daily"]
     if any(keyword in text for keyword in DATE_STAMP_KEYWORDS):
         return ["date", "stamp", "memory"]
     if any(keyword in text for keyword in PHOTO_CORNER_KEYWORDS):
         return ["corner", "photo", "collage", "memory"]
-    if any(keyword in text for keyword in PRESSED_NATURE_KEYWORDS):
-        return ["pressed", "nature", "calm"]
     if any(keyword in text for keyword in STAMP_FILM_KEYWORDS):
         return ["film", "stamp", "photo", "memory"]
     if any(keyword in text for keyword in LETTER_TAG_KEYWORDS):
