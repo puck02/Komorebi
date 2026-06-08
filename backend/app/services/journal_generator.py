@@ -740,8 +740,23 @@ def build_template_section_decorations(
     paper_id = first_asset_id(asset_by_id, "paper", section_index, recipe_tags, preferred_asset_ids)
     tape_id = first_asset_id(asset_by_id, "tape", section_index, recipe_tags, preferred_asset_ids)
     sticker_id = first_asset_id(asset_by_id, "sticker", section_index, recipe_tags, preferred_asset_ids)
+    texture_id = first_asset_id(asset_by_id, "texture", section_index, recipe_tags, preferred_asset_ids)
     body_text = next((text for text in section_texts if text.get("role") == "body"), section_texts[0] if section_texts else None)
     first_image = section_images[0] if section_images else None
+
+    if texture_id is not None and section_index < 2:
+        target = first_image or body_text
+        if target is not None:
+            decorations.append(
+                {
+                    "assetId": texture_id,
+                    "x": clamp_number(positive_number(target.get("x"), 80) - 54, 24, CANVAS_WIDTH - 600),
+                    "y": max(positive_number(target.get("y"), 0) - 72, 0),
+                    "width": 600,
+                    "height": 360,
+                    "rotation": [-1.5, 1.2][section_index % 2],
+                }
+            )
 
     if paper_id is not None and body_text is not None:
         decorations.append(

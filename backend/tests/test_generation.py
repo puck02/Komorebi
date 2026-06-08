@@ -475,6 +475,43 @@ def test_generator_adds_template_decorations_to_sections_without_model_decoratio
     assert paper.y <= body_text.y <= paper.y + paper.height
 
 
+def test_generator_adds_limited_background_textures_to_template_sections():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []},
+        {"id": "section_2", "title": "第二段", "imageIds": ["img_2"], "body": "第二段正文。", "mood": []},
+        {"id": "section_3", "title": "第三段", "imageIds": ["img_3"], "body": "第三段正文。", "mood": []},
+    ]
+    payload["layout"]["sections"] = [
+        {"sectionId": "section_1", "variant": "hero_note", "y": 220, "height": 720, "images": [], "texts": [], "decorations": []},
+        {"sectionId": "section_2", "variant": "hero_note", "y": 980, "height": 720, "images": [], "texts": [], "decorations": []},
+        {"sectionId": "section_3", "variant": "hero_note", "y": 1740, "height": 720, "images": [], "texts": [], "decorations": []},
+    ]
+    payload["layout"]["decorations"] = []
+    assets = [
+        asset_item("paper_note_cream_01", "paper"),
+        asset_item("tape_warm_grid_01", "tape"),
+        asset_item("sticker_leaf_05", "sticker"),
+        asset_item("texture_receipt_flecks_09", "texture"),
+        asset_item("texture_warm_stitches_10", "texture"),
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images(), assets=assets))
+
+    texture_decorations = [
+        decoration
+        for section in layout.layout.sections
+        for decoration in section.decorations
+        if decoration.asset_id.startswith("texture_")
+    ]
+    assert [decoration.asset_id for decoration in texture_decorations] == [
+        "texture_receipt_flecks_09",
+        "texture_warm_stitches_10",
+    ]
+    assert all(decoration.width >= 500 and decoration.height >= 300 for decoration in texture_decorations)
+
+
 def test_generator_expands_template_paper_to_actual_body_height():
     payload = valid_model_json()
     long_body = "这是一段很长的正文，" * 30
