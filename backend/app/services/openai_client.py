@@ -102,9 +102,12 @@ class OpenAIJournalClient:
                 if attempt == OPENAI_MAX_ATTEMPTS:
                     raise GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置") from exc
 
-        payload = response.json()
-        content = payload["choices"][0]["message"]["content"]
-        return json.loads(content)
+        try:
+            payload = response.json()
+            content = payload["choices"][0]["message"]["content"]
+            return json.loads(content)
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise GenerationError("AI 服务返回格式异常，请稍后重试或检查模型服务配置") from exc
 
 
 def build_generation_message_content(request: JournalGenerationRequest) -> str | list[dict[str, Any]]:

@@ -1208,6 +1208,22 @@ def test_openai_client_retries_transient_connection_errors(monkeypatch):
     assert layout["content"]["title"] == "慢下来的周末"
 
 
+def test_openai_client_converts_invalid_json_content_to_generation_error(monkeypatch):
+    def fake_post(url, **kwargs):
+        request = httpx.Request("POST", url)
+        return httpx.Response(
+            200,
+            request=request,
+            json={"choices": [{"message": {"content": "not json"}}]},
+        )
+
+    monkeypatch.setattr("app.services.openai_client.httpx.post", fake_post)
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+
+    with pytest.raises(GenerationError, match="AI 服务返回格式异常"):
+        client.generate_layout(generation_request())
+
+
 def test_openai_client_converts_status_errors_to_generation_error(monkeypatch):
     def fake_post(url, **kwargs):
         request = httpx.Request("POST", url)
