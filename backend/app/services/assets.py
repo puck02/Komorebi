@@ -27,9 +27,14 @@ class AssetItem:
         return ASSET_ROOT / self.file
 
 
-@lru_cache
 def load_assets() -> list[AssetItem]:
-    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    manifest_stat = MANIFEST_PATH.stat()
+    return _load_assets(str(MANIFEST_PATH), manifest_stat.st_mtime_ns, manifest_stat.st_size)
+
+
+@lru_cache
+def _load_assets(manifest_path: str, _mtime_ns: int, _size: int) -> list[AssetItem]:
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
     return [
         AssetItem(
             id=item["id"],
@@ -45,6 +50,9 @@ def load_assets() -> list[AssetItem]:
         )
         for item in manifest
     ]
+
+
+load_assets.cache_clear = _load_assets.cache_clear
 
 
 def get_asset(asset_id: str) -> AssetItem | None:

@@ -48,6 +48,19 @@ def test_manifest_asset_ids_and_files_are_unique():
     assert len({asset.file for asset in assets}) == len(assets)
 
 
+def test_load_assets_refreshes_when_manifest_file_changes(tmp_path, monkeypatch):
+    manifest_path = copy_manifest(tmp_path, monkeypatch)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    new_asset = {**manifest[0], "id": "runtime_manifest_refresh_asset"}
+
+    assert all(asset.id != new_asset["id"] for asset in load_assets())
+
+    manifest.append(new_asset)
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    assert any(asset.id == new_asset["id"] for asset in load_assets())
+
+
 def test_asset_matching_returns_only_approved_assets():
     assets = get_approved_assets(tags=["warm", "daily"])
 
