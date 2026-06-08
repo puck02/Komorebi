@@ -50,6 +50,11 @@ def place_decorations(
             if photo_corner is not None:
                 placed.append(photo_corner)
             continue
+        if function == "clip":
+            clip = place_clip_sticker(decoration, paper_backings, image_placements, text_placements)
+            if clip is not None:
+                placed.append(clip)
+            continue
         sticker = place_sticker(decoration, image_placements, text_placements)
         if sticker is not None:
             placed.append(sticker)
@@ -71,6 +76,8 @@ def infer_asset_function(asset: AssetItem) -> str:
         return "note"
     if "photo_corner" in text or "photo corner" in text:
         return "photo_corner"
+    if "clip" in text or "paperclip" in text or "paper clip" in text:
+        return "clip"
     if "flower" in text:
         return "flower"
     if "star" in text:
@@ -178,6 +185,31 @@ def place_photo_corner_sticker(
     candidate["rotation"] = clamp_number(positive_number(decoration.get("rotation"), -2), -6, 6)
     candidate = clamp_decoration_to_canvas(candidate)
     if overlaps_any_text(candidate, text_placements):
+        return place_sticker(decoration, image_placements, text_placements)
+    return candidate
+
+
+def place_clip_sticker(
+    decoration: dict[str, Any],
+    paper_backings: list[dict[str, Any]],
+    image_placements: list[dict[str, Any]],
+    text_placements: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    if not paper_backings:
+        return place_sticker(decoration, image_placements, text_placements)
+
+    target = nearest_rect(decoration, paper_backings)
+    target_x, target_y, target_width, _target_height = rect_from_item(target)
+    width = min(max(positive_number(decoration.get("width"), 96), 56), 128)
+    height = min(max(positive_number(decoration.get("height"), 96), 56), 128)
+    candidate = dict(decoration)
+    candidate["width"] = width
+    candidate["height"] = height
+    candidate["x"] = clamp_number(target_x + target_width * 0.72, target_x + 12, max(target_x + target_width - width - 12, target_x + 12))
+    candidate["y"] = max(target_y - height * 0.42, 0)
+    candidate["rotation"] = clamp_number(positive_number(decoration.get("rotation"), -3), -7, 7)
+    candidate = clamp_decoration_to_canvas(candidate)
+    if overlaps_photo_safe_area(candidate, image_placements):
         return place_sticker(decoration, image_placements, text_placements)
     return candidate
 
