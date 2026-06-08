@@ -34,6 +34,7 @@ PHOTO_ROW_GAP = 56
 LONG_BODY_SPLIT_TARGET = 58
 GENERIC_CAPTIONS = {"今天的照片", "照片说明", "这张照片", "生活片段"}
 GENERIC_SECTION_BODIES = {"这一组照片也想好好留下", "今天的照片先放在这里", "今天的照片"}
+GENERIC_SECTION_TITLES = {"第一段", "第二段", "第三段", "第四段", "照片小组", "模型乱分组", "A", "B"}
 
 
 class GenerationError(RuntimeError):
@@ -259,11 +260,29 @@ def normalize_content_sections(layout: dict[str, Any], request_images: list[Jour
     return [
         {
             **section,
-            "title": normalize_title(section.get("title"), fallback=f"片段 {index + 1}"),
+            "title": normalize_section_title(section, understanding_by_id, index + 1),
             "body": normalize_section_body(section, understanding_by_id),
         }
         for index, section in enumerate(sections)
     ]
+
+
+def normalize_section_title(section: dict[str, Any], understanding_by_id: dict[Any, dict[str, Any]], index: int) -> str:
+    title = normalize_title(section.get("title"), fallback=f"片段 {index}")
+    if not is_generic_section_title(title):
+        return title
+    for image_id in section.get("imageIds", []):
+        if image_id not in understanding_by_id:
+            continue
+        caption = caption_from_understanding(understanding_by_id[image_id])
+        if not is_generic_caption(caption):
+            return normalize_title(caption, fallback=title)
+    return title
+
+
+def is_generic_section_title(value: Any) -> bool:
+    text = str(value or "").strip(" 。！？!?；;，,")
+    return text.startswith("片段 ") or text in GENERIC_SECTION_TITLES
 
 
 def normalize_section_body(section: dict[str, Any], understanding_by_id: dict[Any, dict[str, Any]]) -> str:

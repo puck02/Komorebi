@@ -685,6 +685,33 @@ def test_generator_rewrites_split_section_body_to_match_section_images():
     ]
 
 
+def test_generator_replaces_generic_section_title_with_image_understanding():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "第一段",
+            "imageIds": ["img_1"],
+            "body": "窗边咖啡和小票，今天就记这一点。",
+            "mood": ["日常"],
+        }
+    ]
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "窗边咖啡和小票",
+            "scene": "咖啡店",
+            "subjects": ["咖啡", "小票"],
+            "mood": ["轻松"],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    assert layout.content.sections[0].title == "窗边咖啡和小票"
+
+
 def test_generator_replaces_generic_section_body_with_image_understanding():
     payload = valid_model_json()
     payload["content"]["sections"] = [
