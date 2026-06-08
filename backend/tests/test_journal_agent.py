@@ -102,7 +102,7 @@ def test_agent_returns_fallback_layout_when_initial_generation_ai_connection_fai
 
     result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(generation_request())
 
-    assert result.layout.content.title == "今日小记"
+    assert result.layout.content.title == "周末一起散步"
     assert result.layout.content.body == ["周末一起散步。"]
     assert result.layout.content.captions[0].image_id == "img_1"
     assert result.layout.content.captions[0].text == "周末一起散步"

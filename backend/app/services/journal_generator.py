@@ -189,7 +189,7 @@ def fallback_title(request: JournalGenerationRequest) -> str:
     location = str(request.location or "").strip()
     if location:
         return normalize_title(f"{location}小记")
-    return "今日小记"
+    return normalize_title(request.description, fallback="今日小记")
 
 
 def fallback_sections(request: JournalGenerationRequest, body: str) -> list[dict[str, Any]]:

@@ -1109,7 +1109,7 @@ def test_generator_returns_fallback_layout_when_model_connection_fails():
 
     layout = generator.generate(generation_request())
 
-    assert layout.content.title == "今日小记"
+    assert layout.content.title == "周末一起散步"
     assert layout.content.body == ["周末一起散步，天气很好，喝了咖啡。"]
     assert layout.content.captions[0].text == "周末一起散步，天气很好，喝了"
     assert layout.layout.sections

@@ -135,7 +135,7 @@ def test_runner_completes_with_local_fallback_when_agent_generation_fails(tmp_pa
         assert job.stage == "completed"
         assert job.best_score == 0
         assert job.error_message is None
-        assert journal.title == "今日小记"
+        assert journal.title == "周末一起散步"
         assert journal.layout_json["content"]["body"] == ["周末一起散步。"]
 
 
@@ -156,7 +156,7 @@ def test_runner_completes_with_local_fallback_when_ai_config_is_missing(tmp_path
         assert job.stage == "completed"
         assert job.best_score == 0
         assert job.error_message is None
-        assert journal.title == "今日小记"
+        assert journal.title == "周末一起散步"
 
 
 def test_runner_completes_job_when_agent_returns_fallback_result(tmp_path):
