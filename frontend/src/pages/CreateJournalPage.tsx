@@ -10,6 +10,7 @@ import type { UploadedImage } from "../api/images";
 import ImageUploader from "../components/ImageUploader";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { CREATE_JOURNAL_MOOD_OPTIONS } from "./createJournalOptions";
 
 const createJournalSchema = z.object({
   description: z.string().trim().min(1, "请写一点今天的内容。"),
@@ -18,8 +19,6 @@ const createJournalSchema = z.object({
 });
 
 type CreateJournalValues = z.infer<typeof createJournalSchema>;
-
-const MOOD_OPTIONS = ["开心", "温柔", "放松", "期待", "感动", "平静", "治愈", "热闹", "浪漫", "疲惫", "想念", "珍贵"];
 
 export default function CreateJournalPage() {
   const navigate = useNavigate();
@@ -148,7 +147,7 @@ export default function CreateJournalPage() {
             </button>
             {isMoodPickerOpen ? (
               <div className="mood-picker" role="listbox" aria-label="选择心情">
-                {MOOD_OPTIONS.map((mood) => (
+                {CREATE_JOURNAL_MOOD_OPTIONS.map((mood) => (
                   <button
                     aria-selected={selectedMood === mood}
                     className={selectedMood === mood ? "is-selected" : ""}
