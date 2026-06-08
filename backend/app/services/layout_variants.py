@@ -8,6 +8,8 @@ SECTION_TEXT_FONT_SIZE = 32
 SECTION_CAPTION_FONT_SIZE = 22
 SECTION_CAPTION_SIDE_PADDING = 28
 SECTION_CAPTION_BOTTOM_OFFSET = 38
+SECTION_CAPTION_BELOW_OFFSET = 10
+SECTION_CAPTION_TEXT_GAP = 18
 SECTION_GAP = 104
 TEXT_PHOTO_GAP = 56
 IMAGE_GAP = 38
@@ -94,11 +96,18 @@ def build_section_layout(
     section_images = [image for image in request_images if image_id(image) in section_image_ids]
     image_placements = build_image_placements(variant, section_images, start_y, section_index)
     image_bottom = max((item["y"] + item["height"] for item in image_placements), default=start_y)
+    caption_texts = build_caption_placements(image_placements)
+    caption_bottom = max(
+        (caption["y"] + estimated_caption_height(caption) for caption in caption_texts),
+        default=image_bottom,
+    )
     text_y = image_bottom + TEXT_PHOTO_GAP
+    if caption_texts:
+        text_y = max(text_y, caption_bottom + SECTION_CAPTION_TEXT_GAP)
     if variant in {"magazine_whitespace", "ticket_memo"} and image_placements:
         text_y = min(text_y, start_y + 420)
     if variant == "ticket_memo" and len(image_placements) >= 2:
-        text_y = image_bottom + TEXT_PHOTO_GAP
+        text_y = max(image_bottom + TEXT_PHOTO_GAP, caption_bottom + SECTION_CAPTION_TEXT_GAP)
     text = {
         "role": "body",
         "x": text_x_for_variant(variant, len(image_placements)),
@@ -108,8 +117,7 @@ def build_section_layout(
     }
     body = str(section.get("body") or "")
     text_bottom = text["y"] + estimate_paragraph_height(body, text["fontSize"], text["width"])
-    section_bottom = max(image_bottom, text_bottom) + SECTION_GAP
-    caption_texts = build_caption_placements(image_placements)
+    section_bottom = max(image_bottom, caption_bottom, text_bottom) + SECTION_GAP
 
     return {
         "sectionId": str(section["id"]),
@@ -222,16 +230,50 @@ def placement(image: Any, x: float, y: float, width: float, index: int, rotation
 
 
 def build_caption_placements(image_placements: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [
-        {
+    caption_placements = []
+    for image in image_placements:
+        caption = {
             "role": "caption",
             "x": image["x"] + SECTION_CAPTION_SIDE_PADDING,
-            "y": image["y"] + image["height"] - SECTION_CAPTION_BOTTOM_OFFSET,
+            "y": caption_y_for_image(image, image_placements),
             "width": max(image["width"] - SECTION_CAPTION_SIDE_PADDING * 2, 120),
             "fontSize": SECTION_CAPTION_FONT_SIZE,
         }
-        for image in image_placements
+        caption_placements.append(caption)
+    return caption_placements
+
+
+def caption_y_for_image(image: dict[str, Any], image_placements: list[dict[str, Any]]) -> float:
+    below_y = image["y"] + image["height"] + SECTION_CAPTION_BELOW_OFFSET
+    caption_rect = (
+        image["x"] + SECTION_CAPTION_SIDE_PADDING,
+        below_y,
+        max(image["width"] - SECTION_CAPTION_SIDE_PADDING * 2, 120),
+        SECTION_CAPTION_FONT_SIZE * 2.4,
+    )
+    other_image_rects = [
+        (candidate["x"], candidate["y"], candidate["width"], candidate["height"])
+        for candidate in image_placements
+        if candidate is not image
     ]
+    if any(rects_overlap(caption_rect, rect) for rect in other_image_rects):
+        return image["y"] + image["height"] - SECTION_CAPTION_BOTTOM_OFFSET
+    return below_y
+
+
+def estimated_caption_height(caption: dict[str, Any]) -> float:
+    return float(caption.get("fontSize") or SECTION_CAPTION_FONT_SIZE) * 2.4
+
+
+def rects_overlap(first: tuple[float, float, float, float], second: tuple[float, float, float, float]) -> bool:
+    first_x, first_y, first_width, first_height = first
+    second_x, second_y, second_width, second_height = second
+    return (
+        first_x < second_x + second_width
+        and first_x + first_width > second_x
+        and first_y < second_y + second_height
+        and first_y + first_height > second_y
+    )
 
 
 def section_keywords(section: dict[str, Any], image_understanding: list[dict[str, Any]]) -> str:
