@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from app.schemas.journal import JournalLayout
 from app.services.assets import AssetItem
 from app.services.decoration_placement import place_decorations
-from app.services.diary_copy import normalize_diary_blocks, normalize_diary_text, normalize_title
+from app.services.diary_copy import normalize_diary_blocks, normalize_diary_text, normalize_title, split_sentences
 from app.services.layout_variants import ALLOWED_SECTION_VARIANTS, build_section_layout
 from app.services.style_recipes import choose_asset_id, recipe_tags_for_section
 from app.services.story_planner import plan_content_sections, split_evenly
@@ -179,22 +179,35 @@ def fallback_title(request: JournalGenerationRequest) -> str:
 
 def fallback_sections(request: JournalGenerationRequest, body: str) -> list[dict[str, Any]]:
     mood_tags = normalized_mood_tags(request) or ["日常"]
+    section_bodies = fallback_section_bodies(body, max(ceil(len(request.images) / 3), 1))
     if not request.images:
-        return [{"id": "section_1", "title": fallback_title(request), "imageIds": ["img_1"], "body": body, "mood": mood_tags}]
+        return [{"id": "section_1", "title": fallback_title(request), "imageIds": ["img_1"], "body": section_bodies[0], "mood": mood_tags}]
 
     sections: list[dict[str, Any]] = []
     for start in range(0, len(request.images), 3):
         group = request.images[start : start + 3]
+        section_index = len(sections)
         sections.append(
             {
-                "id": f"section_{len(sections) + 1}",
-                "title": fallback_title(request) if start == 0 else f"第 {start + 1} 张照片",
+                "id": f"section_{section_index + 1}",
+                "title": fallback_title(request) if start == 0 else fallback_title_from_body(section_bodies[section_index]),
                 "imageIds": [image.id for image in group],
-                "body": body if start == 0 else f"第 {start + 1} 张照片也放在这里。",
+                "body": section_bodies[section_index],
                 "mood": mood_tags,
             }
         )
     return sections
+
+
+def fallback_section_bodies(body: str, section_count: int) -> list[str]:
+    sentences = split_sentences(body)
+    if len(sentences) >= section_count:
+        return [normalize_diary_text(sentence, fallback=body) for sentence in sentences[:section_count]]
+    return [body for _ in range(section_count)]
+
+
+def fallback_title_from_body(body: str) -> str:
+    return normalize_title(body, fallback="继续记")
 
 
 def normalized_mood_tags(request: JournalGenerationRequest) -> list[str]:

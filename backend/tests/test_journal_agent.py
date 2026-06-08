@@ -150,7 +150,11 @@ def test_agent_fallback_layout_splits_large_image_sets_without_repeating_body():
     )
 
     result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(
-        generation_request(images=four_images())
+        JournalGenerationRequest(
+            description="周末一起散步。傍晚喝了咖啡，路口的灯亮起来。",
+            images=four_images(),
+            assets=get_approved_assets(),
+        )
     )
 
     assert [section.image_ids for section in result.layout.content.sections] == [
@@ -159,7 +163,7 @@ def test_agent_fallback_layout_splits_large_image_sets_without_repeating_body():
     ]
     assert [section.body for section in result.layout.content.sections] == [
         "周末一起散步。",
-        "第 4 张照片也放在这里。",
+        "傍晚喝了咖啡，路口的灯亮起来。",
     ]
 
 
