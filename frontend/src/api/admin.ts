@@ -18,6 +18,14 @@ export type AiSettingsUpdate = {
   reviewModel: string;
 };
 
+export type AiConnectionTest = {
+  ok: boolean;
+  status: string;
+  message: string;
+  model: string;
+  statusCode: number | null;
+};
+
 export function getAdminPermissions() {
   return apiRequest<AdminPermissions>("/admin/permissions/me", { auth: true });
 }
@@ -31,5 +39,12 @@ export function updateAiSettings(payload: AiSettingsUpdate) {
     auth: true,
     body: JSON.stringify(payload),
     method: "PATCH"
+  });
+}
+
+export function testAiConnection() {
+  return apiRequest<AiConnectionTest>("/admin/ai-settings/test", {
+    auth: true,
+    method: "POST"
   });
 }

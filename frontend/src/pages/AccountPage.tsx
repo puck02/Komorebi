@@ -1,9 +1,9 @@
-import { CheckCircle2, KeyRound, LogOut, Mail, Save, Server, UserRound } from "lucide-react";
+import { CheckCircle2, CircleAlert, KeyRound, LogOut, Mail, Save, Server, UserRound, Wifi } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
-import { getAdminPermissions, getAiSettings, updateAiSettings } from "../api/admin";
+import { getAdminPermissions, getAiSettings, testAiConnection, updateAiSettings } from "../api/admin";
 import { getCurrentUser } from "../api/auth";
 import { clearAccessToken } from "../api/client";
 import { Button } from "../components/ui/button";
@@ -73,6 +73,7 @@ function AiSettingsPanel() {
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("gpt-5.5");
   const [reviewModel, setReviewModel] = useState("gpt-5.4-mini");
+  const testMutation = useMutation({ mutationFn: testAiConnection });
   const updateMutation = useMutation({
     mutationFn: updateAiSettings,
     onSuccess: (settings) => {
@@ -81,6 +82,7 @@ function AiSettingsPanel() {
       setModel(settings.model);
       setReviewModel(settings.reviewModel);
       queryClient.setQueryData(["ai-settings"], settings);
+      testMutation.reset();
     }
   });
 
@@ -104,6 +106,12 @@ function AiSettingsPanel() {
     });
   }
 
+  function handleTestConnection() {
+    testMutation.mutate();
+  }
+
+  const connectionResult = testMutation.data;
+
   return (
     <form className="account-ai-settings" onSubmit={handleSubmit}>
       <div className="account-ai-heading">
@@ -119,7 +127,20 @@ function AiSettingsPanel() {
 
       {settingsQuery.error instanceof Error ? <p className="form-error">{settingsQuery.error.message}</p> : null}
       {updateMutation.error instanceof Error ? <p className="form-error">{updateMutation.error.message}</p> : null}
+      {testMutation.error instanceof Error ? <p className="form-error">{testMutation.error.message}</p> : null}
       {updateMutation.isSuccess ? <p className="form-success">AI 配置已保存</p> : null}
+      {connectionResult ? (
+        <div className={connectionResult.ok ? "ai-test-result is-ok" : "ai-test-result is-failed"}>
+          {connectionResult.ok ? <CheckCircle2 size={16} /> : <CircleAlert size={16} />}
+          <div>
+            <p>{connectionResult.message}</p>
+            <span>
+              {connectionResult.model}
+              {connectionResult.statusCode ? ` · HTTP ${connectionResult.statusCode}` : ""}
+            </span>
+          </div>
+        </div>
+      ) : null}
 
       <div className="ai-settings-grid">
         <label className="ai-settings-field is-wide">
@@ -167,6 +188,15 @@ function AiSettingsPanel() {
       </datalist>
 
       <div className="ai-settings-actions">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!settingsQuery.data?.hasApiKey || settingsQuery.isLoading || testMutation.isPending || updateMutation.isPending}
+          onClick={handleTestConnection}
+        >
+          <Wifi size={16} />
+          {testMutation.isPending ? "测试中" : "测试连接"}
+        </Button>
         <Button type="submit" disabled={settingsQuery.isLoading || updateMutation.isPending}>
           <Save size={16} />
           {updateMutation.isPending ? "保存中" : "保存配置"}

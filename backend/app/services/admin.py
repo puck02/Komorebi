@@ -1,13 +1,18 @@
 from dataclasses import dataclass
+from typing import Any
 
+import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.models.ai_settings import AiSettings
 from app.models.user import User
+from app.schemas.admin import AiConnectionTestRead
+from app.services.openai_client import DEFAULT_OPENAI_BASE_URL, OPENAI_TIMEOUT_SECONDS
 
 DEFAULT_AI_SETTINGS_ID = "default"
+AI_CONNECTION_TEST_MAX_TIMEOUT = min(OPENAI_TIMEOUT_SECONDS, 30)
 
 
 @dataclass(frozen=True)
@@ -62,3 +67,88 @@ def get_effective_ai_settings(db: Session) -> EffectiveAiSettings:
         model=saved.model or settings.openai_model,
         review_model=saved.review_model or settings.openai_review_model,
     )
+
+
+def test_ai_service_connection(db: Session) -> AiConnectionTestRead:
+    settings = get_effective_ai_settings(db)
+    if not settings.api_key:
+        return AiConnectionTestRead(
+            ok=False,
+            status="missing_key",
+            message="API Key 未配置，请先保存 Key",
+            model=settings.model,
+        )
+
+    base_url = settings.base_url or DEFAULT_OPENAI_BASE_URL
+    try:
+        response = httpx.post(
+            f"{base_url.rstrip('/')}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": settings.model,
+                "messages": [{"role": "user", "content": "Return only this JSON object: {\"ok\": true}"}],
+                "response_format": {"type": "json_object"},
+            },
+            timeout=AI_CONNECTION_TEST_MAX_TIMEOUT,
+            trust_env=True,
+        )
+    except httpx.RequestError:
+        return AiConnectionTestRead(
+            ok=False,
+            status="connection_failed",
+            message="AI 服务连接失败，请检查 Base URL 或网络",
+            model=settings.model,
+        )
+
+    if response.status_code in {401, 403}:
+        return AiConnectionTestRead(
+            ok=False,
+            status="auth_failed",
+            message="AI 服务认证失败，请检查 Key 或渠道权限",
+            model=settings.model,
+            statusCode=response.status_code,
+        )
+    if 400 <= response.status_code < 500:
+        return AiConnectionTestRead(
+            ok=False,
+            status="request_failed",
+            message=f"AI 服务返回 {response.status_code}，请检查模型名或渠道参数",
+            model=settings.model,
+            statusCode=response.status_code,
+        )
+    if response.status_code >= 500:
+        return AiConnectionTestRead(
+            ok=False,
+            status="provider_unavailable",
+            message=f"AI 服务返回 {response.status_code}，第三方渠道暂时不可用",
+            model=settings.model,
+            statusCode=response.status_code,
+        )
+    if not is_chat_completion_json_response(response):
+        return AiConnectionTestRead(
+            ok=False,
+            status="invalid_response",
+            message="AI 服务返回格式异常，请检查渠道是否兼容 OpenAI Chat Completions",
+            model=settings.model,
+            statusCode=response.status_code,
+        )
+
+    return AiConnectionTestRead(
+        ok=True,
+        status="ok",
+        message="AI 服务连接正常",
+        model=settings.model,
+        statusCode=response.status_code,
+    )
+
+
+def is_chat_completion_json_response(response: httpx.Response) -> bool:
+    try:
+        payload: dict[str, Any] = response.json()
+        content = payload["choices"][0]["message"]["content"]
+    except (KeyError, TypeError, ValueError):
+        return False
+    return isinstance(content, str) and bool(content.strip())

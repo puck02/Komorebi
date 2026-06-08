@@ -2,6 +2,7 @@ import json
 import logging
 from pathlib import Path
 
+import httpx
 from PIL import Image as PillowImage
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -223,6 +224,40 @@ def test_runner_uses_saved_admin_ai_settings_for_default_agent(tmp_path, monkeyp
         "model": "gpt-5.5",
         "review_model": "gpt-5.4-mini",
     }
+
+
+def test_runner_completes_with_local_fallback_when_default_agent_cannot_connect(tmp_path, monkeypatch):
+    session_factory = make_session_factory()
+    job_id = seed_job(session_factory, tmp_path)
+
+    def failing_post(url, **_kwargs):
+        request = httpx.Request("POST", url)
+        raise httpx.ConnectError("connection failed", request=request)
+
+    with session_factory() as db:
+        db.add(
+            AiSettings(
+                id="default",
+                base_url="https://example.test/v1",
+                api_key="dummy-saved-api-key",
+                model="gpt-5.5",
+                review_model="gpt-5.4-mini",
+            )
+        )
+        db.commit()
+
+    monkeypatch.setattr("app.services.openai_client.httpx.post", failing_post)
+
+    run_generation_job(job_id, session_factory=session_factory)
+
+    with session_factory() as db:
+        job = db.get(GenerationJob, job_id)
+        journal = db.get(Journal, job.journal_id)
+        assert job.status == "completed"
+        assert job.stage == "completed"
+        assert job.best_score == 0
+        assert job.error_message is None
+        assert journal.title == "周末一起散步"
 
 
 def test_runner_logs_generation_job_failure(tmp_path, caplog):

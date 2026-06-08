@@ -2124,7 +2124,46 @@ body {
 
 .ai-settings-actions {
   display: flex;
+  gap: 10px;
   justify-content: flex-end;
+}
+
+.ai-test-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: rgb(255 253 248 / 70%);
+}
+
+.ai-test-result.is-ok {
+  border-color: rgb(113 142 106 / 42%);
+  color: #4f7249;
+  background: rgb(226 237 219 / 56%);
+}
+
+.ai-test-result.is-failed {
+  border-color: rgb(184 111 91 / 46%);
+  color: #8f4f3f;
+  background: rgb(255 239 231 / 66%);
+}
+
+.ai-test-result p {
+  margin: 0;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.ai-test-result span {
+  display: block;
+  margin-top: 3px;
+  color: var(--color-paragraph);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .form-success {
@@ -2612,6 +2651,7 @@ body {
   }
 
   .ai-settings-actions {
+    flex-direction: column-reverse;
     justify-content: stretch;
   }
 

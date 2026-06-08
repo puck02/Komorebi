@@ -16,6 +16,16 @@ class AiSettingsRead(BaseModel):
     review_model: str = Field(alias="reviewModel")
 
 
+class AiConnectionTestRead(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    ok: bool
+    status: str
+    message: str
+    model: str
+    status_code: int | None = Field(default=None, alias="statusCode")
+
+
 class AiSettingsUpdate(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 

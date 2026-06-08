@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
-from app.schemas.admin import AdminPermissionsRead, AiSettingsRead, AiSettingsUpdate
-from app.services.admin import get_effective_ai_settings, get_or_create_ai_settings, is_admin_user
+from app.schemas.admin import AdminPermissionsRead, AiConnectionTestRead, AiSettingsRead, AiSettingsUpdate
+from app.services.admin import get_effective_ai_settings, get_or_create_ai_settings, is_admin_user, test_ai_service_connection
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -56,6 +56,15 @@ def update_ai_settings(
         model=effective_settings.model,
         reviewModel=effective_settings.review_model,
     )
+
+
+@router.post("/ai-settings/test", response_model=AiConnectionTestRead)
+def test_ai_connection(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AiConnectionTestRead:
+    ensure_admin(db, current_user)
+    return test_ai_service_connection(db)
 
 
 def ensure_admin(db: Session, current_user: User) -> None:
