@@ -82,6 +82,20 @@ def test_layout_rules_report_header_overlap_with_section_images():
     assert has_issue(issues, "readability", "high", "文字与照片发生重叠")
 
 
+def test_layout_rules_report_missing_meta_placement():
+    payload = layout_payload()
+    payload["content"]["meta"] = "2026-05-20 / 上海 / 松快"
+    payload["layout"]["texts"] = [
+        {"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56},
+        {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32},
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert has_issue(issues, "metaCoverage", "medium", "手帐元信息没有渲染位置")
+
+
 def test_layout_rules_report_tape_not_attached_to_edge():
     payload = layout_payload()
     payload["layout"]["decorations"].append(

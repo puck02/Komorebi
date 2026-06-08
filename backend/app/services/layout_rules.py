@@ -36,6 +36,7 @@ def check_layout_rules(layout: JournalLayout, request: Any) -> list[dict[str, An
     issues: list[dict[str, Any]] = []
     issues.extend(check_image_order(layout, request))
     issues.extend(check_copy_quality(layout))
+    issues.extend(check_meta_coverage(layout))
     issues.extend(check_readability(layout))
     issues.extend(check_decorations(layout, request))
     issues.extend(check_sections(layout))
@@ -60,6 +61,14 @@ def rendered_image_ids(layout: JournalLayout) -> list[str]:
             for image in sorted(section.images, key=lambda item: (item.y, item.x))
         ]
     return [image.image_id for image in layout.layout.images]
+
+
+def check_meta_coverage(layout: JournalLayout) -> list[dict[str, Any]]:
+    if not str(layout.content.meta or "").strip():
+        return []
+    if any(text.role == "meta" for text in layout.layout.texts):
+        return []
+    return [rule_issue("metaCoverage", "medium", [], "手帐元信息没有渲染位置")]
 
 
 def check_readability(layout: JournalLayout) -> list[dict[str, Any]]:
