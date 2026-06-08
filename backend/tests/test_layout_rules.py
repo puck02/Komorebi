@@ -620,6 +620,44 @@ def test_layout_rules_report_section_body_repeating_its_caption():
     assert has_issue(issues, "copyQuality", "medium", "章节正文重复照片说明，手帐记录不够具体")
 
 
+def test_layout_rules_report_section_body_repeating_multiple_captions():
+    payload = layout_payload(image_ids=["img_1", "img_2", "img_3"])
+    payload["content"]["captions"] = [
+        {"imageId": "img_1", "text": "周末一起散步"},
+        {"imageId": "img_2", "text": "傍晚喝了咖啡"},
+        {"imageId": "img_3", "text": "路口灯亮起来"},
+    ]
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "散步",
+            "imageIds": ["img_1", "img_2", "img_3"],
+            "body": "周末一起散步，傍晚喝了咖啡，路口灯亮起来。",
+            "mood": [],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "photo_wall",
+            "y": 220,
+            "height": 720,
+            "images": [
+                {"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0},
+                {"imageId": "img_2", "x": 568, "y": 260, "width": 320, "height": 240, "rotation": 0},
+                {"imageId": "img_3", "x": 568, "y": 540, "width": 320, "height": 240, "rotation": 0},
+            ],
+            "texts": [{"role": "body", "x": 112, "y": 820, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=three_images()))
+
+    assert has_issue(issues, "copyQuality", "medium", "章节正文重复照片说明，手帐记录不够具体")
+
+
 def test_layout_rules_report_section_body_mentions_other_image_understanding():
     payload = layout_payload(image_ids=["img_1", "img_2"])
     payload["content"]["imageUnderstanding"] = [

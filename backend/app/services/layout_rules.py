@@ -352,12 +352,16 @@ def has_section_body_repeating_caption(layout: JournalLayout) -> bool:
         body = copy_signal_text(section.body)
         if len(body) < MIN_SECTION_BODY_CHARS:
             continue
+        section_captions: list[str] = []
         for image_id in section.image_ids:
             caption = captions_by_image_id.get(image_id, "")
             if len(caption) < MIN_CAPTION_SIGNAL_CHARS:
                 continue
+            section_captions.append(caption)
             if body == caption or body_is_thin_caption_repeat(body, caption):
                 return True
+        if body_is_caption_list_repeat(body, section_captions):
+            return True
     return False
 
 
@@ -366,6 +370,17 @@ def body_is_thin_caption_repeat(body: str, caption: str) -> bool:
         return False
     extra = body[len(caption) :].strip(" 的和又在把成里。！？!?；;，,、")
     return len(extra) <= 2
+
+
+def body_is_caption_list_repeat(body: str, captions: list[str]) -> bool:
+    matched_captions = [caption for caption in captions if caption in body]
+    if len(matched_captions) < 2:
+        return False
+    remaining = body
+    for caption in matched_captions:
+        remaining = remaining.replace(caption, "")
+    remaining = remaining.strip(" 的和又在把成里。！？!?；;，,、")
+    return len(remaining) <= 4
 
 
 def is_placeholder_copy(value: Any) -> bool:
