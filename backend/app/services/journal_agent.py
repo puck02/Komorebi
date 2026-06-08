@@ -83,7 +83,10 @@ class JournalAgent:
         notify = on_progress or (lambda _stage, _round, _score: None)
         context = log_context or {}
         notify("generating_draft", 0, None)
-        raw_layout = self.client.generate_layout(request)
+        try:
+            raw_layout = self.client.generate_layout(request)
+        except GenerationError as exc:
+            return self._result_from_fallback_layout(request, context, exc)
         try:
             current = self._review_candidate(raw_layout, request, 0, notify, context)
         except GenerationError as exc:
@@ -185,9 +188,70 @@ class JournalAgent:
         )
         return JournalAgentResult(layout, 0, revision_round, False)
 
+    def _result_from_fallback_layout(
+        self,
+        request: JournalGenerationRequest,
+        log_context: dict[str, Any],
+        error: GenerationError,
+    ) -> JournalAgentResult:
+        cleaned = sanitize_model_layout(build_fallback_layout(request), request)
+        layout = JournalLayout.model_validate(cleaned)
+        log_agent_event(
+            "agent.generation_unavailable",
+            **log_context,
+            error_type=error.__class__.__name__,
+            error_message=str(error) or error.__class__.__name__,
+            **layout_observability_summary(layout, request.assets),
+        )
+        return JournalAgentResult(layout, 0, 0, False)
+
     def _passes(self, candidate: JournalCandidate) -> bool:
         return not candidate.rule_issues and candidate.score >= self.quality_threshold and candidate.review.get("passed") is True
 
 
 def result_from_candidate(candidate: JournalCandidate, *, passed: bool) -> JournalAgentResult:
     return JournalAgentResult(candidate.layout, candidate.score, candidate.revision_round, passed)
+
+
+def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
+    body = request.description.strip() or "今天的照片先放在这里。"
+    caption = body.strip(" 。！？!?；;，,")[:18] or "今日小记"
+    image_id = request.images[0].id if request.images else "img_1"
+    return {
+        "canvas": {"width": 1080, "height": 1440, "background": "#f8f1e8"},
+        "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["日常"]},
+        "content": {
+            "title": "今日小记",
+            "body": [body],
+            "captions": [{"imageId": image_id, "text": caption}],
+            "imageUnderstanding": [
+                {
+                    "imageId": image.id,
+                    "summary": caption,
+                    "scene": "",
+                    "subjects": [],
+                    "mood": ["日常"],
+                }
+                for image in request.images
+            ],
+        },
+        "layout": {
+            "variant": "long_collage",
+            "images": [
+                {
+                    "imageId": image.id,
+                    "x": 92,
+                    "y": 210,
+                    "width": 420,
+                    "height": 320,
+                    "rotation": 0,
+                }
+                for image in request.images
+            ],
+            "texts": [
+                {"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56},
+                {"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32},
+            ],
+            "decorations": [],
+        },
+    }

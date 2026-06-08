@@ -94,6 +94,26 @@ def test_agent_returns_draft_when_initial_review_ai_connection_fails():
     assert client.revision_inputs == []
 
 
+def test_agent_returns_fallback_layout_when_initial_generation_ai_connection_fails():
+    client = FakeAgentClient(
+        reviews=[],
+        generation_error=GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置"),
+    )
+
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(generation_request())
+
+    assert result.layout.content.title == "今日小记"
+    assert result.layout.content.body == ["周末一起散步。"]
+    assert result.layout.content.captions[0].image_id == "img_1"
+    assert result.layout.content.captions[0].text == "周末一起散步"
+    assert result.layout.layout.images[0].image_id == "img_1"
+    assert result.score == 0
+    assert result.revision_round == 0
+    assert result.passed is False
+    assert client.review_inputs == []
+    assert client.revision_inputs == []
+
+
 def test_agent_restores_user_image_order_after_revision():
     reversed_layout = layout_payload(title="修订后", image_ids=["img_2", "img_1"])
     client = FakeAgentClient(
@@ -127,13 +147,16 @@ def test_agent_logs_structured_review_events(caplog):
 
 
 class FakeAgentClient:
-    def __init__(self, reviews, revisions=None):
+    def __init__(self, reviews, revisions=None, generation_error=None):
         self.reviews = list(reviews)
         self.revisions = list(revisions or [])
+        self.generation_error = generation_error
         self.review_inputs = []
         self.revision_inputs = []
 
     def generate_layout(self, request):
+        if self.generation_error:
+            raise self.generation_error
         return layout_payload()
 
     def review_layout(self, request, layout, screenshot_data_url, rule_issues):

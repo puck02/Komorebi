@@ -72,6 +72,21 @@ def test_runner_marks_job_failed_when_agent_raises(tmp_path):
         assert job.error_message == "AI 调用失败"
 
 
+def test_runner_completes_job_when_agent_returns_fallback_result(tmp_path):
+    session_factory = make_session_factory()
+    job_id = seed_job(session_factory, tmp_path)
+
+    run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: FakeAgent(score=0, passed=False))
+
+    with session_factory() as db:
+        job = db.get(GenerationJob, job_id)
+        assert job.status == "completed"
+        assert job.stage == "completed"
+        assert job.best_score == 0
+        assert job.journal_id is not None
+        assert job.error_message is None
+
+
 def test_runner_logs_generation_job_failure(tmp_path, caplog):
     session_factory = make_session_factory()
     job_id = seed_job(session_factory, tmp_path)
@@ -100,8 +115,10 @@ def test_recover_marks_incomplete_jobs_failed(tmp_path):
 
 
 class FakeAgent:
-    def __init__(self, error=None):
+    def __init__(self, error=None, score=91, passed=True):
         self.error = error
+        self.score = score
+        self.passed = passed
         self.progress_events = []
 
     def generate(self, request, on_progress=None, log_context=None):
@@ -113,9 +130,9 @@ class FakeAgent:
             on_progress(*event)
         return JournalAgentResult(
             layout=JournalLayout.model_validate(layout_payload(request.images[0].id)),
-            score=91,
+            score=self.score,
             revision_round=2,
-            passed=True,
+            passed=self.passed,
         )
 
 
