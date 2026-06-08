@@ -268,12 +268,13 @@ def normalize_content_sections(layout: dict[str, Any], request_images: list[Jour
 
 def normalize_section_body(section: dict[str, Any], understanding_by_id: dict[Any, dict[str, Any]]) -> str:
     body = normalize_diary_text(section.get("body"), fallback="这一组照片也想好好留下。")
-    if not is_generic_section_body(body):
+    section_image_ids = section.get("imageIds", [])
+    if not is_generic_section_body(body) and not body_mentions_outside_section(body, section_image_ids, understanding_by_id):
         return body
 
     summaries = [
         caption_from_understanding(understanding_by_id[image_id])
-        for image_id in section.get("imageIds", [])
+        for image_id in section_image_ids
         if image_id in understanding_by_id
     ]
     concrete_parts = [summary for summary in summaries if not is_generic_caption(summary)]
@@ -285,6 +286,22 @@ def normalize_section_body(section: dict[str, Any], understanding_by_id: dict[An
 def is_generic_section_body(value: Any) -> bool:
     text = str(value or "").strip(" 。！？!?；;，,")
     return text in GENERIC_SECTION_BODIES
+
+
+def body_mentions_outside_section(
+    body: str,
+    section_image_ids: list[str],
+    understanding_by_id: dict[Any, dict[str, Any]],
+) -> bool:
+    section_image_id_set = set(section_image_ids)
+    for image_id, understanding in understanding_by_id.items():
+        if image_id in section_image_id_set:
+            continue
+        keywords = [caption_from_understanding(understanding)]
+        keywords.extend(str(subject).strip() for subject in understanding.get("subjects") or [] if str(subject).strip())
+        if any(keyword and keyword in body for keyword in keywords):
+            return True
+    return False
 
 
 def normalize_layout_sections(

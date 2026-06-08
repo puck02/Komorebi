@@ -658,6 +658,33 @@ def test_generator_splits_non_adjacent_model_sections():
     assert [section.image_ids for section in layout.content.sections] == [["img_1"], ["img_2"], ["img_3"]]
 
 
+def test_generator_rewrites_split_section_body_to_match_section_images():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {
+            "id": "mixed_section",
+            "title": "模型乱分组",
+            "imageIds": ["img_1", "img_3"],
+            "body": "窗边咖啡和晚饭都放在这一组。",
+            "mood": ["日常"],
+        }
+    ]
+    payload["content"]["imageUnderstanding"] = [
+        {"imageId": "img_1", "summary": "窗边咖啡和小票", "scene": "咖啡店", "subjects": ["咖啡", "小票"], "mood": []},
+        {"imageId": "img_2", "summary": "回程路上的云", "scene": "街边", "subjects": ["云", "路灯"], "mood": []},
+        {"imageId": "img_3", "summary": "晚饭桌上的小碗", "scene": "餐桌", "subjects": ["晚饭", "小碗"], "mood": []},
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    assert [section.body for section in layout.content.sections] == [
+        "窗边咖啡和小票，今天就记这一点。",
+        "回程路上的云，今天就记这一点。",
+        "晚饭桌上的小碗，今天就记这一点。",
+    ]
+
+
 def test_generator_replaces_generic_section_body_with_image_understanding():
     payload = valid_model_json()
     payload["content"]["sections"] = [
