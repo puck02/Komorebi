@@ -52,6 +52,7 @@ PHOTO_ROW_GAP = 56
 LONG_BODY_SPLIT_TARGET = 58
 CAPTION_MAX_CHARS = 14
 GENERIC_CAPTIONS = {"今天的照片", "照片说明", "这张照片", "生活片段"}
+GENERIC_UNDERSTANDING_TEXTS = {*GENERIC_CAPTIONS, "日常", "照片", "图片"}
 GENERIC_SECTION_BODIES = {"这一组照片也想好好留下", "今天的照片先放在这里", "今天的照片"}
 GENERIC_SECTION_TITLES = {"第一段", "第二段", "第三段", "第四段", "照片小组", "模型乱分组", "A", "B"}
 
@@ -426,9 +427,13 @@ def normalize_image_understanding(
         normalized.append(
             {
                 "imageId": image.id,
-                "summary": str(raw_item.get("summary") or fallback_summary).strip(),
-                "scene": str(raw_item.get("scene") or "").strip(),
-                "subjects": normalize_string_list(raw_item.get("subjects")),
+                "summary": normalize_understanding_text(raw_item.get("summary"), fallback_summary),
+                "scene": "" if is_generic_understanding_text(raw_item.get("scene")) else str(raw_item.get("scene") or "").strip(),
+                "subjects": [
+                    subject
+                    for subject in normalize_string_list(raw_item.get("subjects"))
+                    if not is_generic_understanding_text(subject)
+                ],
                 "mood": normalize_string_list(raw_item.get("mood")),
             }
         )
@@ -472,6 +477,18 @@ def generated_caption_signal(text: Any) -> str:
 def is_generic_caption(value: Any) -> bool:
     text = str(value or "").strip(" 。！？!?；;，,")
     return text in GENERIC_CAPTIONS
+
+
+def normalize_understanding_text(value: Any, fallback: str) -> str:
+    text = str(value or "").strip()
+    if not text or is_generic_understanding_text(text):
+        return fallback
+    return text
+
+
+def is_generic_understanding_text(value: Any) -> bool:
+    text = str(value or "").strip(" 。！？!?；;，,")
+    return text in GENERIC_UNDERSTANDING_TEXTS
 
 
 def caption_from_understanding(item: dict[str, Any]) -> str:
