@@ -92,7 +92,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     if "body" not in content and isinstance(content.get("subtitle"), str):
         content["body"] = [content["subtitle"]]
     content["title"] = normalize_title(content.get("title"))
-    content["body"] = normalize_body_content(content.get("body"), len(request.images))
+    content["body"] = normalize_body_content(content.get("body"), request.description)
 
     image_ids = {image.id for image in request.images}
     approved_asset_ids = [asset.id for asset in request.assets if asset.quality_status == "approved"]
@@ -146,8 +146,8 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     return layout
 
 
-def normalize_body_content(body: Any, image_count: int) -> list[str]:
-    return normalize_diary_blocks(body, fallback="今天的照片先放在这里。", split_target=LONG_BODY_SPLIT_TARGET)
+def normalize_body_content(body: Any, fallback: str) -> list[str]:
+    return normalize_diary_blocks(body, fallback=normalize_diary_text(fallback, fallback="今天的照片先放在这里。"), split_target=LONG_BODY_SPLIT_TARGET)
 
 
 def normalize_story_layout(layout: dict[str, Any], request_images: list[JournalImageInput]) -> None:

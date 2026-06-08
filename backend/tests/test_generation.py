@@ -882,6 +882,19 @@ def test_generator_normalizes_common_model_field_variants():
     assert layout.layout.decorations[0].asset_id == "tape_warm_grid_01"
 
 
+def test_generator_uses_user_description_when_model_body_is_missing():
+    payload = valid_model_json()
+    payload["content"].pop("body")
+    payload["content"].pop("captions")
+    payload["layout"]["texts"] = [{"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56}]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    assert layout.content.body == ["周末一起散步，天气很好，喝了咖啡。"]
+    assert "今天的照片先放在这里" not in " ".join(layout.content.body)
+
+
 def test_generator_normalizes_ai_style_copy():
     payload = valid_model_json()
     payload["content"]["title"] = "把这些珍贵回忆收藏在治愈的周末手帐里"
