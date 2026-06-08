@@ -173,7 +173,10 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
     issues: list[dict[str, Any]] = []
     sections = sorted(layout.layout.sections, key=lambda section: section.y)
     body_by_section_id = {section.id: section.body for section in layout.content.sections}
+    content_section_ids = set(body_by_section_id)
     for index, section in enumerate(sections):
+        if section.section_id not in content_section_ids:
+            issues.append(rule_issue("sectionReference", "high", [section.section_id], "版式章节没有对应的内容章节"))
         section_bottom = section.y + section.height
         content_bottom = max(
             [
