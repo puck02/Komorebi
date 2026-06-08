@@ -16,6 +16,7 @@ from app.schemas.journal import JournalLayout
 from app.services.generation_jobs import recover_incomplete_generation_jobs, run_generation_job
 from app.services.journal_agent import JournalAgentResult
 from app.services.journal_generator import GenerationError
+from app.services.openai_client import OpenAIConfigurationError
 
 
 def test_runner_saves_completed_journal_and_progress(tmp_path):
@@ -136,6 +137,26 @@ def test_runner_completes_with_local_fallback_when_agent_generation_fails(tmp_pa
         assert job.error_message is None
         assert journal.title == "今日小记"
         assert journal.layout_json["content"]["body"] == ["周末一起散步。"]
+
+
+def test_runner_completes_with_local_fallback_when_ai_config_is_missing(tmp_path):
+    session_factory = make_session_factory()
+    job_id = seed_job(session_factory, tmp_path)
+
+    run_generation_job(
+        job_id,
+        session_factory=session_factory,
+        agent_factory=lambda: (_ for _ in ()).throw(OpenAIConfigurationError("OPENAI_API_KEY is required to generate journals")),
+    )
+
+    with session_factory() as db:
+        job = db.get(GenerationJob, job_id)
+        journal = db.get(Journal, job.journal_id)
+        assert job.status == "completed"
+        assert job.stage == "completed"
+        assert job.best_score == 0
+        assert job.error_message is None
+        assert journal.title == "今日小记"
 
 
 def test_runner_completes_job_when_agent_returns_fallback_result(tmp_path):

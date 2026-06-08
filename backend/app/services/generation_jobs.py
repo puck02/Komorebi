@@ -22,7 +22,7 @@ from app.services.journal_generator import (
     sanitize_model_layout,
 )
 from app.services.journal_renderer import PlaywrightJournalRenderer
-from app.services.openai_client import OpenAIJournalClient
+from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient
 from app.services.thumbnails import generate_display_image
 
 GENERATION_EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="journal-generation")
@@ -76,7 +76,7 @@ def run_generation_job(
                     on_progress=lambda stage, revision_round, score: update_job_progress(db, job, stage, revision_round, score),
                     log_context={"job_id": job.id, "user_id": job.user_id},
                 )
-            except GenerationError as exc:
+            except (GenerationError, OpenAIConfigurationError) as exc:
                 result = fallback_result_from_generation_error(request, job, exc)
             journal = save_generated_journal(db, job, payload, images, result)
             job.status = "completed"
@@ -171,7 +171,7 @@ def save_generated_journal(
 def fallback_result_from_generation_error(
     request: JournalGenerationRequest,
     job: GenerationJob,
-    error: GenerationError,
+    error: GenerationError | OpenAIConfigurationError,
 ) -> JournalAgentResult:
     layout_json = sanitize_model_layout(build_fallback_layout(request), request)
     log_agent_event(
