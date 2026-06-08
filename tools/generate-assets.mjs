@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,6 +9,7 @@ const rough = require("roughjs");
 
 const assetRoot = path.join(root, "backend", "app", "assets");
 const manifestPath = path.join(assetRoot, "manifest.json");
+const force = process.argv.includes("--force");
 const generator = rough.generator({
   options: {
     bowing: 1.1,
@@ -23,14 +24,28 @@ const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 
 await mkdir(path.join(assetRoot, "stickers"), { recursive: true });
 
-await Promise.all(
-  manifest.filter((asset) => asset.source === "internal").map((asset, index) => {
-    const svg = renderAsset(asset, index + 1);
-    return writeFile(path.join(assetRoot, asset.file), svg, "utf8");
-  })
-);
+let generatedCount = 0;
+for (const [index, asset] of manifest.filter((item) => item.source === "internal").entries()) {
+  const filePath = path.join(assetRoot, asset.file);
+  if (!force && await fileExists(filePath)) {
+    continue;
+  }
+  const svg = renderAsset(asset, index + 1);
+  await writeFile(filePath, svg, "utf8");
+  generatedCount += 1;
+}
 
-console.log(`Generated ${manifest.filter((asset) => asset.source === "internal").length} internal assets.`);
+const mode = force ? "regenerated" : "generated missing";
+console.log(`${mode} ${generatedCount} internal assets.`);
+
+async function fileExists(filePath) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function renderAsset(asset, seed) {
   const reviewedAsset = reviewedInternalAsset(asset);
@@ -94,10 +109,93 @@ function reviewedInternalAsset(asset) {
   }
   if (asset.id === "sticker_bow_20") {
     return cleanSvg(160, 160, [
-      `<path d="M76 80C50 48 25 58 31 93c5 30 31 22 45-8Z" fill="#fff0f2" stroke="#946971" stroke-width="3" stroke-linejoin="round"/>`,
-      `<path d="M84 80c26-32 51-22 45 13c-5 30-31 22-45-8Z" fill="#fff0f2" stroke="#946971" stroke-width="3" stroke-linejoin="round"/>`,
-      `<ellipse cx="80" cy="82" rx="17" ry="16" fill="#d99aa6" stroke="#946971" stroke-width="3"/>`,
-      `<path d="M57 79L36 63M103 79l21-16M58 91c6-1 11-4 16-9M102 91c-6-1-11-4-16-9" stroke="#946971" stroke-width="2" stroke-linecap="round" opacity="0.45"/>`
+      `<defs>`,
+      `<linearGradient id="bowLeftFill" x1="29" y1="58" x2="76" y2="107" gradientUnits="userSpaceOnUse">`,
+      `<stop stop-color="#fff7f5"/>`,
+      `<stop offset="0.58" stop-color="#f0c7ca"/>`,
+      `<stop offset="1" stop-color="#d895a0"/>`,
+      `</linearGradient>`,
+      `<linearGradient id="bowRightFill" x1="131" y1="58" x2="84" y2="107" gradientUnits="userSpaceOnUse">`,
+      `<stop stop-color="#fff7f5"/>`,
+      `<stop offset="0.58" stop-color="#f0c7ca"/>`,
+      `<stop offset="1" stop-color="#d895a0"/>`,
+      `</linearGradient>`,
+      `<linearGradient id="bowKnotFill" x1="69" y1="66" x2="91" y2="99" gradientUnits="userSpaceOnUse">`,
+      `<stop stop-color="#e8aab4"/>`,
+      `<stop offset="1" stop-color="#c87886"/>`,
+      `</linearGradient>`,
+      `<filter id="bowShadow" x="17" y="47" width="126" height="76" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">`,
+      `<feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#704b51" flood-opacity="0.2"/>`,
+      `</filter>`,
+      `</defs>`,
+      `<path d="M76 81C61 58 43 51 31 62C19 73 24 101 43 107C58 112 71 98 78 85C77 83 77 82 76 81Z" fill="url(#bowLeftFill)" stroke="#946971" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#bowShadow)"/>`,
+      `<path d="M84 81C99 58 117 51 129 62C141 73 136 101 117 107C102 112 89 98 82 85C83 83 83 82 84 81Z" fill="url(#bowRightFill)" stroke="#946971" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#bowShadow)"/>`,
+      `<path d="M72 69C79 64 88 67 92 75C96 83 92 95 84 99C77 103 68 98 66 89C64 81 66 73 72 69Z" fill="url(#bowKnotFill)" stroke="#946971" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`,
+      `<g opacity="0.46">`,
+      `<path d="M58 77C51 72 45 67 37 64" stroke="#946971" stroke-width="2" stroke-linecap="round"/>`,
+      `<path d="M102 77C109 72 115 67 123 64" stroke="#946971" stroke-width="2" stroke-linecap="round"/>`,
+      `<path d="M57 94C64 93 70 89 74 84" stroke="#946971" stroke-width="2" stroke-linecap="round"/>`,
+      `<path d="M103 94C96 93 90 89 86 84" stroke="#946971" stroke-width="2" stroke-linecap="round"/>`,
+      `</g>`,
+      `<g opacity="0.34">`,
+      `<path d="M35 72C45 68 57 71 68 80" stroke="#fff8f6" stroke-width="1.4" stroke-linecap="round"/>`,
+      `<path d="M125 72C115 68 103 71 92 80" stroke="#fff8f6" stroke-width="1.4" stroke-linecap="round"/>`,
+      `<path d="M71 75C77 72 84 74 88 80" stroke="#fff8f6" stroke-width="1.2" stroke-linecap="round"/>`,
+      `<circle cx="52" cy="90" r="1" fill="#8f626b" opacity="0.24"/>`,
+      `<circle cx="109" cy="90" r="1" fill="#8f626b" opacity="0.24"/>`,
+      `</g>`
+    ]);
+  }
+  if (asset.id === "paper_checklist_15") {
+    return cleanSvg(220, 170, [
+      `<path d="M32 24C72 20 144 20 188 29C184 70 187 108 194 142C142 148 78 146 28 136C35 93 37 58 32 24Z" fill="#fff6df" stroke="#8c755b" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M48 43C82 40 138 41 170 47" stroke="#a38b6a" stroke-width="2.2" stroke-linecap="round" opacity="0.55"/>`,
+      `<path d="M54 62h14v14H54zM54 86h14v14H54zM54 110h14v14H54z" fill="#fffaf0" stroke="#8c755b" stroke-width="2" stroke-linejoin="round"/>`,
+      `<path d="M57 68l5 5l11-13M57 92l5 5l11-13" stroke="#6f8063" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
+      `<path d="M84 68C112 65 141 66 165 69M84 92C108 90 138 90 160 93M84 116C112 114 134 115 154 118" stroke="#8c755b" stroke-width="2.2" stroke-linecap="round" opacity="0.58"/>`,
+      `<path d="M41 133C82 141 136 142 184 136" stroke="#fffaf0" stroke-width="2.4" stroke-linecap="round" opacity="0.7"/>`
+    ]);
+  }
+  if (asset.id === "paper_bus_ticket_16") {
+    return cleanSvg(220, 170, [
+      `<path d="M27 55C58 48 139 45 190 52C186 62 190 72 202 75C196 88 196 103 204 116C193 118 188 126 192 137C139 143 74 139 25 129C32 119 28 110 17 107C25 92 25 70 27 55Z" fill="#dfeaf5" stroke="#5f7f9a" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M72 53C68 82 69 109 75 134" stroke="#5f7f9a" stroke-width="2" stroke-linecap="round" stroke-dasharray="5 7" opacity="0.58"/>`,
+      `<path d="M91 67C122 64 151 65 174 69M91 88C125 86 152 87 173 91M92 109C119 108 144 108 163 112" stroke="#4d687f" stroke-width="2.3" stroke-linecap="round" opacity="0.62"/>`,
+      `<path d="M40 70h34M40 92h34M40 114h34" stroke="#fff8ea" stroke-width="2.4" stroke-linecap="round" opacity="0.85"/>`,
+      `<path d="M145 54C147 78 147 107 143 136" stroke="#8da6ba" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="3 8" opacity="0.55"/>`,
+      `<circle cx="51" cy="83" r="5" fill="#5f7f9a" opacity="0.28"/>`,
+      `<circle cx="55" cy="105" r="3.5" fill="#5f7f9a" opacity="0.22"/>`
+    ]);
+  }
+  if (asset.id === "sticker_fountain_pen_36") {
+    return cleanSvg(160, 160, [
+      `<path d="M44 118C58 93 78 56 101 31C109 35 116 42 121 50C98 73 68 101 49 123C47 123 45 121 44 118Z" fill="#f4dfbb" stroke="#4f6170" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M91 40C100 43 110 52 114 61" stroke="#fff6df" stroke-width="2.2" stroke-linecap="round" opacity="0.72"/>`,
+      `<path d="M44 118L31 134C42 133 49 129 56 121" fill="#fff6df"/>`,
+      `<path d="M44 118L31 134C42 133 49 129 56 121" stroke="#4f6170" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M38 126L45 131" stroke="#4f6170" stroke-width="2.3" stroke-linecap="round"/>`,
+      `<path d="M104 28C113 32 122 41 126 50L118 58C113 48 104 39 96 35Z" fill="#6f7f8b" stroke="#4f6170" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M57 105C72 93 88 76 104 58" stroke="#4f6170" stroke-width="2.2" stroke-linecap="round" opacity="0.32"/>`,
+      `<path d="M66 127C85 125 101 127 118 132" stroke="#9c8063" stroke-width="2.2" stroke-linecap="round" opacity="0.3"/>`
+    ]);
+  }
+  if (asset.id === "sticker_torn_photo_corner_37") {
+    return cleanSvg(160, 160, [
+      `<path d="M43 39C65 35 105 36 128 42C116 60 104 79 95 102C75 93 58 88 36 83C45 65 49 51 43 39Z" fill="#f7ead2" stroke="#8b6c52" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M51 47C69 44 101 45 116 50" stroke="#fff8ec" stroke-width="2.4" stroke-linecap="round" opacity="0.72"/>`,
+      `<path d="M47 74C67 77 82 82 99 92" stroke="#b58a63" stroke-width="2.2" stroke-linecap="round" opacity="0.45"/>`,
+      `<path d="M43 39C57 52 77 70 95 102" stroke="#8b6c52" stroke-width="2" stroke-linecap="round" stroke-dasharray="5 7" opacity="0.48"/>`,
+      `<path d="M33 86C51 90 70 95 91 106" stroke="#fff8ec" stroke-width="2.4" stroke-linecap="round" opacity="0.55"/>`,
+      `<path d="M70 40L75 48M88 40L92 49M107 43L111 52" stroke="#8b6c52" stroke-width="1.8" stroke-linecap="round" opacity="0.32"/>`
+    ]);
+  }
+  if (asset.id === "sticker_pressed_leaf_38") {
+    return cleanSvg(160, 160, [
+      `<path d="M38 121C44 69 83 32 126 31C122 78 91 119 38 121Z" fill="#edf0d2" stroke="#6e7e55" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M45 114C67 88 92 62 122 36" stroke="#6e7e55" stroke-width="2.4" stroke-linecap="round" opacity="0.62"/>`,
+      `<path d="M67 92C66 74 62 64 54 55M78 80C89 70 94 60 96 45M88 70C101 69 112 63 121 54M59 104C75 104 87 100 99 91" stroke="#7f9160" stroke-width="2" stroke-linecap="round" opacity="0.46"/>`,
+      `<path d="M35 123C57 124 82 119 103 105" stroke="#fff8df" stroke-width="2.2" stroke-linecap="round" opacity="0.6"/>`,
+      `<path d="M50 129C73 135 96 133 118 125" stroke="#a28a62" stroke-width="1.8" stroke-linecap="round" opacity="0.24"/>`
     ]);
   }
   return null;

@@ -77,7 +77,7 @@ def test_internal_functional_stationery_library_is_rich_enough():
         for category in {"paper", "tape", "texture"}
     }
 
-    assert counts_by_category["paper"] >= 14
+    assert counts_by_category["paper"] >= 16
     assert counts_by_category["tape"] >= 13
     assert counts_by_category["texture"] >= 11
 
@@ -89,7 +89,16 @@ def test_internal_handdrawn_sticker_library_is_rich_enough():
         if asset.source == "internal" and asset.category == "sticker" and asset.quality_status == "approved"
     ]
 
-    assert len(approved_internal_stickers) >= 34
+    assert len(approved_internal_stickers) >= 38
+
+
+def test_approved_internal_assets_cover_human_scrapbook_materials():
+    approved_internal_assets = [
+        asset for asset in load_assets() if asset.source == "internal" and asset.quality_status == "approved"
+    ]
+    covered_tags = {tag for asset in approved_internal_assets for tag in asset.tags}
+
+    assert {"pen", "checklist", "bus", "corner", "pressed"}.issubset(covered_tags)
 
 
 def test_internal_scrapbook_ephemera_stickers_cover_common_journal_materials():
@@ -127,6 +136,13 @@ def test_fluent_emoji_assets_stay_draft_until_manually_reviewed():
 
     assert fluent_assets
     assert {asset.quality_status for asset in fluent_assets} == {"draft"}
+
+
+def test_external_icon_assets_stay_draft_until_art_directed():
+    external_icon_assets = [asset for asset in load_assets() if asset.source.startswith("https://")]
+
+    assert external_icon_assets
+    assert {asset.quality_status for asset in external_icon_assets} == {"draft"}
 
 
 def test_asset_api_lists_assets_with_file_url():

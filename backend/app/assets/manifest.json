@@ -1385,6 +1385,116 @@
     "qualityStatus": "approved"
   },
   {
+    "id": "paper_checklist_15",
+    "name": "Checklist Note 15",
+    "category": "paper",
+    "tags": [
+      "checklist",
+      "note",
+      "daily"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#fff6df",
+      "#8c755b"
+    ],
+    "file": "stickers/paper_checklist_15.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "paper_bus_ticket_16",
+    "name": "Bus Ticket 16",
+    "category": "paper",
+    "tags": [
+      "bus",
+      "ticket",
+      "travel"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#dfeaf5",
+      "#5f7f9a"
+    ],
+    "file": "stickers/paper_bus_ticket_16.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_fountain_pen_36",
+    "name": "Fountain Pen 36",
+    "category": "sticker",
+    "tags": [
+      "pen",
+      "hand",
+      "note"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#4f6170",
+      "#f4dfbb"
+    ],
+    "file": "stickers/sticker_fountain_pen_36.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_torn_photo_corner_37",
+    "name": "Torn Photo Corner 37",
+    "category": "sticker",
+    "tags": [
+      "corner",
+      "photo",
+      "collage"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#f7ead2",
+      "#8b6c52"
+    ],
+    "file": "stickers/sticker_torn_photo_corner_37.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_pressed_leaf_38",
+    "name": "Pressed Leaf 38",
+    "category": "sticker",
+    "tags": [
+      "pressed",
+      "nature",
+      "calm"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#9cab78",
+      "#edf0d2"
+    ],
+    "file": "stickers/sticker_pressed_leaf_38.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
     "id": "texture_dots_01",
     "name": "Warm Dots 01",
     "category": "texture",
@@ -1647,7 +1757,7 @@
     "file": "external/streamline-freehand-color/streamline_polaroid_camera.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_photo_frame",
@@ -1670,7 +1780,7 @@
     "file": "external/streamline-freehand-color/streamline_photo_frame.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_polaroid_stack",
@@ -1693,7 +1803,7 @@
     "file": "external/streamline-freehand-color/streamline_polaroid_stack.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_party_balloon",
@@ -1716,7 +1826,7 @@
     "file": "external/streamline-freehand-color/streamline_party_balloon.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_party_banner",
@@ -1739,7 +1849,7 @@
     "file": "external/streamline-freehand-color/streamline_party_banner.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_fireworks",
@@ -1762,7 +1872,7 @@
     "file": "external/streamline-freehand-color/streamline_fireworks.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_clapboard",
@@ -1785,7 +1895,7 @@
     "file": "external/streamline-freehand-color/streamline_clapboard.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_calendar_date",
@@ -1808,7 +1918,7 @@
     "file": "external/streamline-freehand-color/streamline_calendar_date.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_notes_book",
@@ -1831,7 +1941,7 @@
     "file": "external/streamline-freehand-color/streamline_notes_book.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_music_note",
@@ -1854,7 +1964,7 @@
     "file": "external/streamline-freehand-color/streamline_music_note.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_pet_cat",
@@ -1877,7 +1987,7 @@
     "file": "external/streamline-freehand-color/streamline_pet_cat.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_home",
@@ -1900,7 +2010,7 @@
     "file": "external/streamline-freehand-color/streamline_home.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_pen_pencil_brush",
@@ -1923,7 +2033,7 @@
     "file": "external/streamline-freehand-color/streamline_pen_pencil_brush.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_crayon",
@@ -1946,7 +2056,7 @@
     "file": "external/streamline-freehand-color/streamline_crayon.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_write_paper",
@@ -1969,7 +2079,7 @@
     "file": "external/streamline-freehand-color/streamline_write_paper.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_ferris_wheel",
@@ -1992,7 +2102,7 @@
     "file": "external/streamline-freehand-color/streamline_ferris_wheel.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_castle",
@@ -2015,7 +2125,7 @@
     "file": "external/streamline-freehand-color/streamline_castle.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_dice_pawn",
@@ -2061,7 +2171,7 @@
     "file": "external/streamline-freehand-color/streamline_flip_book.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_calendar_grid",
@@ -2084,7 +2194,7 @@
     "file": "external/streamline-freehand-color/streamline_calendar_grid.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_camera",
@@ -2107,7 +2217,7 @@
     "file": "external/streamline-freehand-color/streamline_camera.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_card_symbols",
@@ -2153,7 +2263,7 @@
     "file": "external/streamline-freehand-color/streamline_paint_brush.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_color_palette",
@@ -2176,7 +2286,7 @@
     "file": "external/streamline-freehand-color/streamline_color_palette.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_brush_pen",
@@ -2199,7 +2309,7 @@
     "file": "external/streamline-freehand-color/streamline_brush_pen.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_typewriter",
@@ -2222,7 +2332,7 @@
     "file": "external/streamline-freehand-color/streamline_typewriter.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_coupon_cut",
@@ -2245,7 +2355,7 @@
     "file": "external/streamline-freehand-color/streamline_coupon_cut.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_idea_bulb",
@@ -2291,7 +2401,7 @@
     "file": "external/streamline-freehand-color/streamline_brush_ruler.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_liquid_glue",
@@ -2314,7 +2424,7 @@
     "file": "external/streamline-freehand-color/streamline_liquid_glue.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_magic_wand",
@@ -2360,7 +2470,7 @@
     "file": "external/streamline-freehand-color/streamline_stamp.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_heart_flower",
@@ -2383,7 +2493,7 @@
     "file": "external/streamline-freehand-color/streamline_heart_flower.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_pencil",
@@ -2406,7 +2516,7 @@
     "file": "external/streamline-freehand-color/streamline_pencil.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_quill_feather",
@@ -2429,7 +2539,7 @@
     "file": "external/streamline-freehand-color/streamline_quill_feather.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_home_chimney",
@@ -2452,7 +2562,7 @@
     "file": "external/streamline-freehand-color/streamline_home_chimney.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_favorite_heart_photo",
@@ -2475,7 +2585,7 @@
     "file": "external/streamline-freehand-color/streamline_favorite_heart_photo.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_smile_bubble",
@@ -2498,7 +2608,7 @@
     "file": "external/streamline-freehand-color/streamline_smile_bubble.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_heart_message",
@@ -2521,7 +2631,7 @@
     "file": "external/streamline-freehand-color/streamline_heart_message.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_navigation_map",
@@ -2544,7 +2654,7 @@
     "file": "external/streamline-freehand-color/streamline_navigation_map.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_movie_reel",
@@ -2567,7 +2677,7 @@
     "file": "external/streamline-freehand-color/streamline_movie_reel.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_notes_paper",
@@ -2590,7 +2700,7 @@
     "file": "external/streamline-freehand-color/streamline_notes_paper.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_notes_quill",
@@ -2613,7 +2723,7 @@
     "file": "external/streamline-freehand-color/streamline_notes_quill.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_party_drink",
@@ -2636,7 +2746,7 @@
     "file": "external/streamline-freehand-color/streamline_party_drink.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_double_landscape",
@@ -2659,7 +2769,7 @@
     "file": "external/streamline-freehand-color/streamline_double_landscape.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_landscape_stack",
@@ -2682,7 +2792,7 @@
     "file": "external/streamline-freehand-color/streamline_landscape_stack.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_shopping_star",
