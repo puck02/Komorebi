@@ -370,8 +370,9 @@ def check_layout_rhythm(layout: JournalLayout) -> list[dict[str, Any]]:
 
 def check_decoration_function(layout: JournalLayout, request: Any) -> list[dict[str, Any]]:
     asset_by_id = {asset.id: asset for asset in request.assets if asset.quality_status == "approved"}
-    has_functional_assets = any(asset.category in {"paper", "tape"} for asset in asset_by_id.values())
-    if not has_functional_assets:
+    has_paper_or_tape_assets = any(asset.category in {"paper", "tape"} for asset in asset_by_id.values())
+    has_sticker_assets = any(asset.category == "sticker" for asset in asset_by_id.values())
+    if not has_paper_or_tape_assets and not has_sticker_assets:
         return []
 
     issues: list[dict[str, Any]] = []
@@ -380,6 +381,7 @@ def check_decoration_function(layout: JournalLayout, request: Any) -> list[dict[
         if not section.images or not section.texts:
             continue
         paper_decorations = []
+        sticker_decorations = []
         decoration_categories = set()
         for decoration in section.decorations:
             asset = asset_by_id.get(decoration.asset_id)
@@ -388,7 +390,9 @@ def check_decoration_function(layout: JournalLayout, request: Any) -> list[dict[
             decoration_categories.add(asset.category)
             if asset.category == "paper":
                 paper_decorations.append(decoration)
-        if not decoration_categories.intersection({"paper", "tape"}):
+            if asset.category == "sticker":
+                sticker_decorations.append(decoration)
+        if has_paper_or_tape_assets and not decoration_categories.intersection({"paper", "tape"}):
             issues.append(rule_issue("decorationFunction", "medium", [section.section_id], "章节缺少承载文字或固定照片的功能性装饰"))
         body_texts = [text for text in section.texts if text.role == "body"]
         if paper_decorations and body_texts and not any(
@@ -397,7 +401,30 @@ def check_decoration_function(layout: JournalLayout, request: Any) -> list[dict[
             for text in body_texts
         ):
             issues.append(rule_issue("decorationFunction", "medium", [section.section_id], "纸张素材没有承载章节文字"))
+        text_dicts = [
+            {
+                "x": text.x,
+                "y": text.y,
+                "width": text.width,
+                "height": section_text_height(text, body_by_section_id.get(section.section_id, "")),
+            }
+            for text in body_texts
+        ]
+        image_dicts = [image.model_dump(by_alias=True) for image in section.images]
+        if sticker_decorations and not all(
+            sticker_near_content(sticker.model_dump(by_alias=True), image_dicts, text_dicts)
+            for sticker in sticker_decorations
+        ):
+            issues.append(rule_issue("decorationFunction", "medium", [section.section_id], "贴纸没有靠近照片或文字留白"))
     return issues
+
+
+def sticker_near_content(
+    sticker: dict[str, Any],
+    image_dicts: list[dict[str, Any]],
+    text_dicts: list[dict[str, Any]],
+) -> bool:
+    return overlaps_any_photo_edge(sticker, image_dicts) or overlaps_any_photo_edge(sticker, text_dicts)
 
 
 def paper_backs_text(paper: Any, text: Any, body: str) -> bool:

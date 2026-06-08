@@ -736,6 +736,32 @@ def test_layout_rules_report_section_paper_not_backing_text():
     assert has_issue(issues, "decorationFunction", "medium", "纸张素材没有承载章节文字")
 
 
+def test_layout_rules_report_section_sticker_far_from_content():
+    payload = layout_payload()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "窗边咖啡", "imageIds": ["img_1"], "body": "咖啡还热着，窗外刚亮。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 980,
+            "images": [{"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32}],
+            "decorations": [
+                {"assetId": "sticker_approved", "x": 820, "y": 260, "width": 96, "height": 96, "rotation": 0}
+            ],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+    request = generation_request(assets=[asset_item("sticker_approved", "sticker")])
+
+    issues = check_layout_rules(layout, request)
+
+    assert has_issue(issues, "decorationFunction", "medium", "贴纸没有靠近照片或文字留白")
+
+
 def test_layout_rules_report_section_paper_barely_touching_text():
     payload = layout_payload()
     payload["content"]["sections"] = [
