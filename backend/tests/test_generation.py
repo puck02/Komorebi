@@ -519,6 +519,35 @@ def test_generator_trims_excess_canvas_height_to_content_bottom():
     assert layout.canvas.height >= rendered_content_bottom(layout) + 80
 
 
+def test_generator_clamps_unstable_text_font_sizes():
+    payload = valid_model_json()
+    payload["layout"]["texts"] = [
+        {"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 160},
+        {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 8},
+    ]
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 620,
+            "images": [],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 8}],
+            "decorations": [],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    assert 44 <= layout.layout.texts[0].font_size <= 72
+    assert 24 <= layout.layout.texts[1].font_size <= 38
+    assert 24 <= layout.layout.sections[0].texts[0].font_size <= 38
+
+
 def test_generator_trims_excess_section_height_to_section_content_bottom():
     payload = valid_model_json()
     payload["canvas"]["height"] = 3600

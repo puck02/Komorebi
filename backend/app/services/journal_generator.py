@@ -22,12 +22,18 @@ TITLE_X = 80
 TITLE_Y = 72
 TITLE_WIDTH = 760
 TITLE_FONT_SIZE = 58
+TITLE_FONT_SIZE_MIN = 44
+TITLE_FONT_SIZE_MAX = 72
 BODY_X = 112
 BODY_WIDTH = 820
 BODY_FONT_SIZE = 32
+BODY_FONT_SIZE_MIN = 24
+BODY_FONT_SIZE_MAX = 38
 BODY_BLOCK_GAP = 46
 TEXT_PHOTO_GAP = 64
 SECTION_GAP = 104
+CAPTION_FONT_SIZE_MIN = 18
+CAPTION_FONT_SIZE_MAX = 28
 PHOTO_COLUMN_WIDTH = 420
 PHOTO_LEFT_X = 92
 PHOTO_RIGHT_X = 568
@@ -688,11 +694,20 @@ def min_section_height(generated_section: dict[str, Any], body: str = "") -> flo
 
 
 def placement_text_height(text: dict[str, Any], body: str) -> float:
-    font_size = positive_number(text.get("fontSize"), BODY_FONT_SIZE)
+    font_size = clamp_font_size(text, str(text.get("role") or "body"))
     width = positive_number(text.get("width"), BODY_WIDTH)
     if text.get("role") == "body":
         return estimate_paragraph_height(body, font_size, width)
     return font_size * 2.4
+
+
+def clamp_font_size(text: dict[str, Any], role: str) -> float:
+    font_size = positive_number(text.get("fontSize"), BODY_FONT_SIZE)
+    if role == "title":
+        return clamp_number(font_size, TITLE_FONT_SIZE_MIN, TITLE_FONT_SIZE_MAX)
+    if role == "caption":
+        return clamp_number(font_size, CAPTION_FONT_SIZE_MIN, CAPTION_FONT_SIZE_MAX)
+    return clamp_number(font_size, BODY_FONT_SIZE_MIN, BODY_FONT_SIZE_MAX)
 
 
 def normalize_title_text(title: dict[str, Any] | None) -> dict[str, Any]:
@@ -702,7 +717,11 @@ def normalize_title_text(title: dict[str, Any] | None) -> dict[str, Any]:
         "x": clamp_number(positive_number(source.get("x"), TITLE_X), 0, CANVAS_WIDTH - 240),
         "y": positive_number(source.get("y"), TITLE_Y),
         "width": min(positive_number(source.get("width"), TITLE_WIDTH), CANVAS_WIDTH - 120),
-        "fontSize": positive_number(source.get("fontSize"), TITLE_FONT_SIZE),
+        "fontSize": clamp_number(
+            positive_number(source.get("fontSize"), TITLE_FONT_SIZE),
+            TITLE_FONT_SIZE_MIN,
+            TITLE_FONT_SIZE_MAX,
+        ),
     }
 
 
@@ -717,7 +736,7 @@ def normalize_body_texts(
     y = positive_number(title.get("y"), TITLE_Y) + estimate_text_height(title, {"title": "", "body": body, "captions": []}) + SECTION_GAP
     for index, paragraph in enumerate(body):
         source = body_texts[index] if index < len(body_texts) else {}
-        font_size = positive_number(source.get("fontSize"), BODY_FONT_SIZE)
+        font_size = clamp_font_size(source, "body")
         width = min(positive_number(source.get("width"), BODY_WIDTH), CANVAS_WIDTH - BODY_X * 2)
         x = clamp_number(positive_number(source.get("x"), BODY_X), 40, CANVAS_WIDTH - width - 40)
         height = estimate_paragraph_height(paragraph, font_size, width)
