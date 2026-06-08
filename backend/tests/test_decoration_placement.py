@@ -18,6 +18,10 @@ def test_infer_asset_function_from_category_tags_and_id():
     assert infer_asset_function(asset_item("texture_dots_01", "texture")) == "texture"
 
 
+def test_infer_asset_function_keeps_ticket_sticker_as_sticker():
+    assert infer_asset_function(asset_item("sticker_ticket_stub_24", "sticker", tags=["ticket", "travel"])) == "sticker"
+
+
 def test_place_decorations_uses_note_paper_as_text_backing():
     decorations = [{"assetId": "paper_note", "x": 0, "y": 0, "width": 120, "height": 80, "rotation": 0}]
     text = {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}

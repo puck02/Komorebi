@@ -68,10 +68,6 @@ def infer_asset_function(asset: AssetItem) -> str:
         return "star"
     if "line" in text:
         return "line"
-    if "ticket" in text:
-        return "ticket"
-    if "label" in text:
-        return "label"
     return "sticker"
 
 
