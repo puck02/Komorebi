@@ -327,17 +327,35 @@ def check_decoration_function(layout: JournalLayout, request: Any) -> list[dict[
         return []
 
     issues: list[dict[str, Any]] = []
+    body_by_section_id = {section.id: section.body for section in layout.content.sections}
     for section in layout.layout.sections:
         if not section.images or not section.texts:
             continue
-        decoration_categories = {
-            asset.category
-            for decoration in section.decorations
-            if (asset := asset_by_id.get(decoration.asset_id)) is not None
-        }
+        paper_decorations = []
+        decoration_categories = set()
+        for decoration in section.decorations:
+            asset = asset_by_id.get(decoration.asset_id)
+            if asset is None:
+                continue
+            decoration_categories.add(asset.category)
+            if asset.category == "paper":
+                paper_decorations.append(decoration)
         if not decoration_categories.intersection({"paper", "tape"}):
             issues.append(rule_issue("decorationFunction", "medium", [section.section_id], "章节缺少承载文字或固定照片的功能性装饰"))
+        body_texts = [text for text in section.texts if text.role == "body"]
+        if paper_decorations and body_texts and not any(
+            paper_backs_text(paper, text, body_by_section_id.get(section.section_id, ""))
+            for paper in paper_decorations
+            for text in body_texts
+        ):
+            issues.append(rule_issue("decorationFunction", "medium", [section.section_id], "纸张素材没有承载章节文字"))
     return issues
+
+
+def paper_backs_text(paper: Any, text: Any, body: str) -> bool:
+    paper_rect = rect_from_item(paper.model_dump(by_alias=True))
+    text_rect = (text.x, text.y, text.width, section_text_height(text, body))
+    return rects_overlap(paper_rect, text_rect)
 
 
 def check_section_image_spacing(section: Any) -> list[dict[str, Any]]:

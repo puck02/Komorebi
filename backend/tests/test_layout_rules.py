@@ -111,7 +111,7 @@ def test_layout_rules_report_tape_not_attached_to_edge():
 def test_layout_rules_allow_tape_attached_to_section_paper():
     payload = layout_payload()
     payload["content"]["sections"] = [
-        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+        {"id": "section_1", "title": "窗边咖啡", "imageIds": ["img_1"], "body": "咖啡还热着，窗外刚亮。", "mood": []}
     ]
     payload["layout"]["sections"] = [
         {
@@ -140,7 +140,7 @@ def test_layout_rules_allow_tape_attached_to_section_paper():
 def test_layout_rules_check_section_decoration_assets_and_placement():
     payload = layout_payload()
     payload["content"]["sections"] = [
-        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+        {"id": "section_1", "title": "窗边咖啡", "imageIds": ["img_1"], "body": "咖啡还热着，窗外刚亮。", "mood": []}
     ]
     payload["layout"]["sections"] = [
         {
@@ -628,6 +628,32 @@ def test_layout_rules_report_missing_functional_section_decorations():
     issues = check_layout_rules(layout, request)
 
     assert has_issue(issues, "decorationFunction", "medium", "章节缺少承载文字或固定照片的功能性装饰")
+
+
+def test_layout_rules_report_section_paper_not_backing_text():
+    payload = layout_payload()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 620,
+            "images": [{"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32}],
+            "decorations": [
+                {"assetId": "paper_approved", "x": 760, "y": 260, "width": 160, "height": 120, "rotation": 0}
+            ],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+    request = generation_request(assets=[asset_item("paper_approved", "paper")])
+
+    issues = check_layout_rules(layout, request)
+
+    assert has_issue(issues, "decorationFunction", "medium", "纸张素材没有承载章节文字")
 
 
 def test_layout_rules_report_repetitive_section_rhythm():
