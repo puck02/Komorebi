@@ -99,6 +99,53 @@ def test_layout_rules_report_section_content_beyond_declared_height():
     assert has_issue(issues, "sectionBounds", "high", "章节高度没有覆盖内部内容")
 
 
+def test_layout_rules_report_section_text_photo_overlap():
+    payload = layout_payload()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 200,
+            "height": 620,
+            "images": [{"imageId": "img_1", "x": 100, "y": 240, "width": 360, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 120, "y": 280, "width": 300, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert has_issue(issues, "readability", "high", "章节文字与照片发生重叠")
+
+
+def test_layout_rules_use_actual_section_text_height_for_bounds():
+    payload = layout_payload()
+    long_body = "这是一段很长的正文，" * 30
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": long_body, "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 200,
+            "height": 520,
+            "images": [{"imageId": "img_1", "x": 100, "y": 240, "width": 360, "height": 240, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 500, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert has_issue(issues, "sectionBounds", "high", "章节高度没有覆盖内部内容")
+
+
 def test_layout_rules_report_cliche_copy_quality_issue():
     payload = layout_payload()
     payload["content"]["body"] = ["今天很治愈，像被温柔包裹，也很有仪式感。"]

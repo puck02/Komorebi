@@ -265,8 +265,8 @@ def normalize_layout_sections(
         )
         y = positive_number(source.get("y"), generated_section["y"])
         height = max(
-            min_section_height(generated_section),
-            section_height(section_images, section_texts, section_decorations, y),
+            min_section_height(generated_section, content_section.get("body", "")),
+            section_height(section_images, section_texts, section_decorations, y, content_section.get("body", "")),
         )
         variant = source.get("variant") if source.get("variant") in ALLOWED_SECTION_VARIANTS else generated_section["variant"]
         layout_sections.append(
@@ -442,12 +442,13 @@ def section_height(
     texts: list[dict[str, Any]],
     decorations: list[dict[str, Any]],
     y: float,
+    body: str = "",
 ) -> float:
     image_bottom = max_placement_bottom(images, "height")
     decoration_bottom = max_placement_bottom(decorations, "height")
     text_bottom = max(
         (
-            positive_number(text.get("y"), 0) + positive_number(text.get("fontSize"), BODY_FONT_SIZE) * 2.4
+            positive_number(text.get("y"), 0) + placement_text_height(text, body)
             for text in texts
             if isinstance(text, dict)
         ),
@@ -456,14 +457,23 @@ def section_height(
     return max(image_bottom, decoration_bottom, text_bottom, y + 320) - y
 
 
-def min_section_height(generated_section: dict[str, Any]) -> float:
+def min_section_height(generated_section: dict[str, Any], body: str = "") -> float:
     generated_y = positive_number(generated_section.get("y"), 0)
     return section_height(
         generated_section.get("images", []),
         generated_section.get("texts", []),
         generated_section.get("decorations", []),
         generated_y,
+        body,
     )
+
+
+def placement_text_height(text: dict[str, Any], body: str) -> float:
+    font_size = positive_number(text.get("fontSize"), BODY_FONT_SIZE)
+    width = positive_number(text.get("width"), BODY_WIDTH)
+    if text.get("role") == "body":
+        return estimate_paragraph_height(body, font_size, width)
+    return font_size * 2.4
 
 
 def normalize_title_text(title: dict[str, Any] | None) -> dict[str, Any]:

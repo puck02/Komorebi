@@ -508,9 +508,47 @@ def test_generator_trims_excess_section_height_to_section_content_bottom():
 
     section = layout.layout.sections[0]
     body_text = section.texts[0]
-    assert section.y + section.height >= body_text.y + body_text.font_size * 2.4
+    text_bottom = body_text.y + estimated_paragraph_height(layout.content.sections[0].body, body_text.font_size, body_text.width)
+    assert section.y + section.height >= text_bottom
     assert section.height < 900
     assert layout.canvas.height < 1800
+
+
+def test_generator_section_height_uses_actual_body_text_height():
+    payload = valid_model_json()
+    long_body = "这是一段很长的正文，" * 30
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "长正文",
+            "imageIds": ["img_1"],
+            "body": long_body,
+            "mood": ["日常"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "ticket_memo",
+            "y": 220,
+            "height": 520,
+            "images": [],
+            "texts": [],
+            "decorations": [],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    section = layout.layout.sections[0]
+    body_text = section.texts[0]
+    text_bottom = body_text.y + estimated_paragraph_height(
+        layout.content.sections[0].body,
+        body_text.font_size,
+        body_text.width,
+    )
+    assert section.y + section.height >= text_bottom
 
 
 def test_generator_ignores_global_decorations_for_section_canvas_height_when_sections_have_decorations():

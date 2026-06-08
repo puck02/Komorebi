@@ -51,6 +51,7 @@ def check_readability(layout: JournalLayout) -> list[dict[str, Any]]:
         text_rect = (text.x, text.y, text.width, estimate_paragraph_height(content, text.font_size, text.width))
         if any(rects_overlap(text_rect, image_rect) for image_rect in image_rects):
             issues.append(rule_issue("readability", "high", [text.role], "文字与照片发生重叠"))
+    issues.extend(check_section_readability(layout))
     return issues
 
 
@@ -103,13 +104,17 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
 def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
     issues: list[dict[str, Any]] = []
     sections = sorted(layout.layout.sections, key=lambda section: section.y)
+    body_by_section_id = {section.id: section.body for section in layout.content.sections}
     for index, section in enumerate(sections):
         section_bottom = section.y + section.height
         content_bottom = max(
             [
                 section.y,
                 *[image.y + image.height for image in section.images],
-                *[text.y + text.font_size * 2.4 for text in section.texts],
+                *[
+                    text.y + section_text_height(text, body_by_section_id.get(section.section_id, ""))
+                    for text in section.texts
+                ],
                 *[decoration.y + decoration.height for decoration in section.decorations],
             ]
         )
@@ -122,6 +127,29 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
                 issues.append(rule_issue("sectionSpacing", "medium", [previous.section_id, section.section_id], "章节之间间距不足"))
         issues.extend(check_section_image_spacing(section))
     return issues
+
+
+def check_section_readability(layout: JournalLayout) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    body_by_section_id = {section.id: section.body for section in layout.content.sections}
+    for section in layout.layout.sections:
+        image_rects = [(image.x, image.y, image.width, image.height) for image in section.images]
+        for text in section.texts:
+            text_rect = (
+                text.x,
+                text.y,
+                text.width,
+                section_text_height(text, body_by_section_id.get(section.section_id, "")),
+            )
+            if any(rects_overlap(text_rect, image_rect) for image_rect in image_rects):
+                issues.append(rule_issue("readability", "high", [section.section_id], "章节文字与照片发生重叠"))
+    return issues
+
+
+def section_text_height(text: Any, body: str) -> float:
+    if text.role == "body":
+        return estimate_paragraph_height(body, text.font_size, text.width)
+    return text.font_size * 2.4
 
 
 def check_copy_quality(layout: JournalLayout) -> list[dict[str, Any]]:
