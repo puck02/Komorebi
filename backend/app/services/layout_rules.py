@@ -62,7 +62,7 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
     asset_counts: dict[str, int] = {}
     sticker_count = 0
     external_sticker_count = 0
-    image_dicts = [image.model_dump(by_alias=True) for image in layout.layout.images]
+    image_dicts = all_image_dicts(layout)
 
     for decoration in layout.layout.decorations:
         asset = asset_by_id.get(decoration.asset_id)
@@ -83,6 +83,9 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
         if asset.category == "tape" and not overlaps_any_photo_edge(decoration_dict, image_dicts):
             issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "胶带没有贴近照片边缘"))
 
+    for decoration in section_decorations(layout):
+        issues.extend(check_single_decoration(decoration, asset_by_id, image_dicts, layout.canvas.height))
+
     if len(layout.layout.decorations) > MAX_DECORATIONS:
         issues.append(rule_issue("decorationDensity", "high", [], "装饰总数超过限制"))
     if len(asset_by_id) >= MIN_DECORATIONS and len(layout.layout.decorations) < MIN_DECORATIONS:
@@ -99,6 +102,36 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
         if count > DECORATION_CATEGORY_LIMITS.get(category, 1):
             issues.append(rule_issue("decorationDensity", "high", [category], f"{category} 类素材数量超过限制"))
     return issues
+
+
+def check_single_decoration(
+    decoration: Any,
+    asset_by_id: dict[str, Any],
+    image_dicts: list[dict[str, Any]],
+    canvas_height: float,
+) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    asset = asset_by_id.get(decoration.asset_id)
+    if asset is None:
+        return [rule_issue("asset", "high", [decoration.asset_id], "使用了未审核或不存在的素材")]
+    if not rect_inside_canvas((decoration.x, decoration.y, decoration.width, decoration.height), canvas_height):
+        issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "素材超出画布范围"))
+    decoration_dict = decoration.model_dump(by_alias=True)
+    if asset.category == "sticker" and overlaps_photo_safe_area(decoration_dict, image_dicts):
+        issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "贴纸覆盖照片主体安全区"))
+    if asset.category == "tape" and not overlaps_any_photo_edge(decoration_dict, image_dicts):
+        issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "胶带没有贴近照片边缘"))
+    return issues
+
+
+def all_image_dicts(layout: JournalLayout) -> list[dict[str, Any]]:
+    section_images = [image for section in layout.layout.sections for image in section.images]
+    images = section_images or layout.layout.images
+    return [image.model_dump(by_alias=True) for image in images]
+
+
+def section_decorations(layout: JournalLayout) -> list[Any]:
+    return [decoration for section in layout.layout.sections for decoration in section.decorations]
 
 
 def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
