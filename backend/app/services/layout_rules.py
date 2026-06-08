@@ -10,6 +10,7 @@ MIN_DECORATIONS = 12
 MIN_EXTERNAL_STICKERS = 2
 MIN_SECTION_GAP = 80
 MIN_IMAGE_GAP = 32
+MIN_SECTION_BODY_CHARS = 6
 SECTION_BOUNDS_EPSILON = 1
 CAPTION_BORDER_OFFSET = 64
 DECORATION_CATEGORY_LIMITS = {
@@ -190,6 +191,8 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
             issues.append(rule_issue("sectionReference", "high", [section.section_id], "版式章节没有对应的内容章节"))
         elif rendered_section_image_ids(section) != image_ids_by_section_id[section.section_id]:
             issues.append(rule_issue("sectionImageMatch", "high", [section.section_id], "版式章节图片与内容章节不一致"))
+        elif len(copy_signal_text(body_by_section_id[section.section_id])) < MIN_SECTION_BODY_CHARS:
+            issues.append(rule_issue("sectionCopyAlignment", "medium", [section.section_id], "章节正文过短，手帐记录不够具体"))
         issues.extend(check_section_caption_coverage(section, caption_image_ids))
         section_bottom = section.y + section.height
         content_bottom = max(
@@ -269,6 +272,10 @@ def check_copy_quality(layout: JournalLayout) -> list[dict[str, Any]]:
 def is_placeholder_copy(value: Any) -> bool:
     text = str(value or "").strip(" 。！？!?；;，,")
     return text.startswith("片段 ") or text in PLACEHOLDER_COPY
+
+
+def copy_signal_text(value: Any) -> str:
+    return str(value or "").strip(" \n\t。！？!?；;，,、")
 
 
 def check_visual_focus(layout: JournalLayout) -> list[dict[str, Any]]:
