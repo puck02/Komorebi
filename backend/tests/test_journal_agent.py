@@ -129,6 +129,20 @@ def test_agent_fallback_layout_uses_ordered_captions_for_multiple_images():
     assert [image.image_id for image in result.layout.layout.images] == ["img_1", "img_2"]
 
 
+def test_agent_fallback_layout_adds_functional_section_decorations():
+    client = FakeAgentClient(
+        reviews=[],
+        generation_error=GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置"),
+    )
+
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(generation_request())
+
+    decoration_ids = {decoration.asset_id for decoration in result.layout.layout.sections[0].decorations}
+    assert "paper_note_cream_01" in decoration_ids
+    assert "tape_warm_grid_01" in decoration_ids
+    assert "sticker_leaf_05" in decoration_ids
+
+
 def test_agent_restores_user_image_order_after_revision():
     reversed_layout = layout_payload(title="修订后", image_ids=["img_2", "img_1"])
     client = FakeAgentClient(

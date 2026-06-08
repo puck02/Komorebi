@@ -238,6 +238,15 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
                 }
                 for index, image in enumerate(request.images)
             ],
+            "sections": [
+                {
+                    "id": "section_1",
+                    "title": "今日小记",
+                    "imageIds": [image.id for image in request.images],
+                    "body": body,
+                    "mood": ["日常"],
+                }
+            ],
         },
         "layout": {
             "variant": "long_collage",
@@ -257,5 +266,20 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
                 {"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32},
             ],
             "decorations": [],
+            "sections": [
+                {
+                    "sectionId": "section_1",
+                    "variant": "hero_note",
+                    "y": 220,
+                    "height": 720,
+                    "images": [],
+                    "texts": [],
+                    "decorations": [
+                        {"assetId": "paper_note_cream_01"},
+                        {"assetId": "tape_warm_grid_01"},
+                        {"assetId": "sticker_leaf_05"},
+                    ],
+                }
+            ],
         },
     }
