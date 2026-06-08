@@ -35,6 +35,23 @@ def test_plan_sections_uses_image_understanding_when_body_runs_out():
     assert sections[1]["body"] == "海边蓝色遮阳伞，还有傍晚岸边的长椅。"
 
 
+def test_plan_sections_uses_subjects_when_understanding_summary_is_numbered_photo_label():
+    layout = {
+        "content": {
+            "body": [],
+            "imageUnderstanding": [
+                {"imageId": "img_1", "summary": "第 2 张照片", "scene": "海边", "subjects": ["蓝色遮阳伞", "长椅"]},
+            ],
+            "sections": [],
+        },
+        "theme": {"mood": ["日常"]},
+    }
+
+    sections = plan_content_sections(layout, ["img_1"])
+
+    assert sections[0]["body"] == "蓝色遮阳伞、长椅。"
+
+
 def test_plan_sections_splits_non_adjacent_model_section():
     layout = {
         "content": {

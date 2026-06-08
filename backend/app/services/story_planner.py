@@ -174,14 +174,20 @@ def section_body_from_understanding(layout: dict[str, Any], image_ids: list[str]
 
 
 def concrete_understanding_text(item: dict[str, Any]) -> str:
-    for key in ("summary", "scene"):
-        text = str(item.get(key) or "").strip()
-        if text:
-            return text[:18]
+    summary = str(item.get("summary") or "").strip()
+    if summary and not numbered_photo_label(summary):
+        return summary[:18]
     subjects = normalize_string_list(item.get("subjects"))
     if subjects:
         return "、".join(subjects[:2])[:18]
+    scene = str(item.get("scene") or "").strip()
+    if scene:
+        return scene[:18]
     return ""
+
+
+def numbered_photo_label(text: str) -> bool:
+    return text.startswith("第 ") and "张照片" in text
 
 
 def normalized_body(layout: dict[str, Any]) -> list[str]:
