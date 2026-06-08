@@ -3,7 +3,10 @@ from typing import Any
 
 CLICHE_PHRASES = (
     "被温柔包裹",
+    "被阳光放慢",
     "把时光收藏",
+    "把这些片段收成一页",
+    "收成一页",
     "珍贵回忆",
     "值得被记住",
     "治愈",
@@ -114,6 +117,8 @@ def tidy_text(text: str) -> str:
     text = text.replace("，。", "。").replace("。,", "。").replace("，,", "，")
     text = text.replace("，也很，", "，").replace("，也很。", "。").replace("，充满，", "，")
     text = text.replace("也很，", "").replace("充满，", "").replace("充满。", "")
+    text = text.replace("照片里是的一天，", "").replace("照片里是的一天。", "")
+    text = text.replace("是的一天，", "").replace("是的一天。", "")
     return text.strip(" ")
 
 

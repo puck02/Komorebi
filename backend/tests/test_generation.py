@@ -885,14 +885,14 @@ def test_generator_normalizes_common_model_field_variants():
 def test_generator_normalizes_ai_style_copy():
     payload = valid_model_json()
     payload["content"]["title"] = "把这些珍贵回忆收藏在治愈的周末手帐里"
-    payload["content"]["body"] = ["今天被温柔包裹，也很治愈，充满仪式感。咖啡还热着，窗边坐了一会儿。"]
+    payload["content"]["body"] = ["今天被温柔包裹，也很治愈，充满仪式感。照片里是被阳光放慢的一天，咖啡还热着，窗边坐了一会儿。"]
     payload["content"]["captions"] = [{"imageId": "img_1", "text": "值得被记住的珍贵回忆，咖啡还热着。"}]
     payload["content"]["sections"] = [
         {
             "id": "section_1",
             "title": "把时光收藏",
             "imageIds": ["img_1"],
-            "body": "把时光收藏成珍贵回忆，咖啡还热着。",
+            "body": "把时光收藏成珍贵回忆，适合把这些片段收成一页，咖啡还热着。",
             "mood": ["日常"],
         }
     ]
@@ -911,7 +911,9 @@ def test_generator_normalizes_ai_style_copy():
     assert "治愈" not in rendered_copy
     assert "仪式感" not in rendered_copy
     assert "被温柔包裹" not in rendered_copy
+    assert "被阳光放慢" not in rendered_copy
     assert "把时光收藏" not in rendered_copy
+    assert "收成一页" not in rendered_copy
     assert "珍贵回忆" not in rendered_copy
     assert "咖啡还热着" in rendered_copy
 
