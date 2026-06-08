@@ -298,6 +298,40 @@ def test_layout_rules_report_layout_section_without_content_section():
     assert has_issue(issues, "sectionReference", "high", "版式章节没有对应的内容章节")
 
 
+def test_layout_rules_report_section_image_content_mismatch():
+    payload = layout_payload(image_ids=["img_1", "img_2"])
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_2"], "body": "第二张照片的正文。", "mood": []},
+        {"id": "section_2", "title": "第二段", "imageIds": ["img_1"], "body": "第一张照片的正文。", "mood": []},
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 620,
+            "images": [{"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        },
+        {
+            "sectionId": "section_2",
+            "variant": "hero_note",
+            "y": 920,
+            "height": 620,
+            "images": [{"imageId": "img_2", "x": 92, "y": 960, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 1320, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        },
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=two_images()))
+
+    assert not has_issue(issues, "imageOrder", "high", "图片集合或顺序与用户确认结果不一致")
+    assert has_issue(issues, "sectionImageMatch", "high", "版式章节图片与内容章节不一致")
+
+
 def test_layout_rules_allow_subpixel_section_bound_rounding():
     payload = layout_payload()
     payload["content"]["sections"] = [
