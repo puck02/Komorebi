@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="248" height="74" viewBox="0 0 248 74" fill="none">
+<rect width="248" height="74" fill="none"/>
+<defs>
+<linearGradient id="linenStitchFill" x1="10" y1="16" x2="238" y2="58" gradientUnits="userSpaceOnUse">
+<stop stop-color="#ead6ba" stop-opacity="0.86"/>
+<stop offset="1" stop-color="#c9ae88" stop-opacity="0.8"/>
+</linearGradient>
+<filter id="linenStitchShadow" x="0" y="8" width="248" height="64" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feDropShadow dx="1.6" dy="2.2" stdDeviation="1.5" flood-color="#6c5a44" flood-opacity="0.16"/>
+</filter>
+</defs>
+<path d="M11 16C70 14 133 17 237 16C236 29 238 43 235 57C154 59 81 55 12 57C10 43 12 31 11 16Z" fill="url(#linenStitchFill)" filter="url(#linenStitchShadow)"/>
+<path d="M11 16C70 15 133 17 237 16M237 16C236 30 238 43 235 57M235 57C154 59 81 56 12 57M12 57C10 43 12 31 11 16" stroke="#8b7357" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M21 29C70 27 111 30 153 29" stroke="#fff9ef" stroke-width="1.2" stroke-linecap="round" opacity="0.45"/>
+<path d="M21 47C92 48 146 45 226 47" stroke="#745f48" stroke-width="1.2" stroke-linecap="round" opacity="0.18"/>
+<g stroke="#8b7357" stroke-width="2" stroke-linecap="round" opacity="0.48">
+<path d="M32 22L42 32"/>
+<path d="M56 31L68 21"/>
+<path d="M83 22L94 32"/>
+<path d="M108 31L120 22"/>
+<path d="M136 22L147 32"/>
+<path d="M162 31L174 22"/>
+<path d="M190 22L201 32"/>
+<path d="M216 31L228 22"/>
+</g>
+</svg>

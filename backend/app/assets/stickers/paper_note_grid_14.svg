@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="232" height="172" viewBox="0 0 232 172" fill="none">
+<rect width="232" height="172" fill="none"/>
+<defs>
+<linearGradient id="gridNoteFill" x1="26" y1="22" x2="204" y2="150" gradientUnits="userSpaceOnUse">
+<stop stop-color="#fff4e2"/>
+<stop offset="1" stop-color="#ead7b4"/>
+</linearGradient>
+<filter id="gridNoteShadow" x="10" y="8" width="216" height="162" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feDropShadow dx="2.2" dy="3" stdDeviation="2" flood-color="#78604b" flood-opacity="0.17"/>
+</filter>
+</defs>
+<path d="M26 23C80 21 139 24 204 23C203 69 206 104 202 149C146 151 81 146 27 149C27 101 23 66 26 23Z" fill="url(#gridNoteFill)" filter="url(#gridNoteShadow)"/>
+<path d="M26 23C79 22 139 24 204 23M204 23C203 68 205 104 202 149M202 149C145 151 81 147 27 149M27 149C27 101 23 65 26 23" stroke="#927c61" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<g opacity="0.22" stroke="#927c61" stroke-width="1.4" stroke-linecap="round">
+<path d="M44 32L44 143"/>
+<path d="M78 31L77 144"/>
+<path d="M112 31L113 145"/>
+<path d="M147 32L146 144"/>
+<path d="M181 31L181 143"/>
+<path d="M34 49C80 50 129 47 195 49"/>
+<path d="M34 76C89 77 132 75 195 76"/>
+<path d="M34 103C83 101 139 104 195 102"/>
+<path d="M34 130C83 131 135 129 195 130"/>
+</g>
+<path d="M38 38C76 35 107 40 144 37" stroke="#fffaf2" stroke-width="1.2" stroke-linecap="round" opacity="0.55"/>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="210" height="116" viewBox="0 0 210 116" fill="none">
+<rect width="210" height="116" fill="none"/>
+<defs>
+<linearGradient id="sageLabelFill" x1="22" y1="18" x2="187" y2="96" gradientUnits="userSpaceOnUse">
+<stop stop-color="#eef3df"/>
+<stop offset="1" stop-color="#c5d0a9"/>
+</linearGradient>
+<filter id="sageLabelShadow" x="8" y="8" width="194" height="104" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feDropShadow dx="2" dy="2.6" stdDeviation="1.7" flood-color="#637052" flood-opacity="0.16"/>
+</filter>
+</defs>
+<path d="M21 22C55 19 129 21 188 22C187 48 190 72 186 94C137 98 74 94 22 95C24 70 19 47 21 22Z" fill="url(#sageLabelFill)" filter="url(#sageLabelShadow)"/>
+<path d="M21 22C55 20 122 20 188 22M188 22C187 45 190 70 186 94M186 94C132 98 73 94 22 95M22 95C24 70 19 46 21 22" stroke="#718060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M42 38C78 35 111 39 154 37" stroke="#fffaf0" stroke-width="1.5" stroke-linecap="round" opacity="0.58"/>
+<path d="M43 58C80 60 117 57 169 59" stroke="#6d795d" stroke-width="1.8" stroke-linecap="round" opacity="0.32"/>
+<path d="M43 74C86 72 119 77 154 74" stroke="#6d795d" stroke-width="1.5" stroke-linecap="round" opacity="0.24"/>
+<circle cx="31" cy="32" r="5.5" fill="#f9f3e6" stroke="#718060" stroke-width="1.4"/>
+<circle cx="176" cy="84" r="3" fill="#f9f3e6" opacity="0.55"/>
+<path d="M28 32C23 35 20 39 17 43" stroke="#718060" stroke-width="1.2" stroke-linecap="round" opacity="0.45"/>
+</svg>

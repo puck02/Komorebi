@@ -41,11 +41,39 @@ def test_every_manifest_asset_has_required_metadata_and_file():
         assert asset.file_path.exists()
 
 
+def test_manifest_asset_ids_and_files_are_unique():
+    assets = load_assets()
+
+    assert len({asset.id for asset in assets}) == len(assets)
+    assert len({asset.file for asset in assets}) == len(assets)
+
+
 def test_asset_matching_returns_only_approved_assets():
     assets = get_approved_assets(tags=["warm", "daily"])
 
     assert assets
     assert all(asset.quality_status == "approved" for asset in assets)
+
+
+def test_internal_functional_stationery_library_is_rich_enough():
+    approved_internal_assets = [
+        asset for asset in load_assets() if asset.source == "internal" and asset.quality_status == "approved"
+    ]
+    counts_by_category = {
+        category: len([asset for asset in approved_internal_assets if asset.category == category])
+        for category in {"paper", "tape", "texture"}
+    }
+
+    assert counts_by_category["paper"] >= 14
+    assert counts_by_category["tape"] >= 13
+    assert counts_by_category["texture"] >= 11
+
+
+def test_fluent_emoji_assets_stay_draft_until_manually_reviewed():
+    fluent_assets = [asset for asset in load_assets() if asset.id.startswith("ext_fluent_")]
+
+    assert fluent_assets
+    assert {asset.quality_status for asset in fluent_assets} == {"draft"}
 
 
 def test_asset_api_lists_assets_with_file_url():

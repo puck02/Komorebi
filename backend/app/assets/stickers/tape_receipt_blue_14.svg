@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="248" height="74" viewBox="0 0 248 74" fill="none">
+<rect width="248" height="74" fill="none"/>
+<defs>
+<linearGradient id="receiptBlueTapeFill" x1="12" y1="16" x2="236" y2="57" gradientUnits="userSpaceOnUse">
+<stop stop-color="#d9edf1" stop-opacity="0.86"/>
+<stop offset="1" stop-color="#a9c7ce" stop-opacity="0.82"/>
+</linearGradient>
+<filter id="receiptBlueTapeShadow" x="0" y="8" width="248" height="64" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feDropShadow dx="1.6" dy="2.2" stdDeviation="1.5" flood-color="#486a72" flood-opacity="0.16"/>
+</filter>
+</defs>
+<path d="M12 17C61 14 120 17 237 16C235 28 238 42 236 56C169 58 89 56 12 57C10 43 13 29 12 17Z" fill="url(#receiptBlueTapeFill)" filter="url(#receiptBlueTapeShadow)"/>
+<path d="M12 17C61 15 121 17 237 16M237 16C235 28 238 42 236 56M236 56C169 58 89 56 12 57M12 57C10 43 13 29 12 17" stroke="#6d8d96" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M24 27C67 29 120 26 163 28" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="0.5"/>
+<path d="M22 45C76 44 127 48 225 45" stroke="#587985" stroke-width="1.1" stroke-linecap="round" opacity="0.22"/>
+<g stroke="#6d8d96" stroke-width="1.5" stroke-linecap="round" opacity="0.38">
+<path d="M37 19L37 57"/>
+<path d="M72 18L72 57"/>
+<path d="M107 18L107 57"/>
+<path d="M142 18L142 57"/>
+<path d="M177 18L177 57"/>
+<path d="M212 18L212 56"/>
+</g>
+<circle cx="53" cy="36" r="1.7" fill="#ffffff" opacity="0.5"/>
+<circle cx="157" cy="38" r="1.4" fill="#587985" opacity="0.2"/>
+</svg>

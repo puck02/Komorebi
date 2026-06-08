@@ -239,7 +239,51 @@
     "file": "stickers/tape_lavender_11.svg",
     "license": "internal",
     "source": "internal",
-    "qualityStatus": "draft"
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "tape_linen_stitch_13",
+    "name": "Linen Stitch Tape 13",
+    "category": "tape",
+    "tags": [
+      "daily",
+      "warm",
+      "collage"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#ead6ba",
+      "#8b7357"
+    ],
+    "file": "stickers/tape_linen_stitch_13.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "tape_receipt_blue_14",
+    "name": "Receipt Blue Tape 14",
+    "category": "tape",
+    "tags": [
+      "travel",
+      "calm",
+      "daily"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#d9edf1",
+      "#6d8d96"
+    ],
+    "file": "stickers/tape_receipt_blue_14.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
   },
   {
     "id": "tape_charcoal_12",
@@ -478,6 +522,94 @@
       "#9f6b5e"
     ],
     "file": "stickers/paper_stamp_10.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "paper_note_linen_11",
+    "name": "Linen Note 11",
+    "category": "paper",
+    "tags": [
+      "daily",
+      "warm",
+      "note"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#fff8ec",
+      "#dcc59d"
+    ],
+    "file": "stickers/paper_note_linen_11.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "paper_label_sage_12",
+    "name": "Sage Label 12",
+    "category": "paper",
+    "tags": [
+      "nature",
+      "calm",
+      "label"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#eef3df",
+      "#718060"
+    ],
+    "file": "stickers/paper_label_sage_12.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "paper_receipt_blue_13",
+    "name": "Blue Receipt 13",
+    "category": "paper",
+    "tags": [
+      "travel",
+      "memory",
+      "ticket"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#eff8f8",
+      "#708d95"
+    ],
+    "file": "stickers/paper_receipt_blue_13.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "paper_note_grid_14",
+    "name": "Grid Note 14",
+    "category": "paper",
+    "tags": [
+      "daily",
+      "collage",
+      "note"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#fff4e2",
+      "#927c61"
+    ],
+    "file": "stickers/paper_note_grid_14.svg",
     "license": "internal",
     "source": "internal",
     "qualityStatus": "approved"
@@ -1094,6 +1226,72 @@
       "#eff2df"
     ],
     "file": "stickers/texture_leaf_08.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "texture_receipt_flecks_09",
+    "name": "Receipt Flecks 09",
+    "category": "texture",
+    "tags": [
+      "daily",
+      "warm",
+      "background"
+    ],
+    "style": [
+      "soft-collage",
+      "texture"
+    ],
+    "colors": [
+      "#8b7a64",
+      "#ffffff"
+    ],
+    "file": "stickers/texture_receipt_flecks_09.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "texture_warm_stitches_10",
+    "name": "Warm Stitches 10",
+    "category": "texture",
+    "tags": [
+      "warm",
+      "collage",
+      "background"
+    ],
+    "style": [
+      "soft-collage",
+      "texture"
+    ],
+    "colors": [
+      "#b98267",
+      "#efd9c7"
+    ],
+    "file": "stickers/texture_warm_stitches_10.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "texture_corner_stars_11",
+    "name": "Corner Stars 11",
+    "category": "texture",
+    "tags": [
+      "night",
+      "gentle",
+      "background"
+    ],
+    "style": [
+      "soft-collage",
+      "texture"
+    ],
+    "colors": [
+      "#d0a94f",
+      "#8d7c62"
+    ],
+    "file": "stickers/texture_corner_stars_11.svg",
     "license": "internal",
     "source": "internal",
     "qualityStatus": "approved"

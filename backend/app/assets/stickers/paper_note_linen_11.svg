@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="230" height="176" viewBox="0 0 230 176" fill="none">
+<rect width="230" height="176" fill="none"/>
+<defs>
+<linearGradient id="linenNoteFill" x1="28" y1="20" x2="202" y2="154" gradientUnits="userSpaceOnUse">
+<stop stop-color="#fff8ec"/>
+<stop offset="0.58" stop-color="#f0dfc3"/>
+<stop offset="1" stop-color="#dcc59d"/>
+</linearGradient>
+<filter id="linenNoteShadow" x="10" y="8" width="214" height="164" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feDropShadow dx="2.4" dy="3.4" stdDeviation="2.4" flood-color="#725d47" flood-opacity="0.18"/>
+</filter>
+</defs>
+<path d="M27 24C62 21 108 24 199 22C201 61 197 104 201 148C145 153 86 146 27 149C24 102 28 63 27 24Z" fill="url(#linenNoteFill)" filter="url(#linenNoteShadow)"/>
+<path d="M27 24C70 22 118 25 199 22M199 22C198 61 199 103 201 148M201 148C144 151 85 147 27 149M27 149C25 101 28 61 27 24" stroke="#9a866d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M42 54C92 52 141 55 181 53" stroke="#927d65" stroke-width="1.8" stroke-linecap="round" opacity="0.32"/>
+<path d="M42 80C90 83 134 78 178 80" stroke="#927d65" stroke-width="1.8" stroke-linecap="round" opacity="0.26"/>
+<path d="M42 106C85 104 139 108 188 105" stroke="#927d65" stroke-width="1.8" stroke-linecap="round" opacity="0.22"/>
+<path d="M42 132C96 130 132 134 170 132" stroke="#927d65" stroke-width="1.8" stroke-linecap="round" opacity="0.18"/>
+<path d="M36 34C75 31 114 37 158 33" stroke="#fffaf2" stroke-width="1.2" stroke-linecap="round" opacity="0.55"/>
+<path d="M59 42C61 82 58 116 61 145" stroke="#b29a78" stroke-width="1" stroke-linecap="round" opacity="0.18"/>
+<path d="M87 26C86 77 91 112 87 148" stroke="#fffaf2" stroke-width="0.9" stroke-linecap="round" opacity="0.32"/>
+<circle cx="171" cy="38" r="1.2" fill="#8a735c" opacity="0.24"/>
+<circle cx="72" cy="123" r="1" fill="#8a735c" opacity="0.2"/>
+<circle cx="145" cy="91" r="0.9" fill="#fffdf6" opacity="0.5"/>
+</svg>
