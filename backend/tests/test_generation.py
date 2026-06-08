@@ -1579,7 +1579,7 @@ def test_fallback_layout_uses_theme_recipe_stickers_when_ai_is_unavailable(descr
     )
 
     decoration_ids = {decoration.asset_id for decoration in layout.layout.sections[0].decorations}
-    assert decoration_ids.intersection(expected_asset_ids)
+    assert len(decoration_ids.intersection(expected_asset_ids)) >= 2
 
 
 def test_fallback_layout_uses_human_section_note_instead_of_template_phrase():

@@ -758,6 +758,7 @@ def build_template_section_decorations(
     paper_id = first_body_paper_asset_id(asset_by_id, section_index, recipe_tags, preferred_asset_ids)
     tape_id = first_asset_id(asset_by_id, "tape", section_index, recipe_tags, preferred_asset_ids)
     sticker_id = first_asset_id(asset_by_id, "sticker", section_index, recipe_tags, preferred_asset_ids)
+    secondary_sticker_id = complementary_sticker_asset_id(asset_by_id, sticker_id, recipe_tags, preferred_asset_ids)
     texture_id = first_asset_id(asset_by_id, "texture", section_index, recipe_tags, preferred_asset_ids)
     body_text = next((text for text in section_texts if text.get("role") == "body"), section_texts[0] if section_texts else None)
     first_image = section_images[0] if section_images else None
@@ -815,6 +816,19 @@ def build_template_section_decorations(
                     "rotation": [5, -4, 3][section_index % 3],
                 }
             )
+    if secondary_sticker_id is not None:
+        target = first_image or body_text
+        if target is not None:
+            decorations.append(
+                {
+                    "assetId": secondary_sticker_id,
+                    "x": positive_number(target.get("x"), 80) - 46,
+                    "y": positive_number(target.get("y"), 0) + positive_number(target.get("height"), 220) - 92,
+                    "width": 104,
+                    "height": 104,
+                    "rotation": [-5, 4, -3][section_index % 3],
+                }
+            )
     return decorations
 
 
@@ -852,6 +866,50 @@ def first_body_paper_asset_id(
     if writable_papers:
         return choose_asset_id(writable_papers, "paper", offset, preferred_tags or ["daily"], preferred_asset_ids)
     return first_asset_id(asset_by_id, "paper", offset, preferred_tags, preferred_asset_ids)
+
+
+def complementary_sticker_asset_id(
+    asset_by_id: dict[str, AssetItem],
+    primary_asset_id: str | None,
+    preferred_tags: list[str],
+    preferred_asset_ids: list[str] | None = None,
+) -> str | None:
+    if preferred_asset_ids:
+        return None
+    if not should_add_complementary_sticker(preferred_tags):
+        return None
+
+    tag_rank = {tag: index for index, tag in enumerate(preferred_tags)}
+    primary_tags = set(asset_by_id[primary_asset_id].tags) if primary_asset_id in asset_by_id else set()
+    candidates = [
+        asset
+        for asset in asset_by_id.values()
+        if asset.category == "sticker"
+        and asset.quality_status == "approved"
+        and asset.id != primary_asset_id
+        and any(tag in tag_rank for tag in asset.tags)
+    ]
+    if not candidates:
+        return None
+
+    def score(asset: AssetItem) -> tuple[int, int, int, int, str]:
+        matching_indexes = [tag_rank[tag] for tag in asset.tags if tag in tag_rank]
+        new_matching_indexes = [tag_rank[tag] for tag in asset.tags if tag in tag_rank and tag not in primary_tags]
+        source_rank = 0 if asset.source == "internal" else 1
+        return (
+            0 if new_matching_indexes else 1,
+            min(new_matching_indexes or matching_indexes),
+            -len(new_matching_indexes),
+            source_rank,
+            asset.id,
+        )
+
+    return sorted(candidates, key=score)[0].id
+
+
+def should_add_complementary_sticker(preferred_tags: list[str]) -> bool:
+    material_tags = {"film", "stamp", "letter", "seal", "tag", "ticket", "photo"}
+    return len(material_tags.intersection(preferred_tags)) >= 2
 
 
 def is_writable_body_paper(asset: AssetItem) -> bool:
