@@ -143,6 +143,26 @@ def test_agent_fallback_layout_adds_functional_section_decorations():
     assert "sticker_leaf_05" in decoration_ids
 
 
+def test_agent_fallback_layout_splits_large_image_sets_without_repeating_body():
+    client = FakeAgentClient(
+        reviews=[],
+        generation_error=GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置"),
+    )
+
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(
+        generation_request(images=four_images())
+    )
+
+    assert [section.image_ids for section in result.layout.content.sections] == [
+        ["img_1", "img_2", "img_3"],
+        ["img_4"],
+    ]
+    assert [section.body for section in result.layout.content.sections] == [
+        "周末一起散步。",
+        "第 4 张照片也放在这里。",
+    ]
+
+
 def test_agent_restores_user_image_order_after_revision():
     reversed_layout = layout_payload(title="修订后", image_ids=["img_2", "img_1"])
     client = FakeAgentClient(
@@ -238,6 +258,15 @@ def two_images():
     return [
         JournalImageInput(id="img_1", width=640, height=480),
         JournalImageInput(id="img_2", width=900, height=1200),
+    ]
+
+
+def four_images():
+    return [
+        JournalImageInput(id="img_1", width=640, height=480),
+        JournalImageInput(id="img_2", width=900, height=1200),
+        JournalImageInput(id="img_3", width=1200, height=900),
+        JournalImageInput(id="img_4", width=720, height=960),
     ]
 
 

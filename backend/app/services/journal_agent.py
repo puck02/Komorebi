@@ -238,15 +238,7 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
                 }
                 for index, image in enumerate(request.images)
             ],
-            "sections": [
-                {
-                    "id": "section_1",
-                    "title": "今日小记",
-                    "imageIds": [image.id for image in request.images],
-                    "body": body,
-                    "mood": ["日常"],
-                }
-            ],
+            "sections": fallback_sections(request, body),
         },
         "layout": {
             "variant": "long_collage",
@@ -283,3 +275,22 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
             ],
         },
     }
+
+
+def fallback_sections(request: JournalGenerationRequest, body: str) -> list[dict[str, Any]]:
+    if not request.images:
+        return [{"id": "section_1", "title": "今日小记", "imageIds": ["img_1"], "body": body, "mood": ["日常"]}]
+
+    sections: list[dict[str, Any]] = []
+    for start in range(0, len(request.images), 3):
+        group = request.images[start : start + 3]
+        sections.append(
+            {
+                "id": f"section_{len(sections) + 1}",
+                "title": "今日小记" if start == 0 else f"第 {start + 1} 张照片",
+                "imageIds": [image.id for image in group],
+                "body": body if start == 0 else f"第 {start + 1} 张照片也放在这里。",
+                "mood": ["日常"],
+            }
+        )
+    return sections
