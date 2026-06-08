@@ -60,9 +60,10 @@ def test_capture_journal_screenshot_uses_stable_chrome_flags(monkeypatch):
             captured["closed"] = True
 
     class FakeChromium:
-        def launch(self, executable_path, args):
+        def launch(self, executable_path, args, chromium_sandbox=None):
             captured["executable_path"] = executable_path
             captured["args"] = args
+            captured["chromium_sandbox"] = chromium_sandbox
             return FakeBrowser()
 
     class FakePlaywright:
@@ -86,6 +87,10 @@ def test_capture_journal_screenshot_uses_stable_chrome_flags(monkeypatch):
     assert "--disable-dev-shm-usage" in captured["args"]
     assert "--disable-gpu" in captured["args"]
     assert "--no-zygote" in captured["args"]
+    assert "--disable-setuid-sandbox" in captured["args"]
+    assert "--disable-crash-reporter" in captured["args"]
+    assert "--disable-features=VizDisplayCompositor" in captured["args"]
+    assert captured["chromium_sandbox"] is False
     assert captured["closed"] is True
 
 
@@ -119,8 +124,9 @@ def test_capture_journal_screenshot_serializes_chrome_sessions(monkeypatch):
                 active_sessions -= 1
 
     class FakeChromium:
-        def launch(self, executable_path, args):
+        def launch(self, executable_path, args, chromium_sandbox=None):
             nonlocal active_sessions, max_active_sessions
+            assert chromium_sandbox is False
             with active_lock:
                 active_sessions += 1
                 max_active_sessions = max(max_active_sessions, active_sessions)

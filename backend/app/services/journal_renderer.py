@@ -9,7 +9,15 @@ from app.core.config import get_settings
 from app.services.journal_generator import JournalGenerationRequest
 from app.services.render_drafts import RenderDraftRegistry, render_draft_registry
 
-CHROME_RENDER_ARGS = ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--no-zygote"]
+CHROME_RENDER_ARGS = [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-crash-reporter",
+    "--disable-features=VizDisplayCompositor",
+    "--no-zygote",
+]
 SCREENSHOT_LOCK = Lock()
 
 
@@ -41,6 +49,7 @@ def capture_journal_screenshot(url: str) -> bytes:
             browser = playwright.chromium.launch(
                 executable_path=settings.playwright_chromium_executable,
                 args=CHROME_RENDER_ARGS,
+                chromium_sandbox=False,
             )
             try:
                 page = browser.new_page(viewport={"width": 1160, "height": 900})
