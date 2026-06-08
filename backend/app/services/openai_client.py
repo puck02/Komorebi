@@ -141,6 +141,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         }
         for asset in order_assets_for_ai(request.assets)
     ]
+    user_context = build_user_context(request)
     schema_example = {
         "canvas": {"width": 1080, "height": 2400, "background": "#f8f1e8"},
         "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["安静"]},
@@ -225,6 +226,8 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "优先写可从图片或用户描述中确认的小细节，例如咖啡还热着、路灯亮了、车站等了十分钟。"
         "不要写成 AI 总结，不要写宣传文案，不要堆砌“被温柔包裹”“治愈”“仪式感”“把时光收藏”等套话。"
         "不要替用户发明没有证据的地点、关系、天气或情绪；不确定时写成观察到的画面。"
+        "用户补充信息可以用于增强准确性和日记感，例如日期可影响标题语气，地点和心情标签可辅助选素材与措辞。"
+        "如果和照片冲突，以照片和用户描述为准；不要因为地点或心情标签编造照片里不存在的内容。"
         "图片数组顺序就是用户上传或拖拽排序后的顺序，必须尊重这个顺序，不要自行重排。"
         "生成文字时要结合图片实际可见内容和用户描述；每段正文、每条 caption 都要和对应照片或照片组对得上，不能张冠李戴。"
         "必须先逐张理解图片，并在 content.imageUnderstanding 中为每张图片输出 imageId、summary、scene、subjects、mood。"
@@ -250,9 +253,18 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "最终效果是一张可纵向滚动的完整手帐长图，而不是右侧附加正文。只能使用给定 image id 和 asset id。"
         f"\n返回 JSON 示例：{json.dumps(schema_example, ensure_ascii=False)}"
         f"\n用户描述：{request.description}"
+        f"\n用户补充信息：{json.dumps(user_context, ensure_ascii=False)}"
         f"\n图片：{json.dumps(images, ensure_ascii=False)}"
         f"\n可用素材：{json.dumps(assets, ensure_ascii=False)}"
     )
+
+
+def build_user_context(request: JournalGenerationRequest) -> dict[str, Any]:
+    return {
+        "journalDate": str(request.journal_date) if request.journal_date else None,
+        "location": str(request.location).strip() if request.location else None,
+        "moodTags": [str(tag).strip() for tag in request.mood_tags or [] if str(tag).strip()],
+    }
 
 
 def order_assets_for_ai(assets: list[AssetItem]) -> list[AssetItem]:

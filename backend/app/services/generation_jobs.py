@@ -48,6 +48,9 @@ def run_generation_job(
                 description=payload.description,
                 images=[image_to_generation_input(image) for image in images],
                 assets=assets,
+                journal_date=payload.journal_date,
+                location=payload.location,
+                mood_tags=payload.mood_tags,
             )
             job.status = "running"
             job.stage = "understanding_photos"

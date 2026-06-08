@@ -1,5 +1,6 @@
 from copy import deepcopy
 from dataclasses import dataclass
+from datetime import date
 from math import ceil, isfinite
 from typing import Any, Protocol
 
@@ -54,6 +55,9 @@ class JournalGenerationRequest:
     description: str
     images: list[JournalImageInput]
     assets: list[AssetItem]
+    journal_date: date | str | None = None
+    location: str | None = None
+    mood_tags: list[str] | None = None
 
 
 class JournalModelClient(Protocol):
@@ -71,6 +75,9 @@ class JournalGenerator:
             description=request.description,
             images=request.images,
             assets=approved_assets,
+            journal_date=request.journal_date,
+            location=request.location,
+            mood_tags=request.mood_tags,
         )
 
         try:
@@ -90,15 +97,16 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
     body = request.description.strip() or "今天的照片先放在这里。"
     caption = body.strip(" 。！？!?；;，,")[:14] or "今日小记"
     image_id = request.images[0].id if request.images else "img_1"
+    mood_tags = normalized_mood_tags(request)
     captions_by_image = [
         {"imageId": image.id, "text": caption if index == 0 else f"第 {index + 1} 张照片"}
         for index, image in enumerate(request.images)
     ]
     return {
         "canvas": {"width": CANVAS_WIDTH, "height": DEFAULT_CANVAS_HEIGHT, "background": "#f8f1e8"},
-        "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["日常"]},
+        "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": mood_tags or ["日常"]},
         "content": {
-            "title": "今日小记",
+            "title": fallback_title(request),
             "body": [body],
             "captions": captions_by_image or [{"imageId": image_id, "text": caption}],
             "imageUnderstanding": [
@@ -107,7 +115,7 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
                     "summary": caption if index == 0 else f"第 {index + 1} 张照片",
                     "scene": "",
                     "subjects": [],
-                    "mood": ["日常"],
+                    "mood": mood_tags or ["日常"],
                 }
                 for index, image in enumerate(request.images)
             ],
@@ -150,9 +158,17 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
     }
 
 
+def fallback_title(request: JournalGenerationRequest) -> str:
+    location = str(request.location or "").strip()
+    if location:
+        return normalize_title(f"{location}小记")
+    return "今日小记"
+
+
 def fallback_sections(request: JournalGenerationRequest, body: str) -> list[dict[str, Any]]:
+    mood_tags = normalized_mood_tags(request) or ["日常"]
     if not request.images:
-        return [{"id": "section_1", "title": "今日小记", "imageIds": ["img_1"], "body": body, "mood": ["日常"]}]
+        return [{"id": "section_1", "title": fallback_title(request), "imageIds": ["img_1"], "body": body, "mood": mood_tags}]
 
     sections: list[dict[str, Any]] = []
     for start in range(0, len(request.images), 3):
@@ -160,13 +176,17 @@ def fallback_sections(request: JournalGenerationRequest, body: str) -> list[dict
         sections.append(
             {
                 "id": f"section_{len(sections) + 1}",
-                "title": "今日小记" if start == 0 else f"第 {start + 1} 张照片",
+                "title": fallback_title(request) if start == 0 else f"第 {start + 1} 张照片",
                 "imageIds": [image.id for image in group],
                 "body": body if start == 0 else f"第 {start + 1} 张照片也放在这里。",
-                "mood": ["日常"],
+                "mood": mood_tags,
             }
         )
     return sections
+
+
+def normalized_mood_tags(request: JournalGenerationRequest) -> list[str]:
+    return [str(tag).strip() for tag in request.mood_tags or [] if str(tag).strip()]
 
 
 def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGenerationRequest) -> dict[str, Any]:

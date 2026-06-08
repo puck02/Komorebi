@@ -979,6 +979,26 @@ def test_generator_returns_fallback_layout_when_model_connection_fails():
     assert layout.layout.sections
 
 
+def test_fallback_layout_uses_location_and_mood_context():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+
+    layout = generator.generate(
+        JournalGenerationRequest(
+            description="周末一起散步，天气很好，喝了咖啡。",
+            journal_date="2026-05-20",
+            location="上海",
+            mood_tags=["轻松"],
+            images=[JournalImageInput(id="img_1", width=640, height=480)],
+            assets=load_assets(),
+        )
+    )
+
+    assert layout.content.title == "上海小记"
+    assert layout.theme.mood == ["轻松"]
+    assert layout.content.image_understanding[0].mood == ["轻松"]
+    assert layout.content.sections[0].mood == ["轻松"]
+
+
 def test_openai_client_requires_api_key_only_when_constructed(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "")
 
@@ -1119,6 +1139,26 @@ def test_generation_prompt_requests_natural_diary_text_and_preserves_image_order
     assert '"order": 1' in prompt
     assert '"order": 2' in prompt
     assert '"order": 3' in prompt
+
+
+def test_generation_prompt_includes_user_context():
+    prompt = build_generation_prompt(
+        JournalGenerationRequest(
+            description="周末一起散步，天气很好，喝了咖啡。",
+            journal_date="2026-05-20",
+            location="上海",
+            mood_tags=["轻松", "开心"],
+            images=three_images(),
+            assets=load_assets(),
+        )
+    )
+
+    assert "用户补充信息" in prompt
+    assert "2026-05-20" in prompt
+    assert "上海" in prompt
+    assert "轻松" in prompt
+    assert "开心" in prompt
+    assert "如果和照片冲突，以照片和用户描述为准" in prompt
 
 
 def test_generation_prompt_requests_rich_and_varied_asset_usage():

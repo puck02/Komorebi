@@ -49,6 +49,9 @@ def generate_journal(
                 description=payload.description,
                 images=[image_to_generation_input(image) for image in images],
                 assets=get_approved_assets(),
+                journal_date=payload.journal_date,
+                location=payload.location,
+                mood_tags=payload.mood_tags,
             )
         )
     except GenerationError as exc:
@@ -194,6 +197,9 @@ def normalized_journal_layout(journal: Journal) -> dict:
                 description=journal.input_text,
                 images=[JournalImageInput(id=image.id, width=image.width, height=image.height) for image in journal.images],
                 assets=get_approved_assets(),
+                journal_date=journal.journal_date,
+                location=journal.location,
+                mood_tags=journal.mood_tags,
             ),
         )
     except (KeyError, TypeError, ValueError):

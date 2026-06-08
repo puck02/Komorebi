@@ -154,6 +154,28 @@ def test_generate_journal_saves_and_lists_only_current_users_journals(client):
     assert [item["id"] for item in list_response.json()] == [owner_response.json()["id"]]
 
 
+def test_generate_journal_passes_user_context_to_generator(client):
+    token = register_and_login(client, "owner@example.com")
+    image_id = upload_image(client, token)
+
+    response = client.post(
+        "/api/journals/generate",
+        json={
+            "imageIds": [image_id],
+            "description": "周末一起散步",
+            "journalDate": "2026-05-20",
+            "location": "上海",
+            "moodTags": ["轻松"],
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 201
+    assert str(client.fake_generator.request.journal_date) == "2026-05-20"
+    assert client.fake_generator.request.location == "上海"
+    assert client.fake_generator.request.mood_tags == ["轻松"]
+
+
 def test_normalized_journal_layout_trims_saved_single_section_to_compact_canvas_height():
     image = ImageModel(
         id="img_1",

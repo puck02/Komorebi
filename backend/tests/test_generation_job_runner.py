@@ -36,6 +36,28 @@ def test_runner_saves_completed_journal_and_progress(tmp_path):
         assert [stage for stage, _round, _score in agent.progress_events] == ["generating_draft", "reviewing", "reviewed"]
 
 
+def test_runner_passes_user_context_to_agent(tmp_path):
+    session_factory = make_session_factory()
+    job_id = seed_job(
+        session_factory,
+        tmp_path,
+        payload_json={
+            "imageIds": [],
+            "description": "周末一起散步。",
+            "journalDate": "2026-05-20",
+            "location": "上海",
+            "moodTags": ["轻松"],
+        },
+    )
+    agent = FakeAgent()
+
+    run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: agent)
+
+    assert str(agent.request.journal_date) == "2026-05-20"
+    assert agent.request.location == "上海"
+    assert agent.request.mood_tags == ["轻松"]
+
+
 def test_runner_logs_generation_job_lifecycle(tmp_path, caplog):
     session_factory = make_session_factory()
     job_id = seed_job(session_factory, tmp_path)
@@ -146,7 +168,7 @@ def make_session_factory():
     return sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def seed_job(session_factory, tmp_path, status="queued"):
+def seed_job(session_factory, tmp_path, status="queued", payload_json=None):
     image_path = Path(tmp_path) / f"{status}-original.png"
     PillowImage.new("RGB", (64, 48), color=(210, 170, 140)).save(image_path)
     with session_factory() as db:
@@ -166,7 +188,7 @@ def seed_job(session_factory, tmp_path, status="queued"):
         job = GenerationJob(
             user_id=user.id,
             status=status,
-            payload_json={"imageIds": [image.id], "description": "周末一起散步。", "moodTags": []},
+            payload_json={**(payload_json or {"description": "周末一起散步。", "moodTags": []}), "imageIds": [image.id]},
         )
         db.add(job)
         db.commit()
