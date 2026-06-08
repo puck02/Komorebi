@@ -171,6 +171,26 @@ def test_agent_fallback_layout_splits_large_image_sets_without_repeating_body():
     ]
 
 
+def test_agent_fallback_layout_splits_single_sentence_into_human_section_notes():
+    client = FakeAgentClient(
+        reviews=[],
+        generation_error=GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置"),
+    )
+
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(
+        JournalGenerationRequest(
+            description="周末一起散步，傍晚喝了咖啡，路口的灯亮起来。",
+            images=four_images(),
+            assets=get_approved_assets(),
+        )
+    )
+
+    assert [section.body for section in result.layout.content.sections] == [
+        "周末一起散步。",
+        "傍晚喝了咖啡，路口的灯亮起来。",
+    ]
+
+
 def test_agent_restores_user_image_order_after_revision():
     reversed_layout = layout_payload(title="修订后", image_ids=["img_2", "img_1"])
     client = FakeAgentClient(

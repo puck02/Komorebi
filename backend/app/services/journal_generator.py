@@ -218,6 +218,19 @@ def fallback_section_bodies(body: str, section_count: int) -> list[str]:
     sentences = split_sentences(body)
     if len(sentences) >= section_count:
         return [normalize_diary_text(sentence, fallback=body) for sentence in sentences[:section_count]]
+    clauses = [
+        normalize_diary_text(part, fallback="").strip(" 。！？!?；;，,、")
+        for part in body.strip("。！？!?；;").replace("，", "\n").replace(",", "\n").replace("、", "\n").splitlines()
+    ]
+    clauses = [clause for clause in clauses if clause]
+    if len(clauses) >= section_count:
+        return [
+            normalize_diary_text(
+                ("，".join(clauses[index:]) if index == section_count - 1 else clauses[index]) + "。",
+                fallback=body,
+            )
+            for index in range(section_count)
+        ]
     return [body for _ in range(section_count)]
 
 
