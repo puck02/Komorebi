@@ -14,7 +14,7 @@ from app.schemas.journal import JournalGenerateRequest
 from app.services.agent_observability import log_agent_event
 from app.services.assets import get_approved_assets
 from app.services.journal_agent import JournalAgent, JournalAgentResult
-from app.services.journal_generator import JournalGenerationRequest, JournalImageInput
+from app.services.journal_generator import JournalGenerationRequest, JournalImageInput, sanitize_model_layout
 from app.services.journal_renderer import PlaywrightJournalRenderer
 from app.services.openai_client import OpenAIJournalClient
 from app.services.thumbnails import generate_display_image
@@ -133,14 +133,25 @@ def save_generated_journal(
     images: list[ImageModel],
     result: JournalAgentResult,
 ) -> Journal:
+    layout_json = sanitize_model_layout(
+        result.layout.model_dump(by_alias=True),
+        JournalGenerationRequest(
+            description=payload.description,
+            images=[JournalImageInput(id=image.id, width=image.width, height=image.height) for image in images],
+            assets=get_approved_assets(),
+            journal_date=payload.journal_date,
+            location=payload.location,
+            mood_tags=payload.mood_tags,
+        ),
+    )
     journal = Journal(
         user_id=job.user_id,
-        title=result.layout.content.title,
+        title=str(layout_json["content"]["title"]),
         input_text=payload.description,
         journal_date=payload.journal_date,
         location=payload.location,
         mood_tags=payload.mood_tags,
-        layout_json=result.layout.model_dump(by_alias=True),
+        layout_json=layout_json,
         images=images,
     )
     db.add(journal)

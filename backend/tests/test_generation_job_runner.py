@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 from app.db.base import Base
 from app.models.generation_job import GenerationJob
 from app.models.image import Image
+from app.models.journal import Journal
 from app.models.user import User
 from app.schemas.journal import JournalLayout
 from app.services.generation_jobs import recover_incomplete_generation_jobs, run_generation_job
@@ -56,6 +57,28 @@ def test_runner_passes_user_context_to_agent(tmp_path):
     assert str(agent.request.journal_date) == "2026-05-20"
     assert agent.request.location == "上海"
     assert agent.request.mood_tags == ["轻松"]
+
+
+def test_runner_saved_layout_contains_user_context_meta(tmp_path):
+    session_factory = make_session_factory()
+    job_id = seed_job(
+        session_factory,
+        tmp_path,
+        payload_json={
+            "imageIds": [],
+            "description": "周末一起散步。",
+            "journalDate": "2026-05-20",
+            "location": "上海",
+            "moodTags": ["轻松"],
+        },
+    )
+
+    run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: FakeAgent())
+
+    with session_factory() as db:
+        job = db.get(GenerationJob, job_id)
+        journal = db.get(Journal, job.journal_id)
+        assert journal.layout_json["content"]["meta"] == "2026-05-20 / 上海 / 轻松"
 
 
 def test_runner_logs_generation_job_lifecycle(tmp_path, caplog):
