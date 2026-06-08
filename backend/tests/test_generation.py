@@ -662,6 +662,46 @@ def test_generator_uses_scrapbook_recipe_stickers_for_template_decorations(
     assert expected_sticker in decoration_ids
 
 
+def test_generator_places_photo_corner_recipe_sticker_on_photo_corner():
+    payload = valid_model_json()
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "桌面上的相片和照片角",
+            "scene": "手账页",
+            "subjects": ["照片", "相册"],
+            "mood": [],
+        }
+    ]
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "照片拼贴",
+            "imageIds": ["img_1"],
+            "body": "把几张拍立得和相册小角贴在一起。",
+            "mood": ["日常"],
+        }
+    ]
+    payload["layout"]["decorations"] = []
+    assets = [
+        asset_item("paper_note_cream_01", "paper"),
+        asset_item("tape_warm_grid_01", "tape"),
+        asset_item("sticker_photo_corner_21", "sticker", tags=["photo", "memory", "collage"]),
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(assets=assets))
+
+    section = layout.layout.sections[0]
+    image = section.images[0]
+    corner = next(decoration for decoration in section.decorations if decoration.asset_id == "sticker_photo_corner_21")
+    assert corner.x < image.x
+    assert corner.y < image.y
+    assert corner.x + corner.width > image.x
+    assert corner.y + corner.height > image.y
+    assert not overlaps_photo_safe_area(corner.model_dump(by_alias=True), [image.model_dump(by_alias=True)])
+
+
 def test_generator_repositions_model_section_decorations_around_template_content():
     payload = valid_model_json()
     payload["canvas"]["height"] = 3600
