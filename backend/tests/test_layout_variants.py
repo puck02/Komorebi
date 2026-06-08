@@ -60,6 +60,19 @@ def test_choose_section_variant_uses_timeline_strip_for_three_ordered_travel_pho
     assert variant == "timeline_strip"
 
 
+def test_choose_section_variant_uses_timeline_strip_for_two_transport_photos():
+    images = [image("img_1", 640, 480), image("img_2", 640, 480)]
+    section = content_section("section_1", ["img_1", "img_2"], body="从地铁站出来，沿途慢慢走。")
+    understanding = [
+        {"imageId": "img_1", "summary": "地铁站台", "scene": "地铁", "subjects": ["站台"], "mood": []},
+        {"imageId": "img_2", "summary": "路边指示牌", "scene": "车站", "subjects": ["路线"], "mood": []},
+    ]
+
+    variant = choose_section_variant(section, images, understanding, section_index=0, total_sections=1)
+
+    assert variant == "timeline_strip"
+
+
 def test_choose_section_variant_uses_photo_wall_for_similar_three_photo_group():
     images = [image("img_1", 640, 480), image("img_2", 640, 480), image("img_3", 640, 480)]
     section = content_section("section_1", ["img_1", "img_2", "img_3"], body="三张都是晚饭桌上的小记录。")

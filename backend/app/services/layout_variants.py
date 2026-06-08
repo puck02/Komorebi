@@ -37,6 +37,7 @@ TICKET_KEYWORDS = {
     "车站",
 }
 TIMELINE_KEYWORDS = {"旅行", "旅程", "出门", "抵达", "路上", "地铁", "车站", "散步", "路线", "沿途"}
+STRONG_TIMELINE_KEYWORDS = {"旅行", "旅程", "出门", "抵达", "地铁", "车站", "站台", "路线", "沿途"}
 WHITESPACE_KEYWORDS = {"安静", "留白", "慢", "光", "窗边", "独处", "平静"}
 
 
@@ -52,6 +53,9 @@ def choose_section_variant(
     keyword_text = section_keywords(section, image_understanding)
     image_count = len(section_images)
 
+    if image_count >= 2 and any(keyword in keyword_text for keyword in STRONG_TIMELINE_KEYWORDS):
+        return "timeline_strip"
+
     if image_count <= 2 and any(keyword in keyword_text for keyword in TICKET_KEYWORDS):
         return "ticket_memo"
 
@@ -63,8 +67,6 @@ def choose_section_variant(
         return "staggered_collage"
 
     if image_count == 2:
-        if any(keyword in keyword_text for keyword in TIMELINE_KEYWORDS) and section_index > 0:
-            return "timeline_strip"
         return "staggered_collage"
 
     if len(str(section.get("body") or "")) >= 44 or any(keyword in keyword_text for keyword in WHITESPACE_KEYWORDS):
