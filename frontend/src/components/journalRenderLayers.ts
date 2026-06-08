@@ -16,6 +16,7 @@ export type JournalRenderLayers = {
   titlePlacement?: JournalTextPlacement;
   images: JournalImagePlacement[];
   bodyTexts: JournalRenderText[];
+  captionTexts: JournalRenderText[];
   decorations: JournalDecoration[];
 };
 
@@ -33,6 +34,10 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
       }
       return [{ key: `${section.sectionId}-body`, paragraph, placement }];
     });
+    const captionTexts = sortedSections.flatMap((section) => {
+      const sectionImageIds = contentBySectionId.get(section.sectionId)?.imageIds ?? section.images.map((image) => image.imageId);
+      return buildCaptionTexts(section.texts, layout.content.captions, sectionImageIds, section.sectionId);
+    });
 
     const sectionDecorations = sortedSections.flatMap((section) => section.decorations);
 
@@ -41,11 +46,13 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
       titlePlacement: layout.layout.texts.find((text) => text.role === "title"),
       images: sortedSections.flatMap((section) => section.images),
       bodyTexts,
+      captionTexts,
       decorations: sectionDecorations.length > 0 ? sectionDecorations : layout.layout.decorations
     };
   }
 
   const bodyPlacements = layout.layout.texts.filter((text) => text.role === "body");
+  const legacyImageIds = layout.layout.images.map((image) => image.imageId);
   return {
     usesSections: false,
     titlePlacement: layout.layout.texts.find((text) => text.role === "title"),
@@ -63,10 +70,33 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
           fontSize: 28
         } satisfies JournalTextPlacement)
     })),
+    captionTexts: buildCaptionTexts(layout.layout.texts, layout.content.captions, legacyImageIds, "legacy"),
     decorations: layout.layout.decorations
   };
 }
 
 export function getJournalAssetIds(layout: JournalLayout) {
   return Array.from(new Set(getJournalRenderLayers(layout).decorations.map((decoration) => decoration.assetId)));
+}
+
+function buildCaptionTexts(
+  texts: JournalTextPlacement[],
+  captions: JournalLayout["content"]["captions"],
+  imageIds: string[],
+  keyPrefix: string
+): JournalRenderText[] {
+  const captionPlacements = texts.filter((text) => text.role === "caption");
+  return captionPlacements.flatMap((placement, index) => {
+    const imageId = imageIds[index];
+    if (!imageId) {
+      return [];
+    }
+
+    const caption = captions.find((item) => item.imageId === imageId)?.text.trim();
+    if (!caption) {
+      return [];
+    }
+
+    return [{ key: `${keyPrefix}-caption-${imageId}`, paragraph: caption, placement }];
+  });
 }

@@ -1383,7 +1383,8 @@ body {
 .journal-photo,
 .journal-decoration,
 .journal-title,
-.journal-body {
+.journal-body,
+.journal-caption {
   position: absolute;
 }
 
@@ -1531,6 +1532,18 @@ body {
 
 .journal-body p {
   margin: 0;
+}
+
+.journal-caption {
+  z-index: 29;
+  overflow-wrap: anywhere;
+  color: rgb(92 65 48 / 82%);
+  font-family: "Bailu Qiaoli", "LXGW WenKai", "Kaiti SC", "STKaiti", serif;
+  line-height: 1.36;
+  letter-spacing: 0;
+  pointer-events: none;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 58%);
+  white-space: pre-wrap;
 }
 
 .journal-detail-page {

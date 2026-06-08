@@ -120,6 +120,21 @@ export default function JournalCanvas({ assets, canvasRef, images, layout, onIma
             <p>{paragraph}</p>
           </section>
         ))}
+
+        {renderLayers.captionTexts.map(({ key, paragraph, placement }) => (
+          <figcaption
+            className="journal-caption"
+            key={key}
+            style={{
+              fontSize: placement.fontSize,
+              left: placement.x,
+              top: placement.y,
+              width: placement.width
+            }}
+          >
+            {paragraph}
+          </figcaption>
+        ))}
       </div>
     </div>
   );
