@@ -11,6 +11,7 @@ MIN_EXTERNAL_STICKERS = 2
 MIN_SECTION_GAP = 80
 MIN_IMAGE_GAP = 32
 MIN_SECTION_BODY_CHARS = 6
+SECTION_RHYTHM_HEIGHT_EPSILON = 24
 SECTION_BOUNDS_EPSILON = 1
 CAPTION_BORDER_OFFSET = 64
 DECORATION_CATEGORY_LIMITS = {
@@ -42,6 +43,7 @@ def check_layout_rules(layout: JournalLayout, request: Any) -> list[dict[str, An
     issues.extend(check_decorations(layout, request))
     issues.extend(check_sections(layout))
     issues.extend(check_visual_focus(layout))
+    issues.extend(check_layout_rhythm(layout))
     issues.extend(check_decoration_function(layout, request))
     return issues
 
@@ -291,6 +293,17 @@ def check_visual_focus(layout: JournalLayout) -> list[dict[str, Any]]:
         if largest_area / smallest_area < 1.25:
             issues.append(rule_issue("visualFocus", "medium", [section.section_id], "多图章节缺少明确主图或视觉焦点"))
     return issues
+
+
+def check_layout_rhythm(layout: JournalLayout) -> list[dict[str, Any]]:
+    sections = layout.layout.sections
+    if len(sections) < 3:
+        return []
+    variants = {section.variant for section in sections}
+    heights = [section.height for section in sections]
+    if len(variants) == 1 and max(heights) - min(heights) <= SECTION_RHYTHM_HEIGHT_EPSILON:
+        return [rule_issue("layoutRhythm", "medium", [section.section_id for section in sections], "章节版式节奏过于重复")]
+    return []
 
 
 def check_decoration_function(layout: JournalLayout, request: Any) -> list[dict[str, Any]]:

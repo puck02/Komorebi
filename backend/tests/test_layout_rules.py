@@ -596,6 +596,32 @@ def test_layout_rules_report_missing_functional_section_decorations():
     assert has_issue(issues, "decorationFunction", "medium", "章节缺少承载文字或固定照片的功能性装饰")
 
 
+def test_layout_rules_report_repetitive_section_rhythm():
+    payload = layout_payload(image_ids=["img_1", "img_2", "img_3"])
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一张照片里有窗边咖啡。", "mood": []},
+        {"id": "section_2", "title": "第二段", "imageIds": ["img_2"], "body": "第二张照片里有路口灯光。", "mood": []},
+        {"id": "section_3", "title": "第三段", "imageIds": ["img_3"], "body": "第三张照片里有傍晚天空。", "mood": []},
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": f"section_{index}",
+            "variant": "hero_note",
+            "y": 220 + (index - 1) * 720,
+            "height": 620,
+            "images": [{"imageId": f"img_{index}", "x": 92, "y": 260 + (index - 1) * 720, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 620 + (index - 1) * 720, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+        for index in range(1, 4)
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=three_images()))
+
+    assert has_issue(issues, "layoutRhythm", "medium", "章节版式节奏过于重复")
+
+
 def test_agent_revises_when_default_layout_rules_report_hard_failure():
     bad_layout = layout_payload(title="第一段")
     fixed_layout = layout_payload(title="修复后")
