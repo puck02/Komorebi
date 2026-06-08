@@ -99,6 +99,82 @@ def test_layout_rules_report_section_content_beyond_declared_height():
     assert has_issue(issues, "sectionBounds", "high", "章节高度没有覆盖内部内容")
 
 
+def test_layout_rules_report_cliche_copy_quality_issue():
+    payload = layout_payload()
+    payload["content"]["body"] = ["今天很治愈，像被温柔包裹，也很有仪式感。"]
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "第一段",
+            "imageIds": ["img_1"],
+            "body": "把时光收藏成珍贵回忆。",
+            "mood": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert has_issue(issues, "copyQuality", "medium", "正文存在明显 AI 套话，手帐记录不够具体")
+
+
+def test_layout_rules_report_multi_image_section_without_visual_focus():
+    payload = layout_payload(image_ids=["img_1", "img_2", "img_3"])
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "三张照片",
+            "imageIds": ["img_1", "img_2", "img_3"],
+            "body": "三张照片放在一起。",
+            "mood": [],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "photo_wall",
+            "y": 220,
+            "height": 620,
+            "images": [
+                {"imageId": "img_1", "x": 92, "y": 260, "width": 300, "height": 260, "rotation": 0},
+                {"imageId": "img_2", "x": 420, "y": 260, "width": 300, "height": 260, "rotation": 0},
+                {"imageId": "img_3", "x": 748, "y": 260, "width": 300, "height": 260, "rotation": 0},
+            ],
+            "texts": [{"role": "body", "x": 112, "y": 560, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=three_images()))
+
+    assert has_issue(issues, "visualFocus", "medium", "多图章节缺少明确主图或视觉焦点")
+
+
+def test_layout_rules_report_missing_functional_section_decorations():
+    payload = layout_payload()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 620,
+            "images": [{"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+    request = generation_request(assets=[asset_item("paper_approved", "paper"), asset_item("tape_approved", "tape")])
+
+    issues = check_layout_rules(layout, request)
+
+    assert has_issue(issues, "decorationFunction", "medium", "章节缺少承载文字或固定照片的功能性装饰")
+
+
 def test_agent_revises_when_default_layout_rules_report_hard_failure():
     bad_layout = layout_payload()
     bad_layout["layout"]["texts"] = [{"role": "title", "x": 100, "y": 240, "width": 680, "fontSize": 56}]
@@ -136,6 +212,14 @@ def two_images():
     return [
         JournalImageInput(id="img_1", width=640, height=480),
         JournalImageInput(id="img_2", width=900, height=1200),
+    ]
+
+
+def three_images():
+    return [
+        JournalImageInput(id="img_1", width=640, height=480),
+        JournalImageInput(id="img_2", width=900, height=1200),
+        JournalImageInput(id="img_3", width=1200, height=900),
     ]
 
 

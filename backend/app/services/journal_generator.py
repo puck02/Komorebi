@@ -8,7 +8,9 @@ from pydantic import ValidationError
 from app.schemas.journal import JournalLayout
 from app.services.assets import AssetItem
 from app.services.decoration_placement import place_decorations
+from app.services.diary_copy import normalize_diary_blocks, normalize_diary_text, normalize_title
 from app.services.layout_variants import ALLOWED_SECTION_VARIANTS, build_section_layout
+from app.services.story_planner import plan_content_sections, split_evenly
 
 CANVAS_WIDTH = 1080
 DEFAULT_CANVAS_HEIGHT = 1440
@@ -85,6 +87,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
         content["body"] = content["notes"]
     if "body" not in content and isinstance(content.get("subtitle"), str):
         content["body"] = [content["subtitle"]]
+    content["title"] = normalize_title(content.get("title"))
     content["body"] = normalize_body_content(content.get("body"), len(request.images))
 
     image_ids = {image.id for image in request.images}
@@ -106,7 +109,10 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
         ]
     for caption in captions:
         normalize_id_alias(caption, "imageId")
-    layout["content"]["captions"] = [caption for caption in captions if caption.get("imageId") in image_ids]
+        caption["text"] = normalize_diary_text(caption.get("text"), fallback="今天的照片")
+    layout["content"]["captions"] = [
+        caption for caption in captions if caption.get("imageId") in image_ids and str(caption.get("text") or "").strip()
+    ]
     normalize_image_understanding(layout, request.images)
 
     normalize_story_layout(layout, request.images)
@@ -135,55 +141,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
 
 
 def normalize_body_content(body: Any, image_count: int) -> list[str]:
-    if isinstance(body, str):
-        paragraphs = [body]
-    elif isinstance(body, list):
-        paragraphs = [str(paragraph).strip() for paragraph in body if str(paragraph).strip()]
-    else:
-        paragraphs = []
-
-    if not paragraphs:
-        return ["把这一天轻轻收进手帐里。"]
-
-    if len(paragraphs) == 1 and len(paragraphs[0]) > LONG_BODY_SPLIT_TARGET:
-        return split_long_paragraph(paragraphs[0], image_count)
-    return paragraphs
-
-
-def split_long_paragraph(paragraph: str, image_count: int) -> list[str]:
-    target_count = min(max(ceil(len(paragraph) / LONG_BODY_SPLIT_TARGET), min(max(image_count, 1), 3)), 4)
-    sentences = split_sentences(paragraph)
-    if len(sentences) >= target_count:
-        groups = split_evenly(sentences, target_count)
-        return ["".join(group).strip() for group in groups if "".join(group).strip()]
-
-    chunk_size = ceil(len(paragraph) / target_count)
-    return [paragraph[index : index + chunk_size].strip() for index in range(0, len(paragraph), chunk_size) if paragraph[index : index + chunk_size].strip()]
-
-
-def split_sentences(paragraph: str) -> list[str]:
-    sentences: list[str] = []
-    start = 0
-    for index, character in enumerate(paragraph):
-        if character in "。！？!?；;":
-            sentences.append(paragraph[start : index + 1].strip())
-            start = index + 1
-    if start < len(paragraph):
-        sentences.append(paragraph[start:].strip())
-    return [sentence for sentence in sentences if sentence]
-
-
-def split_evenly(items: list[Any], group_count: int) -> list[list[Any]]:
-    if group_count <= 0:
-        return []
-    base_size, remainder = divmod(len(items), group_count)
-    groups: list[list[Any]] = []
-    cursor = 0
-    for index in range(group_count):
-        size = base_size + (1 if index < remainder else 0)
-        groups.append(items[cursor : cursor + size])
-        cursor += size
-    return groups
+    return normalize_diary_blocks(body, fallback="今天的照片先放在这里。", split_target=LONG_BODY_SPLIT_TARGET)
 
 
 def normalize_story_layout(layout: dict[str, Any], request_images: list[JournalImageInput]) -> None:
@@ -252,100 +210,15 @@ def normalize_string_list(value: Any) -> list[str]:
 
 def normalize_content_sections(layout: dict[str, Any], request_images: list[JournalImageInput]) -> list[dict[str, Any]]:
     image_ids = [image.id for image in request_images]
-    image_id_set = set(image_ids)
-    raw_sections = layout["content"].get("sections")
-    sections: list[dict[str, Any]] = []
-
-    if isinstance(raw_sections, list):
-        for index, raw_section in enumerate(raw_sections):
-            if not isinstance(raw_section, dict):
-                continue
-            raw_image_ids = raw_section.get("imageIds")
-            if raw_image_ids is None:
-                raw_image_ids = raw_section.get("image_ids")
-            section_image_ids = [str(image_id) for image_id in raw_image_ids or [] if str(image_id) in image_id_set]
-            if not section_image_ids:
-                continue
-            body = str(raw_section.get("body") or section_body_fallback(layout, index)).strip()
-            if not body:
-                body = "这一组照片也想好好留下。"
-            title = str(raw_section.get("title") or f"片段 {index + 1}").strip()
-            mood = raw_section.get("mood")
-            raw_section_id = str(raw_section.get("id") or f"section_{len(sections) + 1}")
-            adjacent_groups = split_adjacent_image_ids(section_image_ids, image_ids)
-            for group_index, adjacent_group in enumerate(adjacent_groups):
-                section_id = raw_section_id if len(adjacent_groups) == 1 else f"{raw_section_id}_{group_index + 1}"
-                sections.append(
-                    {
-                        "id": section_id,
-                        "title": title or f"片段 {index + 1}",
-                        "imageIds": adjacent_group,
-                        "body": body,
-                        "mood": normalize_string_list(mood),
-                    }
-                )
-
-    if sections:
-        return sections
-    return build_content_sections_from_flat_layout(layout, image_ids)
-
-
-def split_adjacent_image_ids(section_image_ids: list[str], ordered_image_ids: list[str]) -> list[list[str]]:
-    order_by_id = {image_id: index for index, image_id in enumerate(ordered_image_ids)}
-    ordered_ids = sorted(section_image_ids, key=lambda image_id: order_by_id[image_id])
-    groups: list[list[str]] = []
-    current_group: list[str] = []
-    previous_order: int | None = None
-    for image_id in ordered_ids:
-        current_order = order_by_id[image_id]
-        if previous_order is None or (current_order == previous_order + 1 and len(current_group) < 3):
-            current_group.append(image_id)
-        else:
-            groups.append(current_group)
-            current_group = [image_id]
-        previous_order = current_order
-    if current_group:
-        groups.append(current_group)
-    return groups
-
-
-def section_body_fallback(layout: dict[str, Any], index: int) -> str:
-    body = layout["content"].get("body", [])
-    if isinstance(body, list) and index < len(body):
-        return str(body[index])
-    return ""
-
-
-def build_content_sections_from_flat_layout(layout: dict[str, Any], image_ids: list[str]) -> list[dict[str, Any]]:
-    body = layout["content"].get("body", [])
-    paragraphs = [str(paragraph).strip() for paragraph in body if str(paragraph).strip()]
-    section_count = max(len(paragraphs), min(ceil(len(image_ids) / 3), 4), 1)
-    image_groups = split_evenly(image_ids, section_count)
-    sections: list[dict[str, Any]] = []
-
-    for index in range(section_count):
-        section_image_ids = image_groups[index] if index < len(image_groups) else []
-        if not section_image_ids:
-            continue
-        body_text = paragraphs[index] if index < len(paragraphs) else "这一组照片也想好好留下。"
-        sections.append(
-            {
-                "id": f"section_{len(sections) + 1}",
-                "title": section_title_from_body(body_text, len(sections) + 1),
-                "imageIds": section_image_ids,
-                "body": body_text,
-                "mood": layout["theme"].get("mood", []) if isinstance(layout.get("theme"), dict) else [],
-            }
-        )
-    return sections
-
-
-def section_title_from_body(body: str, index: int) -> str:
-    text = body.strip()
-    if not text:
-        return f"片段 {index}"
-    title = text.split("，", 1)[0].split("。", 1)[0].strip()
-    return title[:12] or f"片段 {index}"
+    sections = plan_content_sections(layout, image_ids)
+    return [
+        {
+            **section,
+            "title": normalize_title(section.get("title"), fallback=f"片段 {index + 1}"),
+            "body": normalize_diary_text(section.get("body"), fallback="这一组照片也想好好留下。"),
+        }
+        for index, section in enumerate(sections)
+    ]
 
 
 def normalize_layout_sections(

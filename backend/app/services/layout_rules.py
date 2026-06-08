@@ -2,6 +2,7 @@ from typing import Any
 
 from app.schemas.journal import JournalLayout
 from app.services.decoration_placement import overlaps_photo_safe_area
+from app.services.diary_copy import has_cliche_copy
 
 CANVAS_WIDTH = 1080
 MAX_DECORATIONS = 22
@@ -20,9 +21,12 @@ DECORATION_CATEGORY_LIMITS = {
 def check_layout_rules(layout: JournalLayout, request: Any) -> list[dict[str, Any]]:
     issues: list[dict[str, Any]] = []
     issues.extend(check_image_order(layout, request))
+    issues.extend(check_copy_quality(layout))
     issues.extend(check_readability(layout))
     issues.extend(check_decorations(layout, request))
     issues.extend(check_sections(layout))
+    issues.extend(check_visual_focus(layout))
+    issues.extend(check_decoration_function(layout, request))
     return issues
 
 
@@ -117,6 +121,53 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
             if section.y - previous_bottom < MIN_SECTION_GAP:
                 issues.append(rule_issue("sectionSpacing", "medium", [previous.section_id, section.section_id], "章节之间间距不足"))
         issues.extend(check_section_image_spacing(section))
+    return issues
+
+
+def check_copy_quality(layout: JournalLayout) -> list[dict[str, Any]]:
+    copy_parts = [
+        layout.content.title,
+        *layout.content.body,
+        *(caption.text for caption in layout.content.captions),
+        *(section.body for section in layout.content.sections),
+    ]
+    if any(has_cliche_copy(part) for part in copy_parts):
+        return [rule_issue("copyQuality", "medium", [], "正文存在明显 AI 套话，手帐记录不够具体")]
+    return []
+
+
+def check_visual_focus(layout: JournalLayout) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    for section in layout.layout.sections:
+        if len(section.images) < 3:
+            continue
+        areas = [image.width * image.height for image in section.images]
+        smallest_area = min(areas)
+        largest_area = max(areas)
+        if smallest_area <= 0:
+            continue
+        if largest_area / smallest_area < 1.25:
+            issues.append(rule_issue("visualFocus", "medium", [section.section_id], "多图章节缺少明确主图或视觉焦点"))
+    return issues
+
+
+def check_decoration_function(layout: JournalLayout, request: Any) -> list[dict[str, Any]]:
+    asset_by_id = {asset.id: asset for asset in request.assets if asset.quality_status == "approved"}
+    has_functional_assets = any(asset.category in {"paper", "tape"} for asset in asset_by_id.values())
+    if not has_functional_assets:
+        return []
+
+    issues: list[dict[str, Any]] = []
+    for section in layout.layout.sections:
+        if not section.images or not section.texts:
+            continue
+        decoration_categories = {
+            asset.category
+            for decoration in section.decorations
+            if (asset := asset_by_id.get(decoration.asset_id)) is not None
+        }
+        if not decoration_categories.intersection({"paper", "tape"}):
+            issues.append(rule_issue("decorationFunction", "medium", [section.section_id], "章节缺少承载文字或固定照片的功能性装饰"))
     return issues
 
 

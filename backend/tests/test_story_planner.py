@@ -1,0 +1,101 @@
+from app.services.story_planner import plan_content_sections, split_adjacent_image_ids
+
+
+def test_plan_sections_from_body_when_model_sections_missing():
+    layout = {
+        "content": {
+            "body": ["早餐在窗边吃。", "后来走到海边。"],
+            "sections": [],
+        },
+        "theme": {"mood": ["日常"]},
+    }
+
+    sections = plan_content_sections(layout, ["img_1", "img_2", "img_3", "img_4"])
+
+    assert [section["imageIds"] for section in sections] == [["img_1", "img_2"], ["img_3", "img_4"]]
+    assert [section["body"] for section in sections] == ["早餐在窗边吃。", "后来走到海边。"]
+
+
+def test_plan_sections_splits_non_adjacent_model_section():
+    layout = {
+        "content": {
+            "body": ["模型把不相邻照片放到一起。"],
+            "sections": [
+                {
+                    "id": "mixed",
+                    "title": "混在一起",
+                    "imageIds": ["img_1", "img_3"],
+                    "body": "模型把不相邻照片放到一起。",
+                    "mood": ["日常"],
+                }
+            ],
+        },
+        "theme": {"mood": []},
+    }
+
+    sections = plan_content_sections(layout, ["img_1", "img_2", "img_3"])
+
+    assert [section["id"] for section in sections] == ["mixed_1", "mixed_2"]
+    assert [section["imageIds"] for section in sections] == [["img_1"], ["img_3"]]
+
+
+def test_plan_sections_splits_groups_larger_than_three_images():
+    layout = {
+        "content": {
+            "body": ["这一整段照片很多。"],
+            "sections": [
+                {
+                    "id": "many",
+                    "title": "很多照片",
+                    "imageIds": ["img_1", "img_2", "img_3", "img_4", "img_5"],
+                    "body": "这一整段照片很多。",
+                    "mood": ["日常"],
+                }
+            ],
+        },
+        "theme": {"mood": []},
+    }
+
+    sections = plan_content_sections(layout, ["img_1", "img_2", "img_3", "img_4", "img_5"])
+
+    assert [section["imageIds"] for section in sections] == [["img_1", "img_2", "img_3"], ["img_4", "img_5"]]
+
+
+def test_plan_sections_uses_body_fallback_for_empty_model_body():
+    layout = {
+        "content": {
+            "body": ["第一段正文。", "第二段正文。"],
+            "sections": [
+                {"id": "section_a", "title": "第一段", "imageIds": ["img_1"], "body": "", "mood": []},
+                {"id": "section_b", "title": "第二段", "imageIds": ["img_2"], "mood": []},
+            ],
+        },
+        "theme": {"mood": []},
+    }
+
+    sections = plan_content_sections(layout, ["img_1", "img_2"])
+
+    assert [section["body"] for section in sections] == ["第一段正文。", "第二段正文。"]
+
+
+def test_plan_sections_keeps_each_image_once_in_order_when_model_duplicates():
+    layout = {
+        "content": {
+            "body": ["重复图片。"],
+            "sections": [
+                {"id": "a", "title": "A", "imageIds": ["img_1", "img_2"], "body": "A", "mood": []},
+                {"id": "b", "title": "B", "imageIds": ["img_2", "img_3"], "body": "B", "mood": []},
+            ],
+        },
+        "theme": {"mood": []},
+    }
+
+    sections = plan_content_sections(layout, ["img_1", "img_2", "img_3"])
+
+    assert [image_id for section in sections for image_id in section["imageIds"]] == ["img_1", "img_2", "img_3"]
+
+
+def test_split_adjacent_image_ids_sorts_by_original_order():
+    groups = split_adjacent_image_ids(["img_3", "img_1", "img_2", "img_5"], ["img_1", "img_2", "img_3", "img_4", "img_5"])
+
+    assert groups == [["img_1", "img_2", "img_3"], ["img_5"]]

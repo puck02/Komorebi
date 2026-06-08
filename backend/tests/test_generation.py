@@ -630,6 +630,54 @@ def test_generator_normalizes_common_model_field_variants():
     assert layout.layout.decorations[0].asset_id == "tape_warm_grid_01"
 
 
+def test_generator_normalizes_ai_style_copy():
+    payload = valid_model_json()
+    payload["content"]["title"] = "把这些珍贵回忆收藏在治愈的周末手帐里"
+    payload["content"]["body"] = ["今天被温柔包裹，也很治愈，充满仪式感。咖啡还热着，窗边坐了一会儿。"]
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "值得被记住的珍贵回忆，咖啡还热着。"}]
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "把时光收藏",
+            "imageIds": ["img_1"],
+            "body": "把时光收藏成珍贵回忆，咖啡还热着。",
+            "mood": ["日常"],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    rendered_copy = " ".join(
+        [
+            layout.content.title,
+            *layout.content.body,
+            *(caption.text for caption in layout.content.captions),
+            *(section.body for section in layout.content.sections),
+        ]
+    )
+    assert "治愈" not in rendered_copy
+    assert "仪式感" not in rendered_copy
+    assert "被温柔包裹" not in rendered_copy
+    assert "把时光收藏" not in rendered_copy
+    assert "珍贵回忆" not in rendered_copy
+    assert "咖啡还热着" in rendered_copy
+
+
+def test_generator_story_planner_ignores_duplicate_model_image_ids():
+    payload = valid_model_json()
+    payload["content"]["body"] = ["第一组照片。", "第二组照片。"]
+    payload["content"]["sections"] = [
+        {"id": "a", "title": "A", "imageIds": ["img_1", "img_2"], "body": "第一组照片。", "mood": []},
+        {"id": "b", "title": "B", "imageIds": ["img_2", "img_3"], "body": "第二组照片。", "mood": []},
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    assert [image_id for section in layout.content.sections for image_id in section.image_ids] == ["img_1", "img_2", "img_3"]
+
+
 def test_invalid_model_json_is_converted_to_generation_error():
     generator = JournalGenerator(FakeClient({"canvas": {"width": 1080, "height": 1440}}))
 
@@ -766,7 +814,9 @@ def test_generation_prompt_requests_natural_diary_text_and_preserves_image_order
     prompt = build_generation_prompt(generation_request(images=three_images()))
 
     assert "真实的日记记录" in prompt
+    assert "具体短句" in prompt
     assert "不要写成 AI 总结" in prompt
+    assert "不要替用户发明没有证据的地点、关系、天气或情绪" in prompt
     assert "图片数组顺序就是用户上传或拖拽排序后的顺序" in prompt
     assert '"order": 1' in prompt
     assert '"order": 2' in prompt
