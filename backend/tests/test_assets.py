@@ -69,6 +69,27 @@ def test_internal_functional_stationery_library_is_rich_enough():
     assert counts_by_category["texture"] >= 11
 
 
+def test_internal_handdrawn_sticker_library_is_rich_enough():
+    approved_internal_stickers = [
+        asset
+        for asset in load_assets()
+        if asset.source == "internal" and asset.category == "sticker" and asset.quality_status == "approved"
+    ]
+
+    assert len(approved_internal_stickers) >= 28
+
+
+def test_generic_external_icons_stay_draft_until_art_directed():
+    generic_icon_ids = {
+        "ext_streamline_game_controller",
+        "ext_streamline_smiley_blush",
+        "ext_streamline_walking_symbol",
+    }
+    statuses = {asset.id: asset.quality_status for asset in load_assets() if asset.id in generic_icon_ids}
+
+    assert statuses == {asset_id: "draft" for asset_id in generic_icon_ids}
+
+
 def test_fluent_emoji_assets_stay_draft_until_manually_reviewed():
     fluent_assets = [asset for asset in load_assets() if asset.id.startswith("ext_fluent_")]
 
