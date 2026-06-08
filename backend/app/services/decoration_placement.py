@@ -9,6 +9,8 @@ TAPE_MAX_WIDTH = 260
 TAPE_MAX_HEIGHT = 70
 TAPE_MIN_WIDTH = 150
 TAPE_MIN_HEIGHT = 38
+PHOTO_CORNER_MAX_SIZE = 128
+PHOTO_CORNER_MIN_SIZE = 40
 MAX_DECORATIONS = 22
 DECORATION_CATEGORY_LIMITS = {
     "paper": 4,
@@ -43,6 +45,11 @@ def place_decorations(
         if function == "texture":
             placed.append(clamp_decoration_to_canvas(decoration))
             continue
+        if function == "photo_corner":
+            photo_corner = place_photo_corner_sticker(decoration, image_placements, text_placements)
+            if photo_corner is not None:
+                placed.append(photo_corner)
+            continue
         sticker = place_sticker(decoration, image_placements, text_placements)
         if sticker is not None:
             placed.append(sticker)
@@ -62,6 +69,8 @@ def infer_asset_function(asset: AssetItem) -> str:
         if "label" in text:
             return "label"
         return "note"
+    if "photo_corner" in text or "photo corner" in text:
+        return "photo_corner"
     if "flower" in text:
         return "flower"
     if "star" in text:
@@ -146,6 +155,31 @@ def place_sticker(
         if not overlaps_photo_safe_area(next_candidate, image_placements) and not overlaps_any_text(next_candidate, text_placements):
             return next_candidate
     return None
+
+
+def place_photo_corner_sticker(
+    decoration: dict[str, Any],
+    image_placements: list[dict[str, Any]],
+    text_placements: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    if not image_placements:
+        return place_sticker(decoration, image_placements, text_placements)
+
+    target = nearest_rect(decoration, image_placements)
+    target_x, target_y, target_width, target_height = rect_from_item(target)
+    size_limit = max(min(target_width, target_height) * 0.28, PHOTO_CORNER_MIN_SIZE)
+    width = min(max(positive_number(decoration.get("width"), 96), PHOTO_CORNER_MIN_SIZE), PHOTO_CORNER_MAX_SIZE, size_limit)
+    height = min(max(positive_number(decoration.get("height"), 96), PHOTO_CORNER_MIN_SIZE), PHOTO_CORNER_MAX_SIZE, size_limit)
+    candidate = dict(decoration)
+    candidate["width"] = width
+    candidate["height"] = height
+    candidate["x"] = target_x - width * 0.42
+    candidate["y"] = target_y - height * 0.42
+    candidate["rotation"] = clamp_number(positive_number(decoration.get("rotation"), -2), -6, 6)
+    candidate = clamp_decoration_to_canvas(candidate)
+    if overlaps_any_text(candidate, text_placements):
+        return place_sticker(decoration, image_placements, text_placements)
+    return candidate
 
 
 def sticker_anchors(

@@ -97,6 +97,26 @@ def test_place_decorations_moves_sticker_out_of_text_and_photo_safe_area():
     assert not overlaps_photo_safe_area(placed[0], [image_placement()])
 
 
+def test_place_decorations_snaps_photo_corner_sticker_to_photo_corner():
+    photo_corner = {"assetId": "sticker_photo_corner_21", "x": 534, "y": 234, "width": 112, "height": 112, "rotation": 0}
+    text = {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}
+    image = image_placement()
+
+    placed = place_decorations(
+        [photo_corner],
+        image_placements=[image],
+        text_placements=[text],
+        asset_by_id={"sticker_photo_corner_21": asset_item("sticker_photo_corner_21", "sticker", tags=["photo", "memory"])},
+    )
+
+    corner = placed[0]
+    assert corner["x"] < image["x"]
+    assert corner["y"] < image["y"]
+    assert corner["x"] + corner["width"] > image["x"]
+    assert corner["y"] + corner["height"] > image["y"]
+    assert not overlaps_photo_safe_area(corner, [image])
+
+
 def test_generator_places_paper_near_body_text():
     payload = valid_model_json()
     payload["layout"]["decorations"] = [
