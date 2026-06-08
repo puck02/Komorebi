@@ -752,7 +752,7 @@ def build_template_section_decorations(
 
     decorations: list[dict[str, Any]] = []
     recipe_tags = preferred_tags or ["daily", "warm", "collage"]
-    paper_id = first_asset_id(asset_by_id, "paper", section_index, recipe_tags, preferred_asset_ids)
+    paper_id = first_body_paper_asset_id(asset_by_id, section_index, recipe_tags, preferred_asset_ids)
     tape_id = first_asset_id(asset_by_id, "tape", section_index, recipe_tags, preferred_asset_ids)
     sticker_id = first_asset_id(asset_by_id, "sticker", section_index, recipe_tags, preferred_asset_ids)
     texture_id = first_asset_id(asset_by_id, "texture", section_index, recipe_tags, preferred_asset_ids)
@@ -833,6 +833,27 @@ def first_asset_id(
     preferred_asset_ids: list[str] | None = None,
 ) -> str | None:
     return choose_asset_id(asset_by_id, category, offset, preferred_tags or ["daily"], preferred_asset_ids)
+
+
+def first_body_paper_asset_id(
+    asset_by_id: dict[str, AssetItem],
+    offset: int,
+    preferred_tags: list[str] | None = None,
+    preferred_asset_ids: list[str] | None = None,
+) -> str | None:
+    writable_papers = {
+        asset_id: asset
+        for asset_id, asset in asset_by_id.items()
+        if asset.category == "paper" and asset.quality_status == "approved" and is_writable_body_paper(asset)
+    }
+    if writable_papers:
+        return choose_asset_id(writable_papers, "paper", offset, preferred_tags or ["daily"], preferred_asset_ids)
+    return first_asset_id(asset_by_id, "paper", offset, preferred_tags, preferred_asset_ids)
+
+
+def is_writable_body_paper(asset: AssetItem) -> bool:
+    text = " ".join([asset.id, asset.name, *asset.tags]).lower()
+    return any(keyword in text for keyword in ("note", "label", "receipt", "ticket"))
 
 
 def section_y(
