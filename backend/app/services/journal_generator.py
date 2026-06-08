@@ -159,11 +159,7 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
                     "height": 720,
                     "images": [],
                     "texts": [],
-                    "decorations": [
-                        {"assetId": "paper_note_cream_01"},
-                        {"assetId": "tape_warm_grid_01"},
-                        {"assetId": "sticker_leaf_05"},
-                    ],
+                    "decorations": [],
                 }
             ],
         },

@@ -196,9 +196,9 @@ def test_agent_fallback_layout_adds_functional_section_decorations():
     result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(generation_request())
 
     decoration_ids = {decoration.asset_id for decoration in result.layout.layout.sections[0].decorations}
-    assert "paper_note_cream_01" in decoration_ids
-    assert "tape_warm_grid_01" in decoration_ids
-    assert "sticker_leaf_05" in decoration_ids
+    assert any(asset_id.startswith("paper_") for asset_id in decoration_ids)
+    assert any(asset_id.startswith("tape_") for asset_id in decoration_ids)
+    assert any(asset_id.startswith("sticker_") for asset_id in decoration_ids)
 
 
 def test_agent_fallback_layout_splits_large_image_sets_without_repeating_body():

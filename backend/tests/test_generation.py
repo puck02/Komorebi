@@ -1560,6 +1560,28 @@ def test_fallback_layout_uses_location_and_mood_context():
     assert layout.content.sections[0].mood == ["轻松"]
 
 
+@pytest.mark.parametrize(
+    ("description", "expected_asset_ids"),
+    [
+        ("今天把冲印照片、胶片和旧邮票夹在这一页。", {"sticker_film_strip_30", "sticker_postage_stamp_29"}),
+        ("信封、封蜡和牛皮纸标签都贴在便签旁边。", {"sticker_tiny_envelope_33", "sticker_wax_seal_31", "sticker_kraft_tag_32"}),
+    ],
+)
+def test_fallback_layout_uses_theme_recipe_stickers_when_ai_is_unavailable(description, expected_asset_ids):
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+
+    layout = generator.generate(
+        JournalGenerationRequest(
+            description=description,
+            images=[JournalImageInput(id="img_1", width=640, height=480)],
+            assets=load_assets(),
+        )
+    )
+
+    decoration_ids = {decoration.asset_id for decoration in layout.layout.sections[0].decorations}
+    assert decoration_ids.intersection(expected_asset_ids)
+
+
 def test_fallback_layout_uses_human_section_note_instead_of_template_phrase():
     generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
 
