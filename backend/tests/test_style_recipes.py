@@ -126,6 +126,60 @@ def test_recipe_tags_for_section_detects_pressed_leaf():
     assert tags[:3] == ["pressed", "nature", "calm"]
 
 
+def test_recipe_tags_for_section_detects_movie_ticket():
+    section = {"title": "电影散场", "body": "电影票和爆米花小票还夹在这一页。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "影院电影票和票根", "scene": "电影院", "subjects": ["电影票"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["movie", "ticket", "night", "memory"]
+
+
+def test_recipe_tags_for_section_detects_shopping_receipt():
+    section = {"title": "买到喜欢的", "body": "购物小票、纸袋和收据放在照片旁边。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "购物小票和纸袋", "scene": "店里", "subjects": ["小票", "纸袋"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["shopping", "receipt", "daily", "memory"]
+
+
+def test_recipe_tags_for_section_detects_rainy_umbrella():
+    section = {"title": "雨天路上", "body": "雨伞上还有雨滴，回来的路有点安静。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "雨伞和雨滴", "scene": "街边", "subjects": ["雨伞"], "mood": ["安静"]}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["umbrella", "rainy", "weather", "calm"]
+
+
+def test_recipe_tags_for_section_detects_night_lamp():
+    section = {"title": "夜里写完", "body": "窗边小灯亮着，夜晚的桌面很安静。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "夜晚的台灯和窗", "scene": "房间", "subjects": ["台灯"], "mood": ["安静"]}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["lamp", "night", "calm", "memory"]
+
+
+def test_recipe_tags_for_section_detects_cat_pet():
+    section = {"title": "猫趴着", "body": "小猫趴在毯子上，爪印留在旁边。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "猫和爪印", "scene": "家里", "subjects": ["猫"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["cat", "pet", "home", "daily"]
+
+
+def test_recipe_tags_for_section_detects_birthday_cake():
+    section = {"title": "生日蛋糕", "body": "蛋糕、蜡烛和礼物都摆在桌上。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "生日蛋糕和蜡烛", "scene": "餐桌", "subjects": ["蛋糕", "蜡烛"], "mood": ["庆祝"]}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["cake", "birthday", "party", "gift"]
+
+
 def test_choose_asset_id_prefers_category_asset_with_matching_recipe_tag():
     assets = {
         "sticker_leaf_05": asset("sticker_leaf_05", "sticker", ["nature", "travel"]),

@@ -1429,6 +1429,50 @@
     "qualityStatus": "approved"
   },
   {
+    "id": "paper_movie_ticket_17",
+    "name": "Movie Ticket 17",
+    "category": "paper",
+    "tags": [
+      "movie",
+      "ticket",
+      "night"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#efe0f2",
+      "#6f5c83"
+    ],
+    "file": "stickers/paper_movie_ticket_17.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "paper_shopping_receipt_18",
+    "name": "Shopping Receipt 18",
+    "category": "paper",
+    "tags": [
+      "shopping",
+      "receipt",
+      "daily"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#fff5de",
+      "#9b7c57"
+    ],
+    "file": "stickers/paper_shopping_receipt_18.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
     "id": "sticker_fountain_pen_36",
     "name": "Fountain Pen 36",
     "category": "sticker",
@@ -1490,6 +1534,116 @@
       "#edf0d2"
     ],
     "file": "stickers/sticker_pressed_leaf_38.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_umbrella_39",
+    "name": "Rain Umbrella 39",
+    "category": "sticker",
+    "tags": [
+      "umbrella",
+      "rainy",
+      "weather"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#6f8fa2",
+      "#e5f0f3"
+    ],
+    "file": "stickers/sticker_umbrella_39.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_window_lamp_40",
+    "name": "Window Lamp 40",
+    "category": "sticker",
+    "tags": [
+      "lamp",
+      "night",
+      "calm"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#6c6275",
+      "#f6dfa8"
+    ],
+    "file": "stickers/sticker_window_lamp_40.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_sleeping_cat_41",
+    "name": "Sleeping Cat 41",
+    "category": "sticker",
+    "tags": [
+      "cat",
+      "pet",
+      "home"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#8b6b57",
+      "#f3dfc8"
+    ],
+    "file": "stickers/sticker_sleeping_cat_41.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_birthday_cake_42",
+    "name": "Birthday Cake 42",
+    "category": "sticker",
+    "tags": [
+      "cake",
+      "birthday",
+      "party"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#d8898b",
+      "#fff0d6"
+    ],
+    "file": "stickers/sticker_birthday_cake_42.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_shopping_bag_43",
+    "name": "Shopping Bag 43",
+    "category": "sticker",
+    "tags": [
+      "shopping",
+      "daily",
+      "gift"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#c99562",
+      "#fff2dc"
+    ],
+    "file": "stickers/sticker_shopping_bag_43.svg",
     "license": "internal",
     "source": "internal",
     "qualityStatus": "approved"

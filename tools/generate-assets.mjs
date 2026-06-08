@@ -167,6 +167,30 @@ function reviewedInternalAsset(asset) {
       `<circle cx="55" cy="105" r="3.5" fill="#5f7f9a" opacity="0.22"/>`
     ]);
   }
+  if (asset.id === "paper_movie_ticket_17") {
+    return cleanSvg(220, 170, [
+      `<path d="M28 52C58 44 141 44 190 51C184 62 189 73 202 76C194 88 194 104 202 116C190 119 185 129 191 139C138 145 72 140 26 130C31 118 26 109 16 106C25 91 25 70 28 52Z" fill="#efe0f2" stroke="#6f5c83" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M74 52C70 82 71 109 77 136" stroke="#6f5c83" stroke-width="2" stroke-linecap="round" stroke-dasharray="5 7" opacity="0.58"/>`,
+      `<path d="M93 67C119 64 150 65 174 70M93 91C120 89 148 90 171 94M94 114C119 113 143 114 160 118" stroke="#574568" stroke-width="2.3" stroke-linecap="round" opacity="0.58"/>`,
+      `<path d="M39 72h42v30H39z" fill="#f8edf8" stroke="#6f5c83" stroke-width="2" stroke-linejoin="round" opacity="0.72"/>`,
+      `<path d="M44 77l10 8l-10 8M60 77l10 8l-10 8" stroke="#6f5c83" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.52"/>`,
+      `<path d="M145 54C148 79 148 106 144 137" stroke="#957faa" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="3 8" opacity="0.5"/>`,
+      `<circle cx="56" cy="118" r="4" fill="#6f5c83" opacity="0.23"/>`,
+      `<path d="M112 54l5 10l11 2l-8 8l2 11l-10-5l-10 5l2-11l-8-8l11-2Z" fill="#fff6d8" stroke="#6f5c83" stroke-width="1.8" opacity="0.76"/>`
+    ]);
+  }
+  if (asset.id === "paper_shopping_receipt_18") {
+    return cleanSvg(220, 170, [
+      `<path d="M46 25C78 31 132 28 174 24C169 67 170 107 181 144C136 137 82 140 39 147C45 103 47 65 46 25Z" fill="#fff5de" stroke="#9b7c57" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M52 29l8 8l9-8l9 8l9-8l9 8l9-8l9 8l9-8l9 8l9-8l9 8l9-8l9 8l9-8" stroke="#9b7c57" stroke-width="1.8" stroke-linecap="round" opacity="0.48"/>`,
+      `<path d="M65 53C97 49 126 50 153 55M64 73C97 70 132 71 161 75M65 94C91 92 119 93 144 96M65 115C101 113 131 114 159 118" stroke="#8a6b4c" stroke-width="2.2" stroke-linecap="round" opacity="0.52"/>`,
+      `<path d="M64 132C94 128 127 129 157 134" stroke="#8a6b4c" stroke-width="2.4" stroke-linecap="round" opacity="0.34"/>`,
+      `<path d="M148 43h18v19h-18z" fill="#fffaf0" stroke="#9b7c57" stroke-width="1.8" stroke-linejoin="round" opacity="0.82"/>`,
+      `<path d="M151 48l5 5l10-12" stroke="#7a8a62" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" opacity="0.62"/>`,
+      `<circle cx="54" cy="58" r="2" fill="#9b7c57" opacity="0.38"/>`,
+      `<circle cx="54" cy="78" r="2" fill="#9b7c57" opacity="0.34"/>`
+    ]);
+  }
   if (asset.id === "sticker_fountain_pen_36") {
     return cleanSvg(160, 160, [
       `<path d="M44 118C58 93 78 56 101 31C109 35 116 42 121 50C98 73 68 101 49 123C47 123 45 121 44 118Z" fill="#f4dfbb" stroke="#4f6170" stroke-width="3" stroke-linejoin="round"/>`,
@@ -196,6 +220,59 @@ function reviewedInternalAsset(asset) {
       `<path d="M67 92C66 74 62 64 54 55M78 80C89 70 94 60 96 45M88 70C101 69 112 63 121 54M59 104C75 104 87 100 99 91" stroke="#7f9160" stroke-width="2" stroke-linecap="round" opacity="0.46"/>`,
       `<path d="M35 123C57 124 82 119 103 105" stroke="#fff8df" stroke-width="2.2" stroke-linecap="round" opacity="0.6"/>`,
       `<path d="M50 129C73 135 96 133 118 125" stroke="#a28a62" stroke-width="1.8" stroke-linecap="round" opacity="0.24"/>`
+    ]);
+  }
+  if (asset.id === "sticker_umbrella_39") {
+    return cleanSvg(160, 160, [
+      `<path d="M31 82C42 47 76 32 114 46C129 51 140 63 145 80C126 74 112 78 99 89C84 78 68 78 53 90C44 80 37 79 31 82Z" fill="#e5f0f3" stroke="#6f8fa2" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M80 40C76 59 76 72 80 97" stroke="#6f8fa2" stroke-width="2.4" stroke-linecap="round" opacity="0.62"/>`,
+      `<path d="M80 96v31c0 13 18 13 18 1" stroke="#6f8fa2" stroke-width="3" stroke-linecap="round"/>`,
+      `<path d="M47 79C61 65 76 61 94 83M94 83C104 68 119 66 139 78" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity="0.55"/>`,
+      `<path d="M50 112c-5 8-2 16 7 17M122 109c-5 8-2 16 7 17" stroke="#6f8fa2" stroke-width="2.2" stroke-linecap="round" opacity="0.38"/>`,
+      `<circle cx="44" cy="118" r="3" fill="#6f8fa2" opacity="0.28"/>`,
+      `<circle cx="118" cy="128" r="2.5" fill="#6f8fa2" opacity="0.24"/>`
+    ]);
+  }
+  if (asset.id === "sticker_window_lamp_40") {
+    return cleanSvg(160, 160, [
+      `<path d="M40 37C61 33 102 33 125 38C122 74 124 104 130 132C95 137 62 136 34 130C41 95 42 67 40 37Z" fill="#f2edf4" stroke="#6c6275" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M52 48h32v35H52zM91 48h24v35H91zM52 90h32v33H52zM91 90h24v33H91z" fill="#f6dfa8" stroke="#6c6275" stroke-width="2.1" stroke-linejoin="round" opacity="0.88"/>`,
+      `<path d="M61 57C67 53 74 53 80 57M98 99C103 96 108 96 113 99" stroke="#fff8da" stroke-width="2.2" stroke-linecap="round" opacity="0.8"/>`,
+      `<path d="M124 43C135 52 140 67 139 83M31 50C25 64 25 79 31 91" stroke="#6c6275" stroke-width="2" stroke-linecap="round" opacity="0.22"/>`,
+      `<circle cx="43" cy="32" r="3" fill="#f6dfa8" opacity="0.7"/>`,
+      `<circle cx="128" cy="29" r="2" fill="#f6dfa8" opacity="0.55"/>`
+    ]);
+  }
+  if (asset.id === "sticker_sleeping_cat_41") {
+    return cleanSvg(160, 160, [
+      `<path d="M38 100C45 70 70 55 100 60C124 64 140 82 137 108C111 124 67 124 38 100Z" fill="#f3dfc8" stroke="#8b6b57" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M62 63L67 43L79 61M104 61L119 45L119 70" fill="#f3dfc8" stroke="#8b6b57" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`,
+      `<path d="M78 83c7 6 17 6 24 0M65 81c4 3 8 3 12 0M108 82c4 3 8 3 12 0" stroke="#8b6b57" stroke-width="2.3" stroke-linecap="round" opacity="0.56"/>`,
+      `<path d="M112 102C128 99 138 105 141 117C132 122 119 120 111 112" stroke="#8b6b57" stroke-width="3" stroke-linecap="round" fill="none"/>`,
+      `<path d="M48 106C70 114 100 114 128 105" stroke="#fff5e6" stroke-width="2.4" stroke-linecap="round" opacity="0.58"/>`,
+      `<path d="M44 132C73 139 105 139 132 130" stroke="#9c8063" stroke-width="2" stroke-linecap="round" opacity="0.22"/>`
+    ]);
+  }
+  if (asset.id === "sticker_birthday_cake_42") {
+    return cleanSvg(160, 160, [
+      `<path d="M43 82C65 76 105 76 128 82V119C102 128 70 128 42 118Z" fill="#fff0d6" stroke="#8f6465" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M48 82C60 97 75 95 85 85C96 100 111 97 126 82" fill="#f1b8b4" stroke="#8f6465" stroke-width="2.5" stroke-linejoin="round"/>`,
+      `<path d="M61 78V52M82 76V48M105 78V54" stroke="#8f6465" stroke-width="3" stroke-linecap="round"/>`,
+      `<path d="M61 39C70 48 63 54 59 55C54 51 54 43 61 39ZM82 34C91 45 84 51 80 52C75 48 75 39 82 34ZM105 41C113 50 106 56 102 56C98 52 98 45 105 41Z" fill="#ffe28d" stroke="#8f6465" stroke-width="2" stroke-linejoin="round"/>`,
+      `<path d="M53 111C75 118 102 118 121 110" stroke="#8f6465" stroke-width="2.2" stroke-linecap="round" opacity="0.34"/>`,
+      `<circle cx="69" cy="99" r="3" fill="#d8898b" opacity="0.65"/>`,
+      `<circle cx="94" cy="102" r="3" fill="#d8898b" opacity="0.55"/>`,
+      `<circle cx="113" cy="96" r="2.5" fill="#d8898b" opacity="0.55"/>`
+    ]);
+  }
+  if (asset.id === "sticker_shopping_bag_43") {
+    return cleanSvg(160, 160, [
+      `<path d="M48 58C69 54 104 54 125 59C121 91 123 112 130 133C97 139 67 138 39 130C46 100 48 80 48 58Z" fill="#fff2dc" stroke="#8d6842" stroke-width="3" stroke-linejoin="round"/>`,
+      `<path d="M67 60C67 40 106 40 106 61" stroke="#8d6842" stroke-width="3" stroke-linecap="round" fill="none"/>`,
+      `<path d="M57 83C77 80 101 81 117 85M57 104C82 102 99 103 115 107" stroke="#8d6842" stroke-width="2.2" stroke-linecap="round" opacity="0.42"/>`,
+      `<path d="M44 132C72 139 101 140 128 132" stroke="#ffffff" stroke-width="2.3" stroke-linecap="round" opacity="0.58"/>`,
+      `<circle cx="57" cy="68" r="3" fill="#c99562" opacity="0.45"/>`,
+      `<circle cx="118" cy="69" r="3" fill="#c99562" opacity="0.45"/>`
     ]);
   }
   return null;

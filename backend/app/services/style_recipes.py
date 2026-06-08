@@ -2,11 +2,18 @@ from typing import Any
 
 from app.services.assets import AssetItem
 
-COFFEE_KEYWORDS = {"咖啡", "咖啡店", "小票", "甜品", "茶", "饮料", "餐桌"}
+COFFEE_KEYWORDS = {"咖啡", "咖啡店", "甜品", "茶", "饮料"}
 TRAVEL_KEYWORDS = {"旅行", "路上", "车站", "站台", "地铁", "路线", "沿途", "散步", "海边"}
 CALM_KEYWORDS = {"安静", "窗边", "平静", "慢", "独处", "雨", "夜色"}
 BIRTHDAY_KEYWORDS = {"生日", "礼物", "蛋糕", "庆祝", "派对"}
 PET_KEYWORDS = {"猫", "狗", "宠物", "小猫", "小狗", "爪"}
+MOVIE_KEYWORDS = {"电影", "电影票", "影院", "电影院", "观影", "散场", "爆米花"}
+SHOPPING_KEYWORDS = {"购物", "纸袋", "购物袋", "买到", "逛店", "商场"}
+RECEIPT_KEYWORDS = {"小票", "收据", "发票", "receipt"}
+RAINY_KEYWORDS = {"雨天", "雨伞", "雨滴", "下雨", "淋雨", "雨衣", "伞"}
+NIGHT_LAMP_KEYWORDS = {"夜晚", "夜里", "台灯", "小灯", "窗灯", "灯光", "卧室"}
+CAT_KEYWORDS = {"猫", "小猫", "猫咪", "喵"}
+CAKE_KEYWORDS = {"蛋糕", "蜡烛", "生日蛋糕", "许愿"}
 PHOTO_KEYWORDS = {"照片", "相片", "相册", "拍立得", "照片角", "冲印", "合影"}
 TICKET_KEYWORDS = {"票根", "门票", "车票", "入场券", "展览", "电影票", "小票", "收据", "小卡片"}
 NOTE_KEYWORDS = {"便签", "纸条", "手写", "记录", "笔记", "备忘", "小事"}
@@ -25,6 +32,18 @@ def recipe_tags_for_section(
     image_understanding: list[dict[str, Any]],
 ) -> list[str]:
     text = section_keyword_text(section, image_understanding)
+    if any(keyword in text for keyword in MOVIE_KEYWORDS) and any(keyword in text for keyword in TICKET_KEYWORDS):
+        return ["movie", "ticket", "night", "memory"]
+    if any(keyword in text for keyword in SHOPPING_KEYWORDS) and any(keyword in text for keyword in RECEIPT_KEYWORDS):
+        return ["shopping", "receipt", "daily", "memory"]
+    if any(keyword in text for keyword in RAINY_KEYWORDS):
+        return ["umbrella", "rainy", "weather", "calm"]
+    if any(keyword in text for keyword in NIGHT_LAMP_KEYWORDS):
+        return ["lamp", "night", "calm", "memory"]
+    if any(keyword in text for keyword in CAKE_KEYWORDS) and any(keyword in text for keyword in BIRTHDAY_KEYWORDS):
+        return ["cake", "birthday", "party", "gift"]
+    if any(keyword in text for keyword in CAT_KEYWORDS):
+        return ["cat", "pet", "home", "daily"]
     if any(keyword in text for keyword in COFFEE_KEYWORDS) and any(keyword in text for keyword in TICKET_KEYWORDS):
         return ["ticket", "coffee", "warm", "memory"]
     if any(keyword in text for keyword in COFFEE_KEYWORDS):

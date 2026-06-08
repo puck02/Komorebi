@@ -746,6 +746,54 @@ def test_generator_uses_date_stamp_for_calendar_journal_scene():
             "撕角照片角压住了这张相片。",
             "sticker_torn_photo_corner_37",
         ),
+        (
+            "影院电影票和票根",
+            "电影院",
+            ["电影票"],
+            "电影散场",
+            "电影票和爆米花小票还夹在这一页。",
+            "paper_movie_ticket_17",
+        ),
+        (
+            "购物小票和纸袋",
+            "店里",
+            ["小票", "纸袋"],
+            "买到喜欢的",
+            "购物小票、纸袋和收据放在照片旁边。",
+            "paper_shopping_receipt_18",
+        ),
+        (
+            "雨伞和雨滴",
+            "街边",
+            ["雨伞"],
+            "雨天路上",
+            "雨伞上还有雨滴，回来的路有点安静。",
+            "sticker_umbrella_39",
+        ),
+        (
+            "夜晚的台灯和窗",
+            "房间",
+            ["台灯"],
+            "夜里写完",
+            "窗边小灯亮着，夜晚的桌面很安静。",
+            "sticker_window_lamp_40",
+        ),
+        (
+            "猫和爪印",
+            "家里",
+            ["猫"],
+            "猫趴着",
+            "小猫趴在毯子上，爪印留在旁边。",
+            "sticker_sleeping_cat_41",
+        ),
+        (
+            "生日蛋糕和蜡烛",
+            "餐桌",
+            ["蛋糕", "蜡烛"],
+            "生日蛋糕",
+            "蛋糕、蜡烛和礼物都摆在桌上。",
+            "sticker_birthday_cake_42",
+        ),
     ],
 )
 def test_generator_uses_scrapbook_recipe_stickers_for_template_decorations(
@@ -794,6 +842,12 @@ def test_generator_uses_scrapbook_recipe_stickers_for_template_decorations(
         asset_item("sticker_fountain_pen_36", "sticker", tags=["pen", "hand", "note"]),
         asset_item("sticker_torn_photo_corner_37", "sticker", tags=["corner", "photo", "collage"]),
         asset_item("sticker_pressed_leaf_38", "sticker", tags=["pressed", "nature", "calm"]),
+        asset_item("paper_movie_ticket_17", "paper", tags=["movie", "ticket", "night"]),
+        asset_item("paper_shopping_receipt_18", "paper", tags=["shopping", "receipt", "daily"]),
+        asset_item("sticker_umbrella_39", "sticker", tags=["umbrella", "rainy", "weather"]),
+        asset_item("sticker_window_lamp_40", "sticker", tags=["lamp", "night", "calm"]),
+        asset_item("sticker_sleeping_cat_41", "sticker", tags=["cat", "pet", "home"]),
+        asset_item("sticker_birthday_cake_42", "sticker", tags=["cake", "birthday", "party"]),
     ]
     generator = JournalGenerator(FakeClient(payload))
 

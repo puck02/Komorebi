@@ -77,7 +77,7 @@ def test_internal_functional_stationery_library_is_rich_enough():
         for category in {"paper", "tape", "texture"}
     }
 
-    assert counts_by_category["paper"] >= 16
+    assert counts_by_category["paper"] >= 18
     assert counts_by_category["tape"] >= 13
     assert counts_by_category["texture"] >= 11
 
@@ -89,7 +89,7 @@ def test_internal_handdrawn_sticker_library_is_rich_enough():
         if asset.source == "internal" and asset.category == "sticker" and asset.quality_status == "approved"
     ]
 
-    assert len(approved_internal_stickers) >= 38
+    assert len(approved_internal_stickers) >= 43
 
 
 def test_approved_internal_assets_cover_human_scrapbook_materials():
@@ -98,7 +98,7 @@ def test_approved_internal_assets_cover_human_scrapbook_materials():
     ]
     covered_tags = {tag for asset in approved_internal_assets for tag in asset.tags}
 
-    assert {"pen", "checklist", "bus", "corner", "pressed"}.issubset(covered_tags)
+    assert {"pen", "checklist", "bus", "corner", "pressed", "movie", "shopping", "receipt"}.issubset(covered_tags)
 
 
 def test_internal_scrapbook_ephemera_stickers_cover_common_journal_materials():
@@ -109,7 +109,22 @@ def test_internal_scrapbook_ephemera_stickers_cover_common_journal_materials():
     ]
     covered_tags = {tag for asset in approved_internal_stickers for tag in asset.tags}
 
-    assert {"photo", "ticket", "note", "stamp", "film", "letter", "tag", "seal", "clip", "date"}.issubset(covered_tags)
+    assert {
+        "photo",
+        "ticket",
+        "note",
+        "stamp",
+        "film",
+        "letter",
+        "tag",
+        "seal",
+        "clip",
+        "date",
+        "umbrella",
+        "lamp",
+        "cat",
+        "cake",
+    }.issubset(covered_tags)
     assert any({"date", "stamp"}.issubset(asset.tags) for asset in approved_internal_stickers)
 
 
