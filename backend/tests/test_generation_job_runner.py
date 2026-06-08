@@ -104,17 +104,38 @@ def test_runner_logs_generation_job_lifecycle(tmp_path, caplog):
     assert payloads[-1]["score"] == 91
 
 
-def test_runner_marks_job_failed_when_agent_raises(tmp_path):
+def test_runner_marks_job_failed_when_agent_crashes(tmp_path):
     session_factory = make_session_factory()
     job_id = seed_job(session_factory, tmp_path)
 
-    run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: FakeAgent(error=GenerationError("AI 调用失败")))
+    run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: FakeAgent(error=RuntimeError("渲染失败")))
 
     with session_factory() as db:
         job = db.get(GenerationJob, job_id)
         assert job.status == "failed"
         assert job.stage == "failed"
-        assert job.error_message == "AI 调用失败"
+        assert job.error_message == "渲染失败"
+
+
+def test_runner_completes_with_local_fallback_when_agent_generation_fails(tmp_path):
+    session_factory = make_session_factory()
+    job_id = seed_job(session_factory, tmp_path)
+
+    run_generation_job(
+        job_id,
+        session_factory=session_factory,
+        agent_factory=lambda: FakeAgent(error=GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")),
+    )
+
+    with session_factory() as db:
+        job = db.get(GenerationJob, job_id)
+        journal = db.get(Journal, job.journal_id)
+        assert job.status == "completed"
+        assert job.stage == "completed"
+        assert job.best_score == 0
+        assert job.error_message is None
+        assert journal.title == "今日小记"
+        assert journal.layout_json["content"]["body"] == ["周末一起散步。"]
 
 
 def test_runner_completes_job_when_agent_returns_fallback_result(tmp_path):
@@ -137,14 +158,14 @@ def test_runner_logs_generation_job_failure(tmp_path, caplog):
     job_id = seed_job(session_factory, tmp_path)
 
     with caplog.at_level(logging.INFO, logger="komorebi.agent"):
-        run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: FakeAgent(error=GenerationError("AI 调用失败")))
+        run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: FakeAgent(error=RuntimeError("渲染失败")))
 
     payloads = [json.loads(record.message) for record in caplog.records]
     failed = payloads[-1]
     assert failed["event"] == "agent.job_failed"
     assert failed["job_id"] == job_id
-    assert failed["error_type"] == "GenerationError"
-    assert failed["error_message"] == "AI 调用失败"
+    assert failed["error_type"] == "RuntimeError"
+    assert failed["error_message"] == "渲染失败"
 
 
 def test_recover_marks_incomplete_jobs_failed(tmp_path):

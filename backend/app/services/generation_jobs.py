@@ -10,11 +10,17 @@ from app.db.session import SessionLocal
 from app.models.generation_job import GenerationJob
 from app.models.image import Image as ImageModel
 from app.models.journal import Journal
-from app.schemas.journal import JournalGenerateRequest
+from app.schemas.journal import JournalGenerateRequest, JournalLayout
 from app.services.agent_observability import log_agent_event
 from app.services.assets import get_approved_assets
 from app.services.journal_agent import JournalAgent, JournalAgentResult
-from app.services.journal_generator import JournalGenerationRequest, JournalImageInput, sanitize_model_layout
+from app.services.journal_generator import (
+    GenerationError,
+    JournalGenerationRequest,
+    JournalImageInput,
+    build_fallback_layout,
+    sanitize_model_layout,
+)
 from app.services.journal_renderer import PlaywrightJournalRenderer
 from app.services.openai_client import OpenAIJournalClient
 from app.services.thumbnails import generate_display_image
@@ -64,11 +70,14 @@ def run_generation_job(
                 description_length=len(payload.description),
                 mood_tag_count=len(payload.mood_tags),
             )
-            result = agent_factory().generate(
-                request,
-                on_progress=lambda stage, revision_round, score: update_job_progress(db, job, stage, revision_round, score),
-                log_context={"job_id": job.id, "user_id": job.user_id},
-            )
+            try:
+                result = agent_factory().generate(
+                    request,
+                    on_progress=lambda stage, revision_round, score: update_job_progress(db, job, stage, revision_round, score),
+                    log_context={"job_id": job.id, "user_id": job.user_id},
+                )
+            except GenerationError as exc:
+                result = fallback_result_from_generation_error(request, job, exc)
             journal = save_generated_journal(db, job, payload, images, result)
             job.status = "completed"
             job.stage = "completed"
@@ -157,6 +166,27 @@ def save_generated_journal(
     db.add(journal)
     db.flush()
     return journal
+
+
+def fallback_result_from_generation_error(
+    request: JournalGenerationRequest,
+    job: GenerationJob,
+    error: GenerationError,
+) -> JournalAgentResult:
+    layout_json = sanitize_model_layout(build_fallback_layout(request), request)
+    log_agent_event(
+        "agent.job_fallback_generated",
+        job_id=job.id,
+        user_id=job.user_id,
+        error_type=error.__class__.__name__,
+        error_message=str(error) or error.__class__.__name__,
+    )
+    return JournalAgentResult(
+        layout=JournalLayout.model_validate(layout_json),
+        score=0,
+        revision_round=0,
+        passed=False,
+    )
 
 
 def get_job_images(db: Session, user_id: str, image_ids: list[str]) -> list[ImageModel]:
