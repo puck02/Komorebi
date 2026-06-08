@@ -24,6 +24,11 @@ TITLE_WIDTH = 760
 TITLE_FONT_SIZE = 58
 TITLE_FONT_SIZE_MIN = 44
 TITLE_FONT_SIZE_MAX = 72
+META_X = 84
+META_WIDTH = 720
+META_FONT_SIZE = 24
+META_FONT_SIZE_MIN = 18
+META_FONT_SIZE_MAX = 28
 BODY_X = 112
 BODY_WIDTH = 820
 BODY_FONT_SIZE = 32
@@ -113,6 +118,7 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
         "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": mood_tags or ["日常"]},
         "content": {
             "title": fallback_title(request),
+            "meta": build_meta_text(request),
             "body": [body],
             "captions": captions_by_image or [{"imageId": image_id, "text": caption}],
             "imageUnderstanding": [
@@ -195,6 +201,16 @@ def normalized_mood_tags(request: JournalGenerationRequest) -> list[str]:
     return [str(tag).strip() for tag in request.mood_tags or [] if str(tag).strip()]
 
 
+def build_meta_text(request: JournalGenerationRequest) -> str | None:
+    parts = []
+    if request.journal_date:
+        parts.append(str(request.journal_date))
+    if request.location and str(request.location).strip():
+        parts.append(str(request.location).strip())
+    parts.extend(normalized_mood_tags(request))
+    return " / ".join(parts) if parts else None
+
+
 def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGenerationRequest) -> dict[str, Any]:
     layout = deepcopy(raw_layout)
     layout["canvas"]["width"] = CANVAS_WIDTH
@@ -206,6 +222,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     if "body" not in content and isinstance(content.get("subtitle"), str):
         content["body"] = [content["subtitle"]]
     content["title"] = normalize_title(content.get("title"))
+    content["meta"] = build_meta_text(request)
     content["body"] = normalize_body_content(content.get("body"), request.description)
 
     image_ids = {image.id for image in request.images}
@@ -271,15 +288,23 @@ def normalize_story_layout(layout: dict[str, Any], request_images: list[JournalI
     should_use_long_collage = len(request_images) > 1 or has_missing_images
 
     title = normalize_title_text(next((text for text in layout["layout"].get("texts", []) if text.get("role") == "title"), None))
+    header_texts = [title]
+    meta = normalize_meta_text(
+        next((text for text in layout["layout"].get("texts", []) if text.get("role") == "meta"), None),
+        title,
+        layout["content"].get("meta"),
+    )
+    if meta is not None:
+        header_texts.append(meta)
     if should_use_long_collage:
-        images, body_texts = build_long_collage_items(request_images, image_placements, body, title)
+        images, body_texts = build_long_collage_items(request_images, image_placements, body, header_texts, layout["content"])
         layout["layout"]["images"] = images
-        layout["layout"]["texts"] = [title, *body_texts]
+        layout["layout"]["texts"] = [*header_texts, *body_texts]
         return
 
     layout["layout"]["texts"] = [
-        title,
-        *normalize_body_texts(layout["layout"].get("texts", []), body, image_placements, title),
+        *header_texts,
+        *normalize_body_texts(layout["layout"].get("texts", []), body, image_placements, header_texts, layout["content"]),
     ]
 
 
@@ -513,7 +538,11 @@ def fallback_first_section_y(layout: dict[str, Any]) -> float:
     title = next((text for text in layout["layout"].get("texts", []) if text.get("role") == "title"), None)
     if not isinstance(title, dict):
         return TITLE_Y + SECTION_GAP
-    return positive_number(title.get("y"), TITLE_Y) + estimate_text_height(title, layout["content"]) + SECTION_GAP
+    header_texts = [title]
+    meta = next((text for text in layout["layout"].get("texts", []) if text.get("role") == "meta"), None)
+    if isinstance(meta, dict):
+        header_texts.append(meta)
+    return header_bottom(header_texts, layout["content"]) + SECTION_GAP
 
 
 def normalize_section_decorations(
@@ -725,15 +754,37 @@ def normalize_title_text(title: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
+def normalize_meta_text(source: dict[str, Any] | None, title: dict[str, Any], meta: Any) -> dict[str, Any] | None:
+    if not str(meta or "").strip():
+        return None
+    source = source or {}
+    title_y = positive_number(title.get("y"), TITLE_Y)
+    title_font_size = positive_number(title.get("fontSize"), TITLE_FONT_SIZE)
+    fallback_y = title_y + title_font_size * 1.28
+    width = min(positive_number(source.get("width"), META_WIDTH), CANVAS_WIDTH - META_X * 2)
+    return {
+        "role": "meta",
+        "x": clamp_number(positive_number(source.get("x"), META_X), 40, CANVAS_WIDTH - width - 40),
+        "y": max(positive_number(source.get("y"), fallback_y), fallback_y),
+        "width": width,
+        "fontSize": clamp_number(
+            positive_number(source.get("fontSize"), META_FONT_SIZE),
+            META_FONT_SIZE_MIN,
+            META_FONT_SIZE_MAX,
+        ),
+    }
+
+
 def normalize_body_texts(
     texts: list[dict[str, Any]],
     body: list[str],
     image_placements: list[dict[str, Any]],
-    title: dict[str, Any],
+    header_texts: list[dict[str, Any]],
+    content: dict[str, Any],
 ) -> list[dict[str, Any]]:
     body_texts = [text for text in texts if text.get("role") == "body"]
     next_texts: list[dict[str, Any]] = []
-    y = positive_number(title.get("y"), TITLE_Y) + estimate_text_height(title, {"title": "", "body": body, "captions": []}) + SECTION_GAP
+    y = header_bottom(header_texts, content) + SECTION_GAP
     for index, paragraph in enumerate(body):
         source = body_texts[index] if index < len(body_texts) else {}
         font_size = clamp_font_size(source, "body")
@@ -747,19 +798,29 @@ def normalize_body_texts(
     return next_texts
 
 
+def header_bottom(header_texts: list[dict[str, Any]], content: dict[str, Any]) -> float:
+    return max(
+        (
+            positive_number(text.get("y"), TITLE_Y) + estimate_text_height(text, content)
+            for text in header_texts
+        ),
+        default=TITLE_Y,
+    )
+
+
 def build_long_collage_items(
     request_images: list[JournalImageInput],
     existing_placements: list[dict[str, Any]],
     body: list[str],
-    title: dict[str, Any],
+    header_texts: list[dict[str, Any]],
+    content: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     existing_by_id = {placement.get("imageId"): placement for placement in existing_placements}
     section_count = max(len(body), min(ceil(len(request_images) / 3), 4), 1)
     image_groups = split_evenly(request_images, section_count)
     image_placements: list[dict[str, Any]] = []
     body_texts: list[dict[str, Any]] = []
-    title_height = estimate_text_height(title, {"title": "", "body": body, "captions": []})
-    y = positive_number(title.get("y"), TITLE_Y) + title_height + SECTION_GAP
+    y = header_bottom(header_texts, content) + SECTION_GAP
 
     for section_index in range(section_count):
         group = image_groups[section_index] if section_index < len(image_groups) else []
@@ -927,6 +988,8 @@ def estimate_text_height(text: dict[str, Any], content: dict[str, Any]) -> float
     width = positive_number(text.get("width"), 760)
     if role == "title":
         text_value = str(content.get("title", ""))
+    elif role == "meta":
+        text_value = str(content.get("meta") or "")
     elif role == "body":
         text_value = "\n".join(str(paragraph) for paragraph in content.get("body", []) if paragraph)
     else:

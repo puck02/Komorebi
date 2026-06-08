@@ -61,6 +61,7 @@ const legacyLayout = makeLayout({ sections: [] });
 const legacyLayers = getJournalRenderLayers(legacyLayout);
 assertEqual(legacyLayers.usesSections, false);
 assertDeepEqual(legacyLayers.images.map((image) => image.imageId), ["img_1"]);
+assertDeepEqual(legacyLayers.metaTexts.map((text) => text.paragraph), ["2026-05-20 / 上海 / 松快"]);
 assertDeepEqual(legacyLayers.bodyTexts.map((text) => text.paragraph), ["第一段正文。", "第二段正文。"]);
 assertDeepEqual(legacyLayers.captionTexts.map((text) => text.paragraph), ["窗边这杯咖啡"]);
 assertDeepEqual(getJournalAssetIds(legacyLayout), ["tape_legacy", "sticker_global"]);
@@ -72,6 +73,7 @@ function makeLayout({ sections }: Required<Pick<JournalLayout["layout"], "sectio
     theme: { style: "soft-collage", palette: ["#fef6e4"], mood: ["温柔"] },
     content: {
       title: "慢下来的周末",
+      meta: "2026-05-20 / 上海 / 松快",
       body: ["第一段正文。", "第二段正文。"],
       captions: [
         { imageId: "img_1", text: "窗边这杯咖啡" },
@@ -87,6 +89,7 @@ function makeLayout({ sections }: Required<Pick<JournalLayout["layout"], "sectio
       images: [{ imageId: "img_1", x: 92, y: 220, width: 420, height: 320, rotation: 0 }],
       texts: [
         { role: "title", x: 80, y: 72, width: 680, fontSize: 56 },
+        { role: "meta", x: 84, y: 144, width: 720, fontSize: 24 },
         { role: "caption", x: 130, y: 560, width: 320, fontSize: 24 },
         { role: "body", x: 112, y: 760, width: 820, fontSize: 32 }
       ],

@@ -15,6 +15,7 @@ export type JournalRenderLayers = {
   usesSections: boolean;
   titlePlacement?: JournalTextPlacement;
   images: JournalImagePlacement[];
+  metaTexts: JournalRenderText[];
   bodyTexts: JournalRenderText[];
   captionTexts: JournalRenderText[];
   decorations: JournalDecoration[];
@@ -45,6 +46,7 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
       usesSections: true,
       titlePlacement: layout.layout.texts.find((text) => text.role === "title"),
       images: sortedSections.flatMap((section) => section.images),
+      metaTexts: buildMetaTexts(layout),
       bodyTexts,
       captionTexts,
       decorations: sectionDecorations.length > 0 ? sectionDecorations : layout.layout.decorations
@@ -57,6 +59,7 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
     usesSections: false,
     titlePlacement: layout.layout.texts.find((text) => text.role === "title"),
     images: layout.layout.images,
+    metaTexts: buildMetaTexts(layout),
     bodyTexts: layout.content.body.map((paragraph, index) => ({
       key: `legacy-body-${index}`,
       paragraph,
@@ -77,6 +80,15 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
 
 export function getJournalAssetIds(layout: JournalLayout) {
   return Array.from(new Set(getJournalRenderLayers(layout).decorations.map((decoration) => decoration.assetId)));
+}
+
+function buildMetaTexts(layout: JournalLayout): JournalRenderText[] {
+  const meta = layout.content.meta?.trim();
+  const placement = layout.layout.texts.find((text) => text.role === "meta");
+  if (!meta || !placement) {
+    return [];
+  }
+  return [{ key: "meta", paragraph: meta, placement }];
 }
 
 function buildCaptionTexts(

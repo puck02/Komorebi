@@ -106,6 +106,21 @@ export default function JournalCanvas({ assets, canvasRef, images, layout, onIma
           {layout.content.title}
         </section>
 
+        {renderLayers.metaTexts.map(({ key, paragraph, placement }) => (
+          <section
+            className="journal-meta"
+            key={key}
+            style={{
+              fontSize: placement.fontSize,
+              left: placement.x,
+              top: placement.y,
+              width: placement.width
+            }}
+          >
+            {paragraph}
+          </section>
+        ))}
+
         {renderLayers.bodyTexts.map(({ key, paragraph, placement }) => (
           <section
             className="journal-body"

@@ -67,6 +67,25 @@ def test_valid_journal_layout_accepts_section_structure():
     assert layout.layout.sections[0].variant == "hero_note"
 
 
+def test_valid_journal_layout_accepts_meta_text():
+    payload = valid_layout()
+    payload["content"]["meta"] = "2026-05-20 / 上海 / 松快"
+    payload["layout"]["texts"].append(
+        {
+            "role": "meta",
+            "x": 84,
+            "y": 144,
+            "width": 720,
+            "fontSize": 24,
+        }
+    )
+
+    layout = JournalLayout.model_validate(payload)
+
+    assert layout.content.meta == "2026-05-20 / 上海 / 松快"
+    assert layout.layout.texts[1].role == "meta"
+
+
 def test_journal_layout_rejects_unsupported_canvas_width():
     payload = valid_layout()
     payload["canvas"]["width"] = 1200

@@ -51,6 +51,7 @@ class JournalContentSection(BaseModel):
 
 class JournalContent(BaseModel):
     title: str = Field(min_length=1)
+    meta: str | None = None
     body: list[str] = Field(min_length=1)
     captions: list[JournalCaption] = Field(default_factory=list)
     image_understanding: list[JournalImageUnderstanding] = Field(default_factory=list, alias="imageUnderstanding")
@@ -71,7 +72,7 @@ class JournalImagePlacement(BaseModel):
 class JournalTextPlacement(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
-    role: Literal["title", "body", "caption"]
+    role: Literal["title", "meta", "body", "caption"]
     x: float
     y: float
     width: float = Field(gt=0)

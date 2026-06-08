@@ -147,6 +147,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["安静"]},
         "content": {
             "title": "窗边坐了一会儿",
+            "meta": "2026-05-20 / 上海 / 松快",
             "body": ["咖啡还热着，杯沿旁边压着一张小票。", "后来走到路口，路灯已经亮了。"],
             "captions": [{"imageId": images[0]["id"] if images else "image_id", "text": "窗边咖啡和小票"}],
             "imageUnderstanding": [
@@ -182,6 +183,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
             ],
             "texts": [
                 {"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56},
+                {"role": "meta", "x": 84, "y": 144, "width": 720, "fontSize": 24},
                 {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32},
                 {"role": "body", "x": 112, "y": 1360, "width": 820, "fontSize": 32},
             ],
@@ -227,6 +229,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "不要写成 AI 总结，不要写宣传文案，不要堆砌“被温柔包裹”“治愈”“仪式感”“把时光收藏”等套话。"
         "不要替用户发明没有证据的地点、关系、天气或情绪；不确定时写成观察到的画面。"
         "用户补充信息可以用于增强准确性和日记感，例如日期可影响标题语气，地点和心情标签可辅助选素材与措辞。"
+        "如果有日期、地点或心情标签，请把它们整理为 content.meta，并在标题下方生成一个 role=meta 的短文本框。"
         "如果和照片冲突，以照片和用户描述为准；不要因为地点或心情标签编造照片里不存在的内容。"
         "图片数组顺序就是用户上传或拖拽排序后的顺序，必须尊重这个顺序，不要自行重排。"
         "生成文字时要结合图片实际可见内容和用户描述；每段正文、每条 caption 都要和对应照片或照片组对得上，不能张冠李戴。"
@@ -241,7 +244,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "如果照片天然能分成几类，就让 content.body 的段落数量尽量对应这些类别。content.captions 必须使用 imageId 和 text。"
         "content.captions 的顺序应尽量跟图片 order 一致，caption 只能描述对应 imageId 的照片内容。"
         "layout.images 必须使用 imageId，排列顺序应尽量按照图片 order 从上到下、从左到右展开。layout.decorations 必须使用 assetId。"
-        "layout.texts.role 只能是 title、body 或 caption；每一段 content.body 都应该对应一个单独的 body 文本框。"
+        "layout.texts.role 只能是 title、meta、body 或 caption；每一段 content.body 都应该对应一个单独的 body 文本框。"
         "画布宽度必须是 1080，高度必须按内容多少生成竖向长图，不能固定为 1440。"
         "图片不要排得太密，图片组、文字块和装饰之间要留出明显呼吸感；内容多时让 canvas.height 继续向下延伸。"
         "所有图片、文字和装饰都必须落在 0 到 canvas.height 范围内，文字框不能和图片重叠。"

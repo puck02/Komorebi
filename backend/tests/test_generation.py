@@ -36,6 +36,27 @@ def test_generator_returns_valid_journal_layout():
     assert layout.content.title == "慢下来的周末"
 
 
+def test_generator_adds_meta_text_from_user_context():
+    generator = JournalGenerator(FakeClient(valid_model_json()))
+
+    layout = generator.generate(
+        JournalGenerationRequest(
+            description="周末一起散步，天气很好，喝了咖啡。",
+            journal_date="2026-05-20",
+            location="上海",
+            mood_tags=["松快"],
+            images=[JournalImageInput(id="img_1", width=640, height=480)],
+            assets=load_assets(),
+        )
+    )
+
+    assert layout.content.meta == "2026-05-20 / 上海 / 松快"
+    meta_text = next(text for text in layout.layout.texts if text.role == "meta")
+    title_text = next(text for text in layout.layout.texts if text.role == "title")
+    assert meta_text.y > title_text.y
+    assert 18 <= meta_text.font_size <= 28
+
+
 def test_generator_expands_canvas_to_fit_long_section_placements():
     payload = valid_model_json()
     payload["canvas"]["height"] = 1500

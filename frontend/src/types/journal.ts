@@ -17,6 +17,7 @@ export type JournalCaption = {
 
 export type JournalContent = {
   title: string;
+  meta?: string | null;
   body: string[];
   captions: JournalCaption[];
   imageUnderstanding?: JournalImageUnderstanding[];
@@ -49,7 +50,7 @@ export type JournalImagePlacement = {
 };
 
 export type JournalTextPlacement = {
-  role: "title" | "body" | "caption";
+  role: "title" | "meta" | "body" | "caption";
   x: number;
   y: number;
   width: number;
