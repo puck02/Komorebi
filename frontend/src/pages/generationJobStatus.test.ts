@@ -30,7 +30,7 @@ assertEqual(
   generationJobErrorMessage(brokenCompletedJob, null),
   "手帐已生成，但没有拿到保存后的入口。请返回后重新生成。"
 );
-assertEqual(generationJobErrorMessage(failedJob, null), "AI服务连接失败");
+assertEqual(generationJobErrorMessage(failedJob, null), "AI 暂时不可用，请返回后重新生成。");
 assertEqual(generationJobErrorMessage(null, new Error("请求失败")), "请求失败");
 assertEqual(generationJobErrorMessage(null, null), null);
 assertEqual(generationJobRouteAfterCreate(queuedJob), "/generation/job_1");
