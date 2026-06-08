@@ -1072,6 +1072,10 @@ def test_generation_prompt_requests_natural_diary_text_and_preserves_image_order
     assert "不要写成 AI 总结" in prompt
     assert "不要替用户发明没有证据的地点、关系、天气或情绪" in prompt
     assert "图片数组顺序就是用户上传或拖拽排序后的顺序" in prompt
+    assert "被阳光放慢" not in prompt
+    assert "刚刚好" not in prompt
+    assert "收成一页" not in prompt
+    assert "窗边坐了一会儿" in prompt
     assert '"order": 1' in prompt
     assert '"order": 2' in prompt
     assert '"order": 3' in prompt

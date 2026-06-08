@@ -140,11 +140,11 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
     ]
     schema_example = {
         "canvas": {"width": 1080, "height": 2400, "background": "#f8f1e8"},
-        "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["温柔"]},
+        "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["安静"]},
         "content": {
-            "title": "慢下来的周末",
-            "body": ["咖啡和阳光是一组，像把早晨轻轻摊开。", "散步的照片放在一起，留下慢下来的路。"],
-            "captions": [{"imageId": images[0]["id"] if images else "image_id", "text": "照片说明"}],
+            "title": "窗边坐了一会儿",
+            "body": ["咖啡还热着，杯沿旁边压着一张小票。", "后来走到路口，路灯已经亮了。"],
+            "captions": [{"imageId": images[0]["id"] if images else "image_id", "text": "窗边咖啡和小票"}],
             "imageUnderstanding": [
                 {
                     "imageId": images[0]["id"] if images else "image_id",
@@ -159,8 +159,8 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
                     "id": "section_1",
                     "title": "窗边的下午",
                     "imageIds": [images[0]["id"] if images else "image_id"],
-                    "body": "咖啡和阳光是一组，像把早晨轻轻摊开。",
-                    "mood": ["温柔", "日常"],
+                    "body": "窗边坐了一会儿，咖啡还热着，小票被压在杯子旁边。",
+                    "mood": ["安静", "日常"],
                 }
             ],
         },
