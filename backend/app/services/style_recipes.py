@@ -59,7 +59,7 @@ def choose_asset_id(
 
     ranked_assets = sorted(assets, key=score)
     if ranked_assets and score(ranked_assets[0])[0] == 0:
-        return ranked_assets[offset % len(ranked_assets)].id if offset and len(ranked_assets) > 1 else ranked_assets[0].id
+        return ranked_assets[0].id
     return assets[offset % len(assets)].id
 
 

@@ -34,6 +34,18 @@ def test_choose_asset_id_prefers_category_asset_with_matching_recipe_tag():
     assert result == "sticker_coffee_06"
 
 
+def test_choose_asset_id_keeps_best_recipe_match_across_section_offsets():
+    assets = {
+        "sticker_coffee_06": asset("sticker_coffee_06", "sticker", ["coffee", "daily"]),
+        "sticker_daily_02": asset("sticker_daily_02", "sticker", ["daily"]),
+        "sticker_leaf_05": asset("sticker_leaf_05", "sticker", ["nature", "travel"]),
+    }
+
+    result = choose_asset_id(assets, "sticker", offset=1, preferred_tags=["coffee", "daily"])
+
+    assert result == "sticker_coffee_06"
+
+
 def test_choose_asset_id_keeps_preferred_asset_when_category_matches():
     assets = {
         "sticker_leaf_05": asset("sticker_leaf_05", "sticker", ["nature", "travel"]),
