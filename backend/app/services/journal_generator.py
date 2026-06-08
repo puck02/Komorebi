@@ -919,6 +919,8 @@ def complementary_sticker_asset_id(
 
 def should_add_complementary_sticker(preferred_tags: list[str]) -> bool:
     material_tags = {"film", "stamp", "letter", "seal", "tag", "ticket", "photo"}
+    if {"ticket", "coffee"}.issubset(preferred_tags):
+        return True
     return len(material_tags.intersection(preferred_tags)) >= 2
 
 

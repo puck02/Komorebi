@@ -8,7 +8,7 @@ CALM_KEYWORDS = {"安静", "窗边", "平静", "慢", "独处", "雨", "夜色"}
 BIRTHDAY_KEYWORDS = {"生日", "礼物", "蛋糕", "庆祝", "派对"}
 PET_KEYWORDS = {"猫", "狗", "宠物", "小猫", "小狗", "爪"}
 PHOTO_KEYWORDS = {"照片", "相片", "相册", "拍立得", "照片角", "冲印", "合影"}
-TICKET_KEYWORDS = {"票根", "门票", "车票", "入场券", "展览", "电影票", "小卡片"}
+TICKET_KEYWORDS = {"票根", "门票", "车票", "入场券", "展览", "电影票", "小票", "收据", "小卡片"}
 NOTE_KEYWORDS = {"便签", "纸条", "手写", "记录", "笔记", "备忘", "小事"}
 STAMP_FILM_KEYWORDS = {"邮票", "胶片", "底片", "冲印", "相纸", "旧照片"}
 LETTER_TAG_KEYWORDS = {"信封", "信纸", "封蜡", "标签", "吊牌", "牛皮纸"}
@@ -19,6 +19,8 @@ def recipe_tags_for_section(
     image_understanding: list[dict[str, Any]],
 ) -> list[str]:
     text = section_keyword_text(section, image_understanding)
+    if any(keyword in text for keyword in COFFEE_KEYWORDS) and any(keyword in text for keyword in TICKET_KEYWORDS):
+        return ["ticket", "coffee", "warm", "memory"]
     if any(keyword in text for keyword in COFFEE_KEYWORDS):
         return ["coffee", "warm", "daily"]
     if any(keyword in text for keyword in BIRTHDAY_KEYWORDS):

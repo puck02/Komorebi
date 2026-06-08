@@ -591,6 +591,43 @@ def test_generator_uses_section_theme_tags_for_template_decorations():
     assert {"paper_label_coffee_06", "tape_coffee_06", "sticker_coffee_06"}.issubset(decoration_ids)
 
 
+def test_generator_uses_ticket_and_coffee_layers_for_cafe_receipt_scene():
+    payload = valid_model_json()
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "窗边咖啡和小票",
+            "scene": "咖啡店",
+            "subjects": ["咖啡", "小票"],
+            "mood": ["放松"],
+        }
+    ]
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "窗边咖啡",
+            "imageIds": ["img_1"],
+            "body": "坐在咖啡店里，桌上有小票和一杯咖啡。",
+            "mood": ["日常"],
+        }
+    ]
+    payload["layout"]["decorations"] = []
+    assets = [
+        asset_item("paper_note_cream_01", "paper"),
+        asset_item("paper_receipt_blue_13", "paper", tags=["travel", "memory", "ticket"]),
+        asset_item("tape_warm_grid_01", "tape"),
+        asset_item("tape_coffee_06", "tape", tags=["coffee", "warm", "daily"]),
+        asset_item("sticker_coffee_06", "sticker", tags=["coffee", "daily", "warm"]),
+        asset_item("sticker_ticket_stub_24", "sticker", tags=["ticket", "travel", "memory"]),
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(assets=assets))
+
+    decoration_ids = {decoration.asset_id for decoration in layout.layout.sections[0].decorations}
+    assert {"paper_receipt_blue_13", "tape_coffee_06", "sticker_ticket_stub_24", "sticker_coffee_06"}.issubset(decoration_ids)
+
+
 @pytest.mark.parametrize(
     ("summary", "scene", "subjects", "section_title", "section_body", "expected_sticker"),
     [
