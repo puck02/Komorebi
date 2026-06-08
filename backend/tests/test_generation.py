@@ -973,6 +973,25 @@ def test_generator_replaces_generic_caption_with_image_understanding():
     assert layout.content.captions[0].text == "窗边咖啡和小票"
 
 
+def test_generator_uses_subjects_when_understanding_summary_is_numbered_photo_label():
+    payload = valid_model_json()
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "今天的照片"}]
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "第 2 张照片",
+            "scene": "海边",
+            "subjects": ["蓝色遮阳伞", "长椅"],
+            "mood": ["轻松"],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    assert layout.content.captions[0].text == "蓝色遮阳伞、长椅"
+
+
 def test_generator_replaces_missing_understanding_caption_with_description_phrases():
     payload = valid_model_json()
     payload["content"].pop("captions")
