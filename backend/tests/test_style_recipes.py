@@ -52,6 +52,15 @@ def test_recipe_tags_for_section_detects_note_memory():
     assert tags[:3] == ["note", "daily", "collage"]
 
 
+def test_recipe_tags_for_section_detects_date_stamp_memory():
+    section = {"title": "六月九日", "body": "把日期章盖在这一页，旁边写了今天的日历小记。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "日期章和日历", "scene": "手账页", "subjects": ["日期章", "日历"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:3] == ["date", "stamp", "memory"]
+
+
 def test_recipe_tags_for_section_detects_stamp_and_film_ephemera():
     section = {"title": "冲印相片", "body": "胶片边和旧邮票放在照片旁边。", "imageIds": ["img_1"]}
     understanding = [

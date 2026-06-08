@@ -100,7 +100,8 @@ def test_internal_scrapbook_ephemera_stickers_cover_common_journal_materials():
     ]
     covered_tags = {tag for asset in approved_internal_stickers for tag in asset.tags}
 
-    assert {"photo", "ticket", "note", "stamp", "film", "letter", "tag", "seal", "clip"}.issubset(covered_tags)
+    assert {"photo", "ticket", "note", "stamp", "film", "letter", "tag", "seal", "clip", "date"}.issubset(covered_tags)
+    assert any({"date", "stamp"}.issubset(asset.tags) for asset in approved_internal_stickers)
 
 
 def test_generic_external_icons_stay_draft_until_art_directed():

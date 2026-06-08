@@ -902,7 +902,7 @@ def complementary_sticker_asset_id(
     if not candidates:
         return None
 
-    def score(asset: AssetItem) -> tuple[int, int, int, int, str]:
+    def score(asset: AssetItem) -> tuple[int, int, int, int]:
         matching_indexes = [tag_rank[tag] for tag in asset.tags if tag in tag_rank]
         new_matching_indexes = [tag_rank[tag] for tag in asset.tags if tag in tag_rank and tag not in primary_tags]
         source_rank = 0 if asset.source == "internal" else 1
@@ -911,7 +911,6 @@ def complementary_sticker_asset_id(
             min(new_matching_indexes or matching_indexes),
             -len(new_matching_indexes),
             source_rank,
-            asset.id,
         )
 
     return sorted(candidates, key=score)[0].id

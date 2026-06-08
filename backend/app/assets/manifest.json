@@ -1363,6 +1363,28 @@
     "qualityStatus": "approved"
   },
   {
+    "id": "sticker_date_stamp_35",
+    "name": "Date Stamp 35",
+    "category": "sticker",
+    "tags": [
+      "date",
+      "stamp",
+      "memory"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#f7ead2",
+      "#8b6c52"
+    ],
+    "file": "stickers/sticker_date_stamp_35.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
     "id": "texture_dots_01",
     "name": "Warm Dots 01",
     "category": "texture",

@@ -628,6 +628,41 @@ def test_generator_uses_ticket_and_coffee_layers_for_cafe_receipt_scene():
     assert {"paper_receipt_blue_13", "tape_coffee_06", "sticker_ticket_stub_24", "sticker_coffee_06"}.issubset(decoration_ids)
 
 
+def test_generator_uses_date_stamp_for_calendar_journal_scene():
+    payload = valid_model_json()
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "日期章和日历小记",
+            "scene": "手账页",
+            "subjects": ["日期章", "日历"],
+            "mood": ["安静"],
+        }
+    ]
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "六月九日",
+            "imageIds": ["img_1"],
+            "body": "把日期章盖在这一页，旁边写了今天的日历小记。",
+            "mood": ["日常"],
+        }
+    ]
+    payload["layout"]["decorations"] = []
+    assets = [
+        asset_item("paper_note_grid_14", "paper", tags=["daily", "collage", "note"]),
+        asset_item("tape_linen_stitch_13", "tape", tags=["daily", "warm", "collage"]),
+        asset_item("sticker_postage_stamp_29", "sticker", tags=["stamp", "travel", "memory"]),
+        asset_item("sticker_date_stamp_35", "sticker", tags=["date", "stamp", "memory"]),
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(assets=assets))
+
+    decoration_ids = {decoration.asset_id for decoration in layout.layout.sections[0].decorations}
+    assert "sticker_date_stamp_35" in decoration_ids
+
+
 @pytest.mark.parametrize(
     ("summary", "scene", "subjects", "section_title", "section_body", "expected_sticker"),
     [
