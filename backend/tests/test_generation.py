@@ -1104,6 +1104,16 @@ def test_generator_normalizes_ai_style_copy():
     assert "咖啡还热着" in rendered_copy
 
 
+def test_generator_shortens_long_caption_to_one_observation():
+    payload = valid_model_json()
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "值得被记住的珍贵回忆，咖啡还热着，窗边坐了一会儿。"}]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    assert layout.content.captions[0].text == "咖啡还热着"
+
+
 def test_generator_story_planner_ignores_duplicate_model_image_ids():
     payload = valid_model_json()
     payload["content"]["body"] = ["第一组照片。", "第二组照片。"]
@@ -1132,7 +1142,7 @@ def test_generator_returns_fallback_layout_when_model_connection_fails():
 
     assert layout.content.title == "周末一起散步"
     assert layout.content.body == ["周末一起散步，天气很好，喝了咖啡。"]
-    assert layout.content.captions[0].text == "周末一起散步，天气很好，喝了"
+    assert layout.content.captions[0].text == "周末一起散步"
     assert layout.layout.sections
 
 

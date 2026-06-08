@@ -50,6 +50,7 @@ PHOTO_LEFT_X = 92
 PHOTO_RIGHT_X = 568
 PHOTO_ROW_GAP = 56
 LONG_BODY_SPLIT_TARGET = 58
+CAPTION_MAX_CHARS = 14
 GENERIC_CAPTIONS = {"今天的照片", "照片说明", "这张照片", "生活片段"}
 GENERIC_SECTION_BODIES = {"这一组照片也想好好留下", "今天的照片先放在这里", "今天的照片"}
 GENERIC_SECTION_TITLES = {"第一段", "第二段", "第三段", "第四段", "照片小组", "模型乱分组", "A", "B"}
@@ -173,10 +174,25 @@ def fallback_caption_texts(body: str, count: int) -> list[str]:
     source_texts = sentences[:count] if len(sentences) >= count else fallback_text_units(body)
     if len(source_texts) < count:
         source_texts.extend([(source_texts[-1] if source_texts else body) for _ in range(count - len(source_texts))])
-    return [
-        normalize_diary_text(text, fallback="今日小记").strip(" 。！？!?；;，,")[:14] or "今日小记"
-        for text in source_texts[:count]
-    ]
+    return [normalize_caption_text(text, fallback="今日小记") for text in source_texts[:count]]
+
+
+def normalize_caption_text(value: Any, *, fallback: str = "今天的照片") -> str:
+    raw_text = str(value or "").strip()
+    for unit in fallback_text_units(raw_text):
+        caption = trim_caption_particles(unit)
+        if is_caption_signal(caption):
+            return caption[:CAPTION_MAX_CHARS]
+    caption = trim_caption_particles(normalize_diary_text(raw_text, fallback=fallback).strip(" 。！？!?；;，,、"))
+    return caption[:CAPTION_MAX_CHARS] if caption else fallback
+
+
+def trim_caption_particles(text: str) -> str:
+    return text.strip(" 的和又在把成里")
+
+
+def is_caption_signal(text: str) -> bool:
+    return bool(text) and text not in {"的", "和", "又", "在", "把", "成", "里", "一天"}
 
 
 def fallback_text_units(body: str) -> list[str]:
@@ -322,7 +338,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
         ]
     for caption in captions:
         normalize_id_alias(caption, "imageId")
-        caption["text"] = normalize_diary_text(caption.get("text"), fallback="今天的照片")
+        caption["text"] = normalize_caption_text(caption.get("text"), fallback="今天的照片")
     layout["content"]["captions"] = [
         caption for caption in captions if caption.get("imageId") in image_ids and str(caption.get("text") or "").strip()
     ]
