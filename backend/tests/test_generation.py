@@ -706,6 +706,46 @@ def test_generator_uses_date_stamp_for_calendar_journal_scene():
             "信封、封蜡和牛皮纸标签压在便签下面。",
             "sticker_tiny_envelope_33",
         ),
+        (
+            "公交车票和路线",
+            "公交站",
+            ["公交车票"],
+            "通勤车票",
+            "公交车票夹在照片旁边，记一下今天的路线。",
+            "paper_bus_ticket_16",
+        ),
+        (
+            "钢笔、笔尖和便签",
+            "桌面",
+            ["钢笔"],
+            "钢笔旁边",
+            "钢笔和笔尖压着便签，旁边有一点墨水痕迹。",
+            "sticker_fountain_pen_36",
+        ),
+        (
+            "压叶和植物标本",
+            "桌面",
+            ["压叶"],
+            "压叶",
+            "干花和压叶像植物标本一样放在纸边。",
+            "sticker_pressed_leaf_38",
+        ),
+        (
+            "清单便签和勾选标记",
+            "桌面",
+            ["清单"],
+            "待办清单",
+            "便签上列了今天要做的几件事，还打了两个勾。",
+            "paper_checklist_15",
+        ),
+        (
+            "照片角和相片",
+            "手账页",
+            ["照片角"],
+            "照片边角",
+            "撕角照片角压住了这张相片。",
+            "sticker_torn_photo_corner_37",
+        ),
     ],
 )
 def test_generator_uses_scrapbook_recipe_stickers_for_template_decorations(
@@ -749,6 +789,11 @@ def test_generator_uses_scrapbook_recipe_stickers_for_template_decorations(
         asset_item("sticker_kraft_tag_32", "sticker", tags=["tag", "label", "collage"]),
         asset_item("sticker_tiny_envelope_33", "sticker", tags=["letter", "note", "memory"]),
         asset_item("sticker_binder_clip_34", "sticker", tags=["clip", "note", "collage"]),
+        asset_item("paper_checklist_15", "paper", tags=["checklist", "note", "daily"]),
+        asset_item("paper_bus_ticket_16", "paper", tags=["bus", "ticket", "travel"]),
+        asset_item("sticker_fountain_pen_36", "sticker", tags=["pen", "hand", "note"]),
+        asset_item("sticker_torn_photo_corner_37", "sticker", tags=["corner", "photo", "collage"]),
+        asset_item("sticker_pressed_leaf_38", "sticker", tags=["pressed", "nature", "calm"]),
     ]
     generator = JournalGenerator(FakeClient(payload))
 

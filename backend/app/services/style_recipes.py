@@ -10,6 +10,11 @@ PET_KEYWORDS = {"猫", "狗", "宠物", "小猫", "小狗", "爪"}
 PHOTO_KEYWORDS = {"照片", "相片", "相册", "拍立得", "照片角", "冲印", "合影"}
 TICKET_KEYWORDS = {"票根", "门票", "车票", "入场券", "展览", "电影票", "小票", "收据", "小卡片"}
 NOTE_KEYWORDS = {"便签", "纸条", "手写", "记录", "笔记", "备忘", "小事"}
+CHECKLIST_KEYWORDS = {"清单", "待办", "勾选", "打勾", "事项", "todo", "checklist"}
+BUS_TICKET_KEYWORDS = {"公交", "公交车票", "巴士", "车票", "通勤", "路线"}
+PEN_KEYWORDS = {"钢笔", "笔尖", "笔", "墨水", "手写笔", "签字笔"}
+PHOTO_CORNER_KEYWORDS = {"撕角", "相册角", "护角"}
+PRESSED_NATURE_KEYWORDS = {"压叶", "压花", "干花", "植物标本", "叶片标本"}
 DATE_STAMP_KEYWORDS = {"日期章", "日期", "日历", "盖章", "手帐章", "手账章"}
 STAMP_FILM_KEYWORDS = {"邮票", "胶片", "底片", "冲印", "相纸", "旧照片"}
 LETTER_TAG_KEYWORDS = {"信封", "信纸", "封蜡", "标签", "吊牌", "牛皮纸"}
@@ -28,8 +33,18 @@ def recipe_tags_for_section(
         return ["birthday", "warm", "party", "gift"]
     if any(keyword in text for keyword in PET_KEYWORDS):
         return ["pet", "home", "daily"]
+    if any(keyword in text for keyword in CHECKLIST_KEYWORDS):
+        return ["checklist", "note", "pen", "daily"]
+    if any(keyword in text for keyword in BUS_TICKET_KEYWORDS) and any(keyword in text for keyword in TICKET_KEYWORDS):
+        return ["bus", "ticket", "travel", "memory"]
+    if any(keyword in text for keyword in PEN_KEYWORDS):
+        return ["pen", "hand", "note", "daily"]
     if any(keyword in text for keyword in DATE_STAMP_KEYWORDS):
         return ["date", "stamp", "memory"]
+    if any(keyword in text for keyword in PHOTO_CORNER_KEYWORDS):
+        return ["corner", "photo", "collage", "memory"]
+    if any(keyword in text for keyword in PRESSED_NATURE_KEYWORDS):
+        return ["pressed", "nature", "calm"]
     if any(keyword in text for keyword in STAMP_FILM_KEYWORDS):
         return ["film", "stamp", "photo", "memory"]
     if any(keyword in text for keyword in LETTER_TAG_KEYWORDS):

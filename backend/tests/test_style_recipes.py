@@ -52,6 +52,33 @@ def test_recipe_tags_for_section_detects_note_memory():
     assert tags[:3] == ["note", "daily", "collage"]
 
 
+def test_recipe_tags_for_section_detects_checklist_note():
+    section = {"title": "待办清单", "body": "便签上列了今天要做的几件事，还打了两个勾。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "清单便签和勾选标记", "scene": "桌面", "subjects": ["清单"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["checklist", "note", "pen", "daily"]
+
+
+def test_recipe_tags_for_section_detects_bus_ticket():
+    section = {"title": "通勤车票", "body": "公交车票夹在照片旁边，记一下今天的路线。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "公交车票和路线", "scene": "公交站", "subjects": ["公交车票"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["bus", "ticket", "travel", "memory"]
+
+
+def test_recipe_tags_for_section_detects_pen_note():
+    section = {"title": "钢笔旁边", "body": "钢笔和笔尖压着便签，旁边有一点墨水痕迹。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "钢笔、笔尖和便签", "scene": "桌面", "subjects": ["钢笔"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["pen", "hand", "note", "daily"]
+
+
 def test_recipe_tags_for_section_detects_date_stamp_memory():
     section = {"title": "六月九日", "body": "把日期章盖在这一页，旁边写了今天的日历小记。", "imageIds": ["img_1"]}
     understanding = [{"imageId": "img_1", "summary": "日期章和日历", "scene": "手账页", "subjects": ["日期章", "日历"], "mood": []}]
@@ -79,6 +106,24 @@ def test_recipe_tags_for_section_detects_letter_and_tag_ephemera():
     tags = recipe_tags_for_section(section, understanding)
 
     assert tags[:4] == ["letter", "seal", "tag", "note"]
+
+
+def test_recipe_tags_for_section_detects_torn_photo_corner():
+    section = {"title": "照片边角", "body": "撕角照片角压住了这张相片。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "照片角和相片", "scene": "手账页", "subjects": ["照片角"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["corner", "photo", "collage", "memory"]
+
+
+def test_recipe_tags_for_section_detects_pressed_leaf():
+    section = {"title": "压叶", "body": "干花和压叶像植物标本一样放在纸边。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "压叶和植物标本", "scene": "桌面", "subjects": ["压叶"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:3] == ["pressed", "nature", "calm"]
 
 
 def test_choose_asset_id_prefers_category_asset_with_matching_recipe_tag():
