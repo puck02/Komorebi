@@ -186,15 +186,22 @@ def minimum_decoration_count(layout: JournalLayout) -> int:
 def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
     issues: list[dict[str, Any]] = []
     sections = sorted(layout.layout.sections, key=lambda section: section.y)
+    content_sections_by_id = {section.id: section for section in layout.content.sections}
     body_by_section_id = {section.id: section.body for section in layout.content.sections}
     image_ids_by_section_id = {section.id: section.image_ids for section in layout.content.sections}
     caption_image_ids = {caption.image_id for caption in layout.content.captions}
+    understanding_by_image_id = {item.image_id: item for item in layout.content.image_understanding}
     content_section_ids = set(body_by_section_id)
     for index, section in enumerate(sections):
         if section.section_id not in content_section_ids:
             issues.append(rule_issue("sectionReference", "high", [section.section_id], "版式章节没有对应的内容章节"))
         elif rendered_section_image_ids(section) != image_ids_by_section_id[section.section_id]:
             issues.append(rule_issue("sectionImageMatch", "high", [section.section_id], "版式章节图片与内容章节不一致"))
+        elif section_mentions_other_image(
+            content_sections_by_id[section.section_id],
+            understanding_by_image_id,
+        ):
+            issues.append(rule_issue("sectionCopyAlignment", "medium", [section.section_id], "章节正文描述了其他照片"))
         elif (section_copy_issue := check_section_copy_alignment(section.section_id, body_by_section_id[section.section_id])) is not None:
             issues.append(section_copy_issue)
         issues.extend(check_section_caption_coverage(section, caption_image_ids))
@@ -223,6 +230,23 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
 
 def rendered_section_image_ids(section: Any) -> list[str]:
     return [image.image_id for image in sorted(section.images, key=lambda item: (item.y, item.x))]
+
+
+def section_mentions_other_image(section: Any, understanding_by_image_id: dict[str, Any]) -> bool:
+    body = copy_signal_text(section.body)
+    section_image_ids = set(section.image_ids)
+    for image_id, understanding in understanding_by_image_id.items():
+        if image_id in section_image_ids:
+            continue
+        if any(keyword and keyword in body for keyword in understanding_keywords(understanding)):
+            return True
+    return False
+
+
+def understanding_keywords(understanding: Any) -> list[str]:
+    keywords = [copy_signal_text(understanding.summary), copy_signal_text(understanding.scene)]
+    keywords.extend(copy_signal_text(subject) for subject in understanding.subjects)
+    return [keyword for keyword in keywords if len(keyword) >= MIN_CAPTION_SIGNAL_CHARS]
 
 
 def check_section_caption_coverage(section: Any, caption_image_ids: set[str]) -> list[dict[str, Any]]:

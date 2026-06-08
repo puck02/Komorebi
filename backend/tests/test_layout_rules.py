@@ -620,6 +620,55 @@ def test_layout_rules_report_section_body_repeating_its_caption():
     assert has_issue(issues, "copyQuality", "medium", "章节正文重复照片说明，手帐记录不够具体")
 
 
+def test_layout_rules_report_section_body_mentions_other_image_understanding():
+    payload = layout_payload(image_ids=["img_1", "img_2"])
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "窗边咖啡和小票",
+            "scene": "咖啡店",
+            "subjects": ["咖啡", "小票"],
+            "mood": [],
+        },
+        {
+            "imageId": "img_2",
+            "summary": "回程路上的云",
+            "scene": "街边",
+            "subjects": ["云", "路灯"],
+            "mood": [],
+        },
+    ]
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "窗边", "imageIds": ["img_1"], "body": "回程路上的云很低。", "mood": []},
+        {"id": "section_2", "title": "路口", "imageIds": ["img_2"], "body": "回程路上的云很低。", "mood": []},
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 620,
+            "images": [{"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        },
+        {
+            "sectionId": "section_2",
+            "variant": "hero_note",
+            "y": 920,
+            "height": 620,
+            "images": [{"imageId": "img_2", "x": 92, "y": 960, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 1320, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        },
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=two_images()))
+
+    assert has_issue(issues, "sectionCopyAlignment", "medium", "章节正文描述了其他照片")
+
+
 def test_layout_rules_allow_section_body_expanding_on_caption():
     payload = layout_payload()
     payload["content"]["captions"] = [{"imageId": "img_1", "text": "周末一起散步"}]
