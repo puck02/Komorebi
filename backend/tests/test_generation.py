@@ -616,6 +616,22 @@ def test_generator_uses_section_theme_tags_for_template_decorations():
             "纸条上写了今天的几件小事。",
             "sticker_paperclip_note_26",
         ),
+        (
+            "照片旁边有邮票和胶片",
+            "手账桌面",
+            ["胶片", "邮票"],
+            "冲印相片",
+            "胶片边和旧邮票放在照片旁边。",
+            "sticker_film_strip_30",
+        ),
+        (
+            "信封和标签",
+            "桌面",
+            ["信封", "封蜡", "标签"],
+            "写给今天",
+            "信封、封蜡和牛皮纸标签压在便签下面。",
+            "sticker_tiny_envelope_33",
+        ),
     ],
 )
 def test_generator_uses_scrapbook_recipe_stickers_for_template_decorations(
@@ -653,6 +669,12 @@ def test_generator_uses_scrapbook_recipe_stickers_for_template_decorations(
         asset_item("sticker_photo_corner_21", "sticker", tags=["photo", "memory", "collage"]),
         asset_item("sticker_ticket_stub_24", "sticker", tags=["ticket", "travel", "memory"]),
         asset_item("sticker_paperclip_note_26", "sticker", tags=["note", "daily", "collage"]),
+        asset_item("sticker_postage_stamp_29", "sticker", tags=["stamp", "travel", "memory"]),
+        asset_item("sticker_film_strip_30", "sticker", tags=["film", "photo", "memory"]),
+        asset_item("sticker_wax_seal_31", "sticker", tags=["seal", "letter", "memory"]),
+        asset_item("sticker_kraft_tag_32", "sticker", tags=["tag", "label", "collage"]),
+        asset_item("sticker_tiny_envelope_33", "sticker", tags=["letter", "note", "memory"]),
+        asset_item("sticker_binder_clip_34", "sticker", tags=["clip", "note", "collage"]),
     ]
     generator = JournalGenerator(FakeClient(payload))
 

@@ -10,6 +10,8 @@ PET_KEYWORDS = {"猫", "狗", "宠物", "小猫", "小狗", "爪"}
 PHOTO_KEYWORDS = {"照片", "相片", "相册", "拍立得", "照片角", "冲印", "合影"}
 TICKET_KEYWORDS = {"票根", "门票", "车票", "入场券", "展览", "电影票", "小卡片"}
 NOTE_KEYWORDS = {"便签", "纸条", "手写", "记录", "笔记", "备忘", "小事"}
+STAMP_FILM_KEYWORDS = {"邮票", "胶片", "底片", "冲印", "相纸", "旧照片"}
+LETTER_TAG_KEYWORDS = {"信封", "信纸", "封蜡", "标签", "吊牌", "牛皮纸"}
 
 
 def recipe_tags_for_section(
@@ -23,6 +25,10 @@ def recipe_tags_for_section(
         return ["birthday", "warm", "party", "gift"]
     if any(keyword in text for keyword in PET_KEYWORDS):
         return ["pet", "home", "daily"]
+    if any(keyword in text for keyword in STAMP_FILM_KEYWORDS):
+        return ["film", "stamp", "photo", "memory"]
+    if any(keyword in text for keyword in LETTER_TAG_KEYWORDS):
+        return ["letter", "seal", "tag", "note"]
     if any(keyword in text for keyword in TICKET_KEYWORDS):
         return ["ticket", "travel", "memory"]
     if any(keyword in text for keyword in PHOTO_KEYWORDS):

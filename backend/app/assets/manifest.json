@@ -1231,6 +1231,138 @@
     "qualityStatus": "approved"
   },
   {
+    "id": "sticker_postage_stamp_29",
+    "name": "Postage Stamp 29",
+    "category": "sticker",
+    "tags": [
+      "stamp",
+      "travel",
+      "memory"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#f8ead2",
+      "#8d7254"
+    ],
+    "file": "stickers/sticker_postage_stamp_29.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_film_strip_30",
+    "name": "Film Strip 30",
+    "category": "sticker",
+    "tags": [
+      "film",
+      "photo",
+      "memory"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#403b37",
+      "#f6e8c8"
+    ],
+    "file": "stickers/sticker_film_strip_30.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_wax_seal_31",
+    "name": "Wax Seal 31",
+    "category": "sticker",
+    "tags": [
+      "seal",
+      "letter",
+      "memory"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#c96f68",
+      "#8d4f4a"
+    ],
+    "file": "stickers/sticker_wax_seal_31.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_kraft_tag_32",
+    "name": "Kraft Tag 32",
+    "category": "sticker",
+    "tags": [
+      "tag",
+      "label",
+      "collage"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#d8b57f",
+      "#8a6842"
+    ],
+    "file": "stickers/sticker_kraft_tag_32.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_tiny_envelope_33",
+    "name": "Tiny Envelope 33",
+    "category": "sticker",
+    "tags": [
+      "letter",
+      "note",
+      "memory"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#fff3df",
+      "#8b6c52"
+    ],
+    "file": "stickers/sticker_tiny_envelope_33.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_binder_clip_34",
+    "name": "Binder Clip 34",
+    "category": "sticker",
+    "tags": [
+      "clip",
+      "note",
+      "collage"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#667783",
+      "#f8e7c7"
+    ],
+    "file": "stickers/sticker_binder_clip_34.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
     "id": "texture_dots_01",
     "name": "Warm Dots 01",
     "category": "texture",
@@ -1884,7 +2016,7 @@
     "file": "external/streamline-freehand-color/streamline_dice_pawn.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_flip_book",
@@ -1976,7 +2108,7 @@
     "file": "external/streamline-freehand-color/streamline_card_symbols.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_paint_brush",
@@ -2114,7 +2246,7 @@
     "file": "external/streamline-freehand-color/streamline_idea_bulb.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_brush_ruler",
@@ -2183,7 +2315,7 @@
     "file": "external/streamline-freehand-color/streamline_magic_wand.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_stamp",
@@ -2551,7 +2683,7 @@
     "file": "external/streamline-freehand-color/streamline_shopping_star.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_smiley_blush",
@@ -2597,7 +2729,7 @@
     "file": "external/streamline-freehand-color/streamline_smiley_happy.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_smiley_heart",
@@ -2620,7 +2752,7 @@
     "file": "external/streamline-freehand-color/streamline_smiley_heart.svg",
     "license": "CC-BY-4.0",
     "source": "https://icon-sets.iconify.design/streamline-freehand-color/",
-    "qualityStatus": "approved"
+    "qualityStatus": "draft"
   },
   {
     "id": "ext_streamline_game_controller",

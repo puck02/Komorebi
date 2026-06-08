@@ -89,7 +89,18 @@ def test_internal_handdrawn_sticker_library_is_rich_enough():
         if asset.source == "internal" and asset.category == "sticker" and asset.quality_status == "approved"
     ]
 
-    assert len(approved_internal_stickers) >= 28
+    assert len(approved_internal_stickers) >= 34
+
+
+def test_internal_scrapbook_ephemera_stickers_cover_common_journal_materials():
+    approved_internal_stickers = [
+        asset
+        for asset in load_assets()
+        if asset.source == "internal" and asset.category == "sticker" and asset.quality_status == "approved"
+    ]
+    covered_tags = {tag for asset in approved_internal_stickers for tag in asset.tags}
+
+    assert {"photo", "ticket", "note", "stamp", "film", "letter", "tag", "seal", "clip"}.issubset(covered_tags)
 
 
 def test_generic_external_icons_stay_draft_until_art_directed():
@@ -97,6 +108,13 @@ def test_generic_external_icons_stay_draft_until_art_directed():
         "ext_streamline_game_controller",
         "ext_streamline_smiley_blush",
         "ext_streamline_walking_symbol",
+        "ext_streamline_dice_pawn",
+        "ext_streamline_card_symbols",
+        "ext_streamline_idea_bulb",
+        "ext_streamline_magic_wand",
+        "ext_streamline_shopping_star",
+        "ext_streamline_smiley_happy",
+        "ext_streamline_smiley_heart",
     }
     statuses = {asset.id: asset.quality_status for asset in load_assets() if asset.id in generic_icon_ids}
 

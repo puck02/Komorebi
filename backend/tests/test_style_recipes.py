@@ -52,6 +52,26 @@ def test_recipe_tags_for_section_detects_note_memory():
     assert tags[:3] == ["note", "daily", "collage"]
 
 
+def test_recipe_tags_for_section_detects_stamp_and_film_ephemera():
+    section = {"title": "冲印相片", "body": "胶片边和旧邮票放在照片旁边。", "imageIds": ["img_1"]}
+    understanding = [
+        {"imageId": "img_1", "summary": "照片旁边有邮票和胶片", "scene": "手账桌面", "subjects": ["胶片", "邮票"], "mood": []}
+    ]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["film", "stamp", "photo", "memory"]
+
+
+def test_recipe_tags_for_section_detects_letter_and_tag_ephemera():
+    section = {"title": "写给今天", "body": "信封、封蜡和牛皮纸标签压在便签下面。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "信封和标签", "scene": "桌面", "subjects": ["信封", "封蜡", "标签"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["letter", "seal", "tag", "note"]
+
+
 def test_choose_asset_id_prefers_category_asset_with_matching_recipe_tag():
     assets = {
         "sticker_leaf_05": asset("sticker_leaf_05", "sticker", ["nature", "travel"]),

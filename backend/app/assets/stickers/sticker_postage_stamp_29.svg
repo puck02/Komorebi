@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none">
+<rect width="160" height="160" fill="none"/>
+<path d="M43 39C62 37 94 38 120 42C116 66 116 94 122 119C94 123 65 122 39 118C44 92 45 64 43 39Z" fill="#f8ead2" stroke="#8d7254" stroke-width="3" stroke-linejoin="round"/>
+<path d="M49 48C67 47 93 48 113 51C111 70 111 91 115 110C93 113 66 112 48 109C51 89 52 66 49 48Z" fill="#fff7e8" stroke="#c49b6b" stroke-width="2.2" stroke-linejoin="round"/>
+<path d="M67 80C75 66 89 61 101 70C97 87 83 96 68 92C64 89 64 84 67 80Z" fill="#d9e5c2" stroke="#718160" stroke-width="2.4" stroke-linejoin="round"/>
+<path d="M72 92C82 85 90 78 98 69" stroke="#718160" stroke-width="2" stroke-linecap="round"/>
+<path d="M57 58C62 57 67 57 72 58" stroke="#c49b6b" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+<path d="M56 104C75 106 94 106 108 104" stroke="#c49b6b" stroke-width="2" stroke-linecap="round" opacity="0.45"/>
+<path d="M39 49C44 47 47 44 43 39M58 38C57 44 53 47 48 48M76 38C75 44 71 47 66 48M95 39C93 44 89 48 84 48M114 41C112 47 108 50 102 50M121 59C115 59 112 55 113 50M119 78C114 76 112 72 114 67M119 97C114 95 112 91 114 86M122 119C116 116 113 112 115 106M103 121C102 116 106 112 113 111M84 122C84 116 89 113 96 113M64 121C65 116 70 113 77 113M39 118C44 113 48 111 53 112M42 99C47 100 51 104 50 110M44 79C49 81 51 85 50 91M44 59C49 61 52 65 51 72" stroke="#8d7254" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+</svg>
