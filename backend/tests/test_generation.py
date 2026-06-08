@@ -1440,6 +1440,27 @@ def test_generator_uses_user_description_when_model_body_is_missing():
     assert "今天的照片先放在这里" not in " ".join(layout.content.body)
 
 
+def test_generator_fallback_sections_use_natural_diary_sentences_after_grouping():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+
+    layout = generator.generate(
+        JournalGenerationRequest(
+            description="咖啡还热着，窗边坐了一会儿，路口灯亮起来，回程路上的云压得很低。",
+            images=[
+                JournalImageInput(id=f"img_{index}", width=640, height=480)
+                for index in range(1, 7)
+            ],
+            assets=get_approved_assets(tags=["warm", "daily"]),
+        )
+    )
+
+    section_bodies = [section.body for section in layout.content.sections]
+    assert len(section_bodies) == 2
+    assert all("：" not in body and ":" not in body for body in section_bodies)
+    assert section_bodies[0] == "咖啡还热着，窗边坐了一会儿。"
+    assert section_bodies[1] == "路口灯亮起来，回程路上的云压得很低。"
+
+
 def test_generator_normalizes_ai_style_copy():
     payload = valid_model_json()
     payload["content"]["title"] = "把这些珍贵回忆收藏在治愈的周末手帐里"
@@ -1551,7 +1572,8 @@ def test_fallback_layout_uses_human_section_note_instead_of_template_phrase():
     )
 
     section_body = layout.content.sections[0].body
-    assert section_body == "顺着照片看下来：周末一起散步、傍晚喝了咖啡、路口的灯亮起来。"
+    assert section_body == "这一组放在一起看，周末一起散步、傍晚喝了咖啡、路口的灯亮起来。"
+    assert "：" not in section_body
     assert "这几张先放在一起" not in section_body
 
 
@@ -1570,8 +1592,8 @@ def test_fallback_layout_rotates_human_section_note_prefixes():
     )
 
     assert [section.body for section in layout.content.sections] == [
-        "顺着照片看下来：早上整理照片、午后喝了茶、傍晚去了车站。",
-        "这一段先留给：夜里看了电影、回家写了便签、睡前把票根夹好。",
+        "这一组放在一起看，早上整理照片、午后喝了茶、傍晚去了车站。",
+        "后面几张接着记，夜里看了电影、回家写了便签、睡前把票根夹好。",
     ]
 
 

@@ -37,7 +37,8 @@ def normalize_diary_text(value: Any, *, fallback: str = "") -> str:
         return fallback
     for phrase in CLICHE_PHRASES:
         text = text.replace(phrase, "")
-    return tidy_text(text) or fallback
+    text = tidy_text(text)
+    return fallback if is_empty_observation(text) else text
 
 
 def normalize_diary_blocks(
@@ -147,6 +148,10 @@ def tidy_text(text: str) -> str:
     text = text.replace("照片里的很满，", "").replace("照片里的，", "")
     text = text.replace("刚刚好", "")
     return text.strip(" ")
+
+
+def is_empty_observation(text: str) -> bool:
+    return text.strip(" 的和又在把成里。！？!?；;，,、") in {"", "今天", "照片", "这一页"}
 
 
 def trim_wrapping_particles(text: str) -> str:

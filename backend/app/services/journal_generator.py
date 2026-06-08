@@ -282,9 +282,9 @@ def fallback_section_note(units: list[str], fallback: str, index: int = 0) -> st
 
 
 FALLBACK_SECTION_NOTE_PREFIXES = (
-    "顺着照片看下来：",
-    "这一段先留给：",
-    "这几样就放一组：",
+    "这一组放在一起看，",
+    "后面几张接着记，",
+    "这几样先放一组，",
 )
 
 

@@ -53,6 +53,18 @@ def test_normalize_diary_text_removes_template_journal_phrases():
     assert "咖啡还放在窗边" in result
 
 
+def test_normalize_diary_text_uses_fallback_when_cliche_cleanup_leaves_no_observation():
+    result = normalize_diary_text("今日份小确幸，照片里的氛围感很满，都是美好瞬间和生活碎片。", fallback="今天先记到这里。")
+
+    assert result == "今天先记到这里。"
+
+
+def test_normalize_diary_text_drops_empty_today_stub_after_cliche_cleanup():
+    result = normalize_diary_text("今天被温柔包裹，也很治愈，充满仪式感。", fallback="今天先记到这里。")
+
+    assert result == "今天先记到这里。"
+
+
 def test_normalize_diary_blocks_trims_and_splits_long_blocks():
     blocks = [
         "  ",
