@@ -272,7 +272,8 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "所有图片、文字和装饰都必须落在 0 到 canvas.height 范围内，文字框不能和图片重叠。"
         "layout.decorations 请生成 12 到 22 个装饰，照片多或画布长时接近上限，照片少时也要有层次。"
         "装饰要分布在标题、照片组、正文段落和页脚附近，尽量不要重复 assetId。"
-        "如果可用素材里有外部素材，请在贴纸类装饰中自然混入外部素材，让导入素材库的丰富度体现出来。"
+        "优先使用内部手绘素材和功能素材；外部素材只有在语义非常贴合照片内容时才少量使用。"
+        "不要为了体现素材库数量强行混入外部图标，低质或泛图标感素材不要使用。"
         "电子手账素材要承担功能：胶带用于固定照片或便签，纸张用于承载文字，线条、便签和小贴纸用于分隔层次。"
         "素材使用必须符合语义：tape 只能作为胶带贴在照片边缘或四角；paper 只能作为底纸或文字背景，不能盖住照片主体；"
         "sticker 只能放在照片外侧空白区或轻微压住照片边缘，不能遮挡照片中心；texture 只能作为背景纹理。"
@@ -296,13 +297,7 @@ def build_user_context(request: JournalGenerationRequest) -> dict[str, Any]:
 def order_assets_for_ai(assets: list[AssetItem]) -> list[AssetItem]:
     internal_assets = [asset for asset in assets if asset.source == "internal"]
     external_assets = [asset for asset in assets if asset.source != "internal"]
-    ordered_assets: list[AssetItem] = []
-    for index in range(max(len(internal_assets), len(external_assets))):
-        if index < len(internal_assets):
-            ordered_assets.append(internal_assets[index])
-        if index < len(external_assets):
-            ordered_assets.append(external_assets[index])
-    return ordered_assets
+    return [*internal_assets, *external_assets]
 
 
 def build_review_prompt(
@@ -321,7 +316,7 @@ def build_review_prompt(
         "检查章节正文是否对应章节图片：每个 content.sections[].body 必须只描述该章节 imageIds 中的照片，不能张冠李戴。"
         "检查装饰是否有功能：胶带应像固定照片或便签，paper 应作为底纸或文字背景，贴纸应补充主题或填补留白，不能随意漂浮或遮挡主体。"
         "检查最终效果是否像电子手账：应有拼贴层次、手写日记感、照片和文字的关系，而不是普通图片加文字列表。"
-        "评审素材丰富度：装饰是否过少、assetId 是否重复过多、外部素材是否几乎没有被使用。"
+        "评审素材丰富度：装饰是否过少、assetId 是否重复过多、内部手绘和功能素材是否优先、素材语义是否贴合。"
         "passed=true 必须满足 score>=85，且不存在硬失败。每轮只列出最影响体验的 3 到 6 个问题。"
         "只返回严格 JSON，字段为 score、passed、scores、issues、summary。"
         "issues 每项字段为 type、severity、targetIds、description、instruction。"
@@ -350,7 +345,7 @@ def build_revision_prompt(
         "根据视觉评审问题修订当前 JSON。只修改解决 issues 所必需的字段，保留已经合理的设计。"
         "禁止修改图片集合和图片顺序。正文或 caption 只有在评审指出图文不匹配时才修改。"
         "不得新增列表之外的 assetId。若建议冲突，优先处理 high severity 问题。"
-        "如果 issues 指出素材过少、重复过多或外部素材不足，可新增装饰、替换重复素材或混入合适外部素材。"
+        "如果 issues 指出素材过少、重复过多或素材不贴合，可新增装饰，并优先替换为更贴合的内部手绘或功能素材。"
         "只处理视觉评审 issues 中列出的 3 到 6 个主要问题，不要改变未被点名的问题区域。"
         "如果 issues 没有要求重做整体版式，不要推翻整版布局；优先做局部移动、缩放、换素材或微调文字。"
         f"这是第 {revision_round}/3 轮修订。当前最佳得分：{best_score:g}。不得扩大修改范围。"

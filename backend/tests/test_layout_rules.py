@@ -596,6 +596,28 @@ def test_layout_rules_report_repeated_caption_copy():
     assert has_issue(issues, "copyQuality", "medium", "照片说明重复，手帐记录不够具体")
 
 
+def test_layout_rules_do_not_require_external_stickers_when_internal_assets_are_varied():
+    payload = layout_payload()
+    payload["layout"]["decorations"] = [
+        {"assetId": f"internal_sticker_{index}", "x": 40 + index * 90, "y": 40, "width": 72, "height": 72, "rotation": 0}
+        for index in range(4)
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(
+        layout,
+        generation_request(
+            assets=[
+                *[asset_item(f"internal_sticker_{index}", "sticker") for index in range(4)],
+                asset_item("external_sticker_1", "sticker", source="https://example.com/icons"),
+                asset_item("external_sticker_2", "sticker", source="https://example.com/icons"),
+            ]
+        ),
+    )
+
+    assert not has_issue(issues, "decorationVariety", "medium", "外部素材使用偏少，素材库丰富度没有体现出来")
+
+
 def test_layout_rules_report_section_body_repeating_its_caption():
     payload = layout_payload()
     payload["content"]["captions"] = [{"imageId": "img_1", "text": "周末一起散步"}]

@@ -7,7 +7,6 @@ from app.services.diary_copy import has_cliche_copy
 CANVAS_WIDTH = 1080
 MAX_DECORATIONS = 22
 MIN_DECORATIONS = 12
-MIN_EXTERNAL_STICKERS = 2
 MIN_SECTION_GAP = 80
 MIN_IMAGE_GAP = 32
 MIN_CAPTION_SIGNAL_CHARS = 3
@@ -104,8 +103,6 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
     asset_by_id = {asset.id: asset for asset in request.assets if asset.quality_status == "approved"}
     category_counts: dict[str, int] = {}
     asset_counts: dict[str, int] = {}
-    sticker_count = 0
-    external_sticker_count = 0
     image_dicts = all_image_dicts(layout)
     rendered_decorations = all_rendered_decorations(layout)
     paper_dicts = [
@@ -121,10 +118,6 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
             continue
         asset_counts[asset.id] = asset_counts.get(asset.id, 0) + 1
         category_counts[asset.category] = category_counts.get(asset.category, 0) + 1
-        if asset.category == "sticker":
-            sticker_count += 1
-            if asset.source != "internal":
-                external_sticker_count += 1
         if not rect_inside_canvas((decoration.x, decoration.y, decoration.width, decoration.height), layout.canvas.height):
             issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "素材超出画布范围"))
         decoration_dict = decoration.model_dump(by_alias=True)
@@ -141,11 +134,6 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
     repeated_asset_ids = [asset_id for asset_id, count in asset_counts.items() if count > 1]
     if repeated_asset_ids and len(asset_by_id) > len(asset_counts):
         issues.append(rule_issue("decorationVariety", "medium", repeated_asset_ids, "素材重复使用过多，画面变化不足"))
-    external_sticker_candidates = [
-        asset for asset in asset_by_id.values() if asset.category == "sticker" and asset.source != "internal"
-    ]
-    if len(external_sticker_candidates) >= MIN_EXTERNAL_STICKERS and sticker_count >= 4 and external_sticker_count < MIN_EXTERNAL_STICKERS:
-        issues.append(rule_issue("decorationVariety", "medium", [], "外部素材使用偏少，素材库丰富度没有体现出来"))
     for category, count in category_counts.items():
         if count > DECORATION_CATEGORY_LIMITS.get(category, 1):
             issues.append(rule_issue("decorationDensity", "high", [category], f"{category} 类素材数量超过限制"))

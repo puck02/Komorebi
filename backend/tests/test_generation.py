@@ -1764,7 +1764,8 @@ def test_generation_prompt_requests_rich_and_varied_asset_usage():
 
     assert "12 到 22 个装饰" in prompt
     assert "尽量不要重复 assetId" in prompt
-    assert "外部素材" in prompt
+    assert "优先使用内部手绘素材和功能素材" in prompt
+    assert "不要为了体现素材库数量强行混入外部图标" in prompt
 
 
 def test_generation_prompt_treats_stationery_assets_as_functional_layers():
@@ -1791,12 +1792,13 @@ def test_review_and_revision_prompts_check_asset_richness(monkeypatch):
     client.revise_layout(request, valid_model_json(), "data:image/webp;base64,screenshot", valid_review_json(), revision_round=1, best_score=70)
 
     assert "素材丰富度" in captured[0]
-    assert "外部素材" in captured[0]
+    assert "内部手绘和功能素材是否优先" in captured[0]
     assert "视觉焦点" in captured[0]
     assert "章节正文是否对应章节图片" in captured[0]
     assert "装饰是否有功能" in captured[0]
     assert "像电子手账" in captured[0]
     assert "可新增装饰" in captured[1]
+    assert "优先替换为更贴合的内部手绘或功能素材" in captured[1]
     assert "只处理视觉评审 issues 中列出的 3 到 6 个主要问题" in captured[1]
     assert "不要改变未被点名的问题区域" in captured[1]
 
@@ -1831,7 +1833,7 @@ def test_review_and_revision_prompts_include_user_context(monkeypatch):
         assert "轻松" in prompt
 
 
-def test_layout_rules_report_sparse_repetitive_or_external_poor_decorations():
+def test_layout_rules_report_sparse_or_repetitive_decorations_without_requiring_external_assets():
     request = generation_request(
         assets=[
             asset_item("internal_sticker_1", "sticker"),
@@ -1859,10 +1861,10 @@ def test_layout_rules_report_sparse_repetitive_or_external_poor_decorations():
 
     issue_descriptions = [issue["description"] for issue in issues]
     assert "素材重复使用过多，画面变化不足" in issue_descriptions
-    assert "外部素材使用偏少，素材库丰富度没有体现出来" in issue_descriptions
+    assert "外部素材使用偏少，素材库丰富度没有体现出来" not in issue_descriptions
 
 
-def test_assets_sent_to_ai_alternate_between_internal_and_external_sources():
+def test_assets_sent_to_ai_prioritize_internal_handdrawn_assets():
     assets = [
         asset_item("internal_1", "sticker"),
         asset_item("internal_2", "tape"),
@@ -1872,7 +1874,7 @@ def test_assets_sent_to_ai_alternate_between_internal_and_external_sources():
 
     ordered_assets = order_assets_for_ai(assets)
 
-    assert [asset.id for asset in ordered_assets] == ["internal_1", "external_1", "internal_2", "external_2"]
+    assert [asset.id for asset in ordered_assets] == ["internal_1", "internal_2", "external_1", "external_2"]
 
 
 def test_openai_client_converts_connection_errors_to_generation_error(monkeypatch):
