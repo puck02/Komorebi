@@ -1,5 +1,12 @@
 import type { GenerationJob } from "../api/generationJobs";
 
+export function generationJobRouteAfterCreate(job: GenerationJob): string | null {
+  if (job.status === "failed") {
+    return null;
+  }
+  return `/generation/${job.id}`;
+}
+
 export function generationJobErrorMessage(job: GenerationJob | null | undefined, queryError: unknown): string | null {
   if (job?.status === "failed") {
     return job.errorMessage ?? "请稍后重新生成。";

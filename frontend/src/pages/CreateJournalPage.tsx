@@ -11,6 +11,7 @@ import ImageUploader from "../components/ImageUploader";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { CREATE_JOURNAL_MOOD_OPTIONS } from "./createJournalOptions";
+import { generationJobErrorMessage, generationJobRouteAfterCreate } from "./generationJobStatus";
 
 const createJournalSchema = z.object({
   description: z.string().trim().min(1, "请写一点今天的内容。"),
@@ -57,7 +58,12 @@ export default function CreateJournalPage() {
         location: values.location?.trim() || null,
         moodTags: selectedMood ? [selectedMood] : []
       });
-      navigate(`/generation/${job.id}`);
+      const route = generationJobRouteAfterCreate(job);
+      if (route) {
+        navigate(route);
+        return;
+      }
+      setSubmitError(generationJobErrorMessage(job, null) ?? "生成任务启动失败，请稍后重试。");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "生成失败，请稍后重试。");
     }

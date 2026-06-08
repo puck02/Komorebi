@@ -1,4 +1,4 @@
-import { generationJobErrorMessage } from "./generationJobStatus";
+import { generationJobErrorMessage, generationJobRouteAfterCreate } from "./generationJobStatus";
 import type { GenerationJob } from "../api/generationJobs";
 
 const brokenCompletedJob: GenerationJob = {
@@ -20,6 +20,11 @@ const failedJob: GenerationJob = {
   stage: "failed",
   errorMessage: "AI服务连接失败"
 };
+const queuedJob: GenerationJob = {
+  ...brokenCompletedJob,
+  status: "queued",
+  stage: "queued"
+};
 
 assertEqual(
   generationJobErrorMessage(brokenCompletedJob, null),
@@ -28,6 +33,8 @@ assertEqual(
 assertEqual(generationJobErrorMessage(failedJob, null), "AI服务连接失败");
 assertEqual(generationJobErrorMessage(null, new Error("请求失败")), "请求失败");
 assertEqual(generationJobErrorMessage(null, null), null);
+assertEqual(generationJobRouteAfterCreate(queuedJob), "/generation/job_1");
+assertEqual(generationJobRouteAfterCreate(failedJob), null);
 
 function assertEqual(actual: string | null, expected: string | null) {
   if (actual !== expected) {
