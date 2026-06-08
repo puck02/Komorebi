@@ -146,6 +146,23 @@ def test_agent_returns_fallback_layout_when_initial_generation_ai_connection_fai
     assert client.revision_inputs == []
 
 
+def test_agent_returns_fallback_layout_when_initial_generation_layout_is_invalid():
+    client = FakeAgentClient(
+        reviews=[],
+        generated_layout={"content": {"title": "坏结构"}},
+    )
+
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(generation_request())
+
+    assert result.layout.content.title == "周末一起散步"
+    assert result.layout.content.body == ["周末一起散步。"]
+    assert result.score == 0
+    assert result.revision_round == 0
+    assert result.passed is False
+    assert client.review_inputs == []
+    assert client.revision_inputs == []
+
+
 def test_agent_fallback_layout_uses_ordered_captions_for_multiple_images():
     client = FakeAgentClient(
         reviews=[],
@@ -296,17 +313,18 @@ def test_agent_logs_structured_review_events(caplog):
 
 
 class FakeAgentClient:
-    def __init__(self, reviews, revisions=None, generation_error=None):
+    def __init__(self, reviews, revisions=None, generation_error=None, generated_layout=None):
         self.reviews = list(reviews)
         self.revisions = list(revisions or [])
         self.generation_error = generation_error
+        self.generated_layout = generated_layout
         self.review_inputs = []
         self.revision_inputs = []
 
     def generate_layout(self, request):
         if self.generation_error:
             raise self.generation_error
-        return layout_payload()
+        return deepcopy(self.generated_layout) if self.generated_layout is not None else layout_payload()
 
     def review_layout(self, request, layout, screenshot_data_url, rule_issues):
         self.review_inputs.append(

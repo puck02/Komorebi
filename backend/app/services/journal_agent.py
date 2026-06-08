@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Any, Callable, Protocol
 
+from pydantic import ValidationError
+
 from app.schemas.journal import JournalLayout
 from app.services.agent_observability import issue_summary, layout_observability_summary, log_agent_event
 from app.services.journal_generator import GenerationError, JournalGenerationRequest, build_fallback_layout, sanitize_model_layout
@@ -145,8 +147,11 @@ class JournalAgent:
         notify: Callable[[str, int, float | None], None],
         log_context: dict[str, Any],
     ) -> JournalCandidate:
-        cleaned = sanitize_model_layout(raw_layout, request)
-        layout = JournalLayout.model_validate(cleaned)
+        try:
+            cleaned = sanitize_model_layout(raw_layout, request)
+            layout = JournalLayout.model_validate(cleaned)
+        except (KeyError, TypeError, ValueError, ValidationError) as error:
+            raise GenerationError("模型返回的手帐结构无效，请稍后重试") from error
         rule_issues = self.rule_checker(layout, request)
         notify("reviewing", revision_round, None)
         try:
@@ -179,8 +184,11 @@ class JournalAgent:
         log_context: dict[str, Any],
         error: GenerationError,
     ) -> JournalAgentResult:
-        cleaned = sanitize_model_layout(raw_layout, request)
-        layout = JournalLayout.model_validate(cleaned)
+        try:
+            cleaned = sanitize_model_layout(raw_layout, request)
+            layout = JournalLayout.model_validate(cleaned)
+        except (KeyError, TypeError, ValueError, ValidationError):
+            return self._result_from_fallback_layout(request, log_context, error)
         rule_issues = self.rule_checker(layout, request)
         log_agent_event(
             "agent.review_unavailable",
