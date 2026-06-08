@@ -236,6 +236,8 @@ def is_generic_caption(value: Any) -> bool:
 
 def caption_from_understanding(item: dict[str, Any]) -> str:
     summary = normalize_diary_text(item.get("summary"))
+    if summary.startswith("第 ") and "张照片" in summary:
+        return summary.split("的", 1)[0][:18]
     if summary and not summary.startswith("第 "):
         return summary[:18]
     subjects = [str(subject).strip() for subject in item.get("subjects") or [] if str(subject).strip()]

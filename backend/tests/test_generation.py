@@ -862,6 +862,21 @@ def test_generator_replaces_generic_caption_with_image_understanding():
     assert layout.content.captions[0].text == "窗边咖啡和小票"
 
 
+def test_generator_replaces_missing_understanding_caption_with_ordered_label():
+    payload = valid_model_json()
+    payload["content"].pop("captions")
+    payload["content"].pop("imageUnderstanding", None)
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    assert [(caption.image_id, caption.text) for caption in layout.content.captions] == [
+        ("img_1", "第 1 张照片"),
+        ("img_2", "第 2 张照片"),
+        ("img_3", "第 3 张照片"),
+    ]
+
+
 def test_generator_normalizes_common_model_field_variants():
     payload = valid_model_json()
     payload["canvas"]["background"] = {"type": "solid", "color": "#fff7ef"}
