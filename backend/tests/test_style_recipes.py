@@ -23,6 +23,35 @@ def test_recipe_tags_for_section_detects_travel_route():
     assert "walk" in tags
 
 
+def test_recipe_tags_for_section_detects_photo_memory():
+    section = {"title": "照片拼贴", "body": "把几张拍立得和相册小角贴在一起。", "imageIds": ["img_1"]}
+    understanding = [
+        {"imageId": "img_1", "summary": "桌面上的相片和照片角", "scene": "手账页", "subjects": ["照片", "相册"], "mood": []}
+    ]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:3] == ["photo", "memory", "collage"]
+
+
+def test_recipe_tags_for_section_detects_ticket_memory():
+    section = {"title": "展览票根", "body": "票根和小卡片都夹在这一页。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "展览门票和票根", "scene": "展览", "subjects": ["票根"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:3] == ["ticket", "travel", "memory"]
+
+
+def test_recipe_tags_for_section_detects_note_memory():
+    section = {"title": "今日便签", "body": "纸条上写了今天的几件小事。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "便签纸和手写记录", "scene": "桌面", "subjects": ["便签"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:3] == ["note", "daily", "collage"]
+
+
 def test_choose_asset_id_prefers_category_asset_with_matching_recipe_tag():
     assets = {
         "sticker_leaf_05": asset("sticker_leaf_05", "sticker", ["nature", "travel"]),

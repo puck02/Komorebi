@@ -7,6 +7,9 @@ TRAVEL_KEYWORDS = {"旅行", "路上", "车站", "站台", "地铁", "路线", "
 CALM_KEYWORDS = {"安静", "窗边", "平静", "慢", "独处", "雨", "夜色"}
 BIRTHDAY_KEYWORDS = {"生日", "礼物", "蛋糕", "庆祝", "派对"}
 PET_KEYWORDS = {"猫", "狗", "宠物", "小猫", "小狗", "爪"}
+PHOTO_KEYWORDS = {"照片", "相片", "相册", "拍立得", "照片角", "冲印", "合影"}
+TICKET_KEYWORDS = {"票根", "门票", "车票", "入场券", "展览", "电影票", "小卡片"}
+NOTE_KEYWORDS = {"便签", "纸条", "手写", "记录", "笔记", "备忘", "小事"}
 
 
 def recipe_tags_for_section(
@@ -20,6 +23,12 @@ def recipe_tags_for_section(
         return ["birthday", "warm", "party", "gift"]
     if any(keyword in text for keyword in PET_KEYWORDS):
         return ["pet", "home", "daily"]
+    if any(keyword in text for keyword in TICKET_KEYWORDS):
+        return ["ticket", "travel", "memory"]
+    if any(keyword in text for keyword in PHOTO_KEYWORDS):
+        return ["photo", "memory", "collage"]
+    if any(keyword in text for keyword in NOTE_KEYWORDS):
+        return ["note", "daily", "collage"]
     if any(keyword in text for keyword in TRAVEL_KEYWORDS):
         return ["travel", "walk", "memory", "daily"]
     if any(keyword in text for keyword in CALM_KEYWORDS):
