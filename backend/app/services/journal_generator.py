@@ -649,6 +649,8 @@ def suggested_section_variant(value: Any, content_section: dict[str, Any]) -> st
     image_count = len(content_section.get("imageIds") or [])
     if image_count > 1 and value in {"hero_note", "magazine_whitespace"}:
         return None
+    if image_count > 2 and value == "ticket_memo":
+        return None
     return str(value)
 
 
