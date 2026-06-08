@@ -132,6 +132,16 @@ def test_created_generation_job_completes_with_local_fallback_when_openai_key_mi
         journal = db.get(Journal, job["journalId"])
         assert journal.title == "周末一起散步"
         assert journal.layout_json["content"]["body"] == ["周末一起散步。"]
+        section = journal.layout_json["layout"]["sections"][0]
+        decoration_ids = {
+            decoration["assetId"]
+            for section in journal.layout_json["layout"]["sections"]
+            for decoration in section["decorations"]
+        }
+        assert section["images"][0]["imageId"] == image_id
+        assert any(asset_id.startswith("paper_") for asset_id in decoration_ids)
+        assert any(asset_id.startswith("tape_") for asset_id in decoration_ids)
+        assert any(asset_id.startswith("sticker_") for asset_id in decoration_ids)
 
 
 def test_user_cannot_read_another_users_generation_job(client):
