@@ -40,6 +40,15 @@ def test_normalize_diary_blocks_uses_fallback_when_empty():
     assert result == ["今日小记。"]
 
 
+def test_normalize_diary_blocks_removes_duplicate_blocks_after_cleanup():
+    result = normalize_diary_blocks(
+        ["咖啡还热着，窗边坐了一会儿。", "咖啡还热着，窗边坐了一会儿。", "后来走到路口，云压得很低。"],
+        fallback="今日小记。",
+    )
+
+    assert result == ["咖啡还热着，窗边坐了一会儿。", "后来走到路口，云压得很低。"]
+
+
 def test_normalize_title_shortens_long_ai_style_title():
     title = "把这些闪闪发光的珍贵回忆收藏在温柔又治愈的周末手帐里"
 

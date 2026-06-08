@@ -45,14 +45,14 @@ def normalize_diary_blocks(
         raw_blocks = []
 
     blocks: list[str] = []
+    seen_blocks: set[str] = set()
     for raw_block in raw_blocks:
         block = normalize_diary_text(raw_block)
-        if not block:
-            continue
-        if len(block) > split_target:
-            blocks.extend(split_long_block(block, split_target))
-        else:
-            blocks.append(block)
+        for next_block in split_long_block(block, split_target) if len(block) > split_target else [block]:
+            if not next_block or next_block in seen_blocks:
+                continue
+            blocks.append(next_block)
+            seen_blocks.add(next_block)
     return blocks or [fallback]
 
 
