@@ -722,6 +722,25 @@ def test_generator_fills_missing_captions_from_image_understanding():
     ]
 
 
+def test_generator_replaces_generic_caption_with_image_understanding():
+    payload = valid_model_json()
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "今天的照片"}]
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "窗边咖啡和小票",
+            "scene": "咖啡店",
+            "subjects": ["咖啡", "小票"],
+            "mood": ["轻松"],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request())
+
+    assert layout.content.captions[0].text == "窗边咖啡和小票"
+
+
 def test_generator_normalizes_common_model_field_variants():
     payload = valid_model_json()
     payload["canvas"]["background"] = {"type": "solid", "color": "#fff7ef"}

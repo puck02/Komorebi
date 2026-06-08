@@ -32,6 +32,7 @@ PHOTO_LEFT_X = 92
 PHOTO_RIGHT_X = 568
 PHOTO_ROW_GAP = 56
 LONG_BODY_SPLIT_TARGET = 58
+GENERIC_CAPTIONS = {"今天的照片", "照片说明", "这张照片", "生活片段"}
 
 
 class GenerationError(RuntimeError):
@@ -217,10 +218,18 @@ def fill_missing_captions(
             continue
         caption = captions_by_id.get(image_id)
         if caption is not None:
-            next_captions.append(caption)
+            if is_generic_caption(caption.get("text")):
+                next_captions.append({"imageId": image_id, "text": caption_from_understanding(item)})
+            else:
+                next_captions.append(caption)
             continue
         next_captions.append({"imageId": image_id, "text": caption_from_understanding(item)})
     return next_captions
+
+
+def is_generic_caption(value: Any) -> bool:
+    text = str(value or "").strip(" 。！？!?；;，,")
+    return text in GENERIC_CAPTIONS
 
 
 def caption_from_understanding(item: dict[str, Any]) -> str:
