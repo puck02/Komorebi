@@ -12,6 +12,7 @@ from app.api.routes.generation_jobs import get_generation_job_submitter
 from app.db.base import Base
 from app.main import app
 from app.models import asset, generation_job, image, journal, user  # noqa: F401
+from app.models.generation_job import GenerationJob
 
 
 @pytest.fixture
@@ -38,6 +39,7 @@ def client(tmp_path, monkeypatch):
     try:
         test_client = TestClient(app)
         test_client.submitted_job_ids = submitted_job_ids
+        test_client.session_factory = testing_session
         yield test_client
     finally:
         app.dependency_overrides.clear()
@@ -82,6 +84,24 @@ def test_create_and_read_generation_job(client):
     assert read_response.json()["id"] == job["id"]
 
 
+def test_create_generation_job_returns_failed_job_when_submitter_fails(client):
+    token = register_and_login(client, "owner@example.com")
+    image_id = upload_image(client, token)
+    app.dependency_overrides[get_generation_job_submitter] = lambda: failing_submitter
+
+    response = create_generation_job(client, token, image_id)
+    job = response.json()
+
+    assert response.status_code == 202
+    assert job["status"] == "failed"
+    assert job["stage"] == "failed"
+    assert job["errorMessage"] == "生成任务启动失败，请稍后重试"
+    with client.session_factory() as db:
+        saved_job = db.get(GenerationJob, job["id"])
+        assert saved_job.status == "failed"
+        assert saved_job.error_message == "生成任务启动失败，请稍后重试"
+
+
 def test_user_cannot_read_another_users_generation_job(client):
     owner_token = register_and_login(client, "owner@example.com")
     other_token = register_and_login(client, "other@example.com")
@@ -118,6 +138,10 @@ def create_generation_job(client: TestClient, token: str, image_id: str):
         json={"imageIds": [image_id], "description": "周末一起散步"},
         headers={"Authorization": f"Bearer {token}"},
     )
+
+
+def failing_submitter(job_id: str):
+    raise RuntimeError("executor unavailable")
 
 
 def make_image_bytes() -> bytes:

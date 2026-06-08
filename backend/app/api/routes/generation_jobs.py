@@ -12,6 +12,7 @@ from app.schemas.generation_job import GenerationJobRead
 from app.schemas.journal import JournalGenerateRequest
 
 router = APIRouter(prefix="/api/journal-generation-jobs", tags=["journal-generation-jobs"])
+JOB_SUBMIT_FAILURE_MESSAGE = "生成任务启动失败，请稍后重试"
 
 
 def get_generation_job_submitter() -> Callable[[str], None]:
@@ -39,7 +40,14 @@ def create_generation_job(
     db.add(job)
     db.commit()
     db.refresh(job)
-    submit(job.id)
+    try:
+        submit(job.id)
+    except Exception:
+        job.status = "failed"
+        job.stage = "failed"
+        job.error_message = JOB_SUBMIT_FAILURE_MESSAGE
+        db.commit()
+        db.refresh(job)
     return job_to_read(job)
 
 
