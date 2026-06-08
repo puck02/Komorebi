@@ -453,13 +453,15 @@ def normalize_layout_sections(
         section_id = content_section["id"]
         source = raw_by_id.get(section_id, {})
         suggested_variant = source.get("variant") if source.get("variant") in ALLOWED_SECTION_VARIANTS else None
+        source_y = positive_number(source.get("y"), next_y)
+        y = max(source_y, next_y)
         generated_section = build_section_layout(
             content_section,
             request_images=request_images,
             image_understanding=layout["content"].get("imageUnderstanding", []),
             section_index=index,
             total_sections=len(content_sections),
-            start_y=next_y,
+            start_y=y,
             suggested_variant=suggested_variant,
         )
         section_images = generated_section["images"]
@@ -481,7 +483,6 @@ def normalize_layout_sections(
             asset_by_id,
             index,
         )
-        y = positive_number(source.get("y"), generated_section["y"])
         height = max(
             min_section_height(generated_section, content_section.get("body", "")),
             section_height(section_images, section_texts, section_decorations, y, content_section.get("body", "")),
@@ -492,13 +493,13 @@ def normalize_layout_sections(
                 "sectionId": section_id,
                 "variant": str(variant),
                 "y": y,
-                "height": max(height, 1),
+                "height": max(ceil(height), 1),
                 "images": section_images,
                 "texts": section_texts,
                 "decorations": section_decorations,
             }
         )
-        next_y = y + max(height, 1) + SECTION_GAP
+        next_y = y + max(ceil(height), 1) + SECTION_GAP
     return layout_sections
 
 

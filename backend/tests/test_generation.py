@@ -591,6 +591,31 @@ def test_generator_section_height_uses_actual_body_text_height():
     assert section.y + section.height >= text_bottom
 
 
+def test_generator_reflows_overlapping_model_sections_with_gap():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []},
+        {"id": "section_2", "title": "第二段", "imageIds": ["img_2"], "body": "第二段正文。", "mood": []},
+    ]
+    payload["layout"]["sections"] = [
+        {"sectionId": "section_1", "variant": "hero_note", "y": 220, "height": 720, "images": [], "texts": [], "decorations": []},
+        {"sectionId": "section_2", "variant": "hero_note", "y": 300, "height": 720, "images": [], "texts": [], "decorations": []},
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(
+        generation_request(
+            images=[
+                JournalImageInput(id="img_1", width=640, height=480),
+                JournalImageInput(id="img_2", width=900, height=1200),
+            ]
+        )
+    )
+
+    first, second = layout.layout.sections
+    assert second.y >= first.y + first.height + 104
+
+
 def test_generator_ignores_global_decorations_for_section_canvas_height_when_sections_have_decorations():
     payload = valid_model_json()
     payload["content"]["sections"] = [
