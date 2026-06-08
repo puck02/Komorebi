@@ -63,8 +63,9 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
     sticker_count = 0
     external_sticker_count = 0
     image_dicts = all_image_dicts(layout)
+    rendered_decorations = all_rendered_decorations(layout)
 
-    for decoration in layout.layout.decorations:
+    for decoration in rendered_decorations:
         asset = asset_by_id.get(decoration.asset_id)
         if asset is None:
             issues.append(rule_issue("asset", "high", [decoration.asset_id], "使用了未审核或不存在的素材"))
@@ -83,12 +84,9 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
         if asset.category == "tape" and not overlaps_any_photo_edge(decoration_dict, image_dicts):
             issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "胶带没有贴近照片边缘"))
 
-    for decoration in section_decorations(layout):
-        issues.extend(check_single_decoration(decoration, asset_by_id, image_dicts, layout.canvas.height))
-
-    if len(layout.layout.decorations) > MAX_DECORATIONS:
+    if len(rendered_decorations) > MAX_DECORATIONS:
         issues.append(rule_issue("decorationDensity", "high", [], "装饰总数超过限制"))
-    if len(asset_by_id) >= MIN_DECORATIONS and len(layout.layout.decorations) < MIN_DECORATIONS:
+    if len(asset_by_id) >= MIN_DECORATIONS and len(rendered_decorations) < MIN_DECORATIONS:
         issues.append(rule_issue("decorationDensity", "medium", [], "装饰数量偏少，画面丰富度不足"))
     repeated_asset_ids = [asset_id for asset_id, count in asset_counts.items() if count > 1]
     if repeated_asset_ids and len(asset_by_id) > len(asset_counts):
@@ -132,6 +130,11 @@ def all_image_dicts(layout: JournalLayout) -> list[dict[str, Any]]:
 
 def section_decorations(layout: JournalLayout) -> list[Any]:
     return [decoration for section in layout.layout.sections for decoration in section.decorations]
+
+
+def all_rendered_decorations(layout: JournalLayout) -> list[Any]:
+    decorations = section_decorations(layout)
+    return decorations if decorations else list(layout.layout.decorations)
 
 
 def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:

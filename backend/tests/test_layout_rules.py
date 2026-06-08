@@ -71,6 +71,36 @@ def test_layout_rules_check_section_decoration_assets_and_placement():
     assert has_issue(issues, "decorationPlacement", "high", "胶带没有贴近照片边缘")
 
 
+def test_layout_rules_count_section_decorations_for_density():
+    payload = layout_payload()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    payload["layout"]["decorations"] = []
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 720,
+            "images": [{"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32}],
+            "decorations": [
+                {"assetId": f"sticker_{index}", "x": 760, "y": 160 + index * 54, "width": 80, "height": 80, "rotation": 0}
+                for index in range(12)
+            ],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+    request = generation_request(
+        assets=[asset_item(f"sticker_{index}", "sticker") for index in range(12)]
+    )
+
+    issues = check_layout_rules(layout, request)
+
+    assert not has_issue(issues, "decorationDensity", "medium", "装饰数量偏少，画面丰富度不足")
+
+
 def test_layout_rules_report_section_spacing_and_section_image_gap():
     payload = layout_payload()
     payload["content"]["sections"] = [
