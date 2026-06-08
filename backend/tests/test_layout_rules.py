@@ -53,6 +53,35 @@ def test_layout_rules_report_text_photo_overlap_and_decoration_overflow():
     assert has_issue(issues, "decorationPlacement", "high", "素材超出画布范围")
 
 
+def test_layout_rules_report_header_overlap_with_section_images():
+    payload = layout_payload()
+    payload["content"]["meta"] = "2026-05-20 / 上海 / 松快"
+    payload["layout"]["images"] = []
+    payload["layout"]["texts"] = [
+        {"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56},
+        {"role": "meta", "x": 84, "y": 144, "width": 720, "fontSize": 24},
+    ]
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 110,
+            "height": 620,
+            "images": [{"imageId": "img_1", "x": 92, "y": 130, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 520, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert has_issue(issues, "readability", "high", "文字与照片发生重叠")
+
+
 def test_layout_rules_report_tape_not_attached_to_edge():
     payload = layout_payload()
     payload["layout"]["decorations"].append(
@@ -441,8 +470,7 @@ def test_layout_rules_report_missing_functional_section_decorations():
 
 
 def test_agent_revises_when_default_layout_rules_report_hard_failure():
-    bad_layout = layout_payload()
-    bad_layout["layout"]["texts"] = [{"role": "title", "x": 100, "y": 240, "width": 680, "fontSize": 56}]
+    bad_layout = layout_payload(title="第一段")
     fixed_layout = layout_payload(title="修复后")
     client = FakeAgentClient(
         reviews=[review(score=95, passed=True), review(score=92, passed=True)],

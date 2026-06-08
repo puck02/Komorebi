@@ -64,12 +64,18 @@ def rendered_image_ids(layout: JournalLayout) -> list[str]:
 
 def check_readability(layout: JournalLayout) -> list[dict[str, Any]]:
     issues: list[dict[str, Any]] = []
-    image_rects = [(image.x, image.y, image.width, image.height) for image in layout.layout.images]
-    title = layout.content.title
+    image_rects = [rect_from_item(image) for image in all_image_dicts(layout)]
+    texts = [
+        text
+        for text in layout.layout.texts
+        if not layout.layout.sections or text.role in {"title", "meta"}
+    ]
     body_index = 0
-    for text in layout.layout.texts:
-        content = title
-        if text.role == "body":
+    for text in texts:
+        content = layout.content.title
+        if text.role == "meta":
+            content = layout.content.meta or ""
+        elif text.role == "body":
             content = layout.content.body[body_index] if body_index < len(layout.content.body) else ""
             body_index += 1
         text_rect = (text.x, text.y, text.width, estimate_paragraph_height(content, text.font_size, text.width))
