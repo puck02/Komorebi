@@ -407,6 +407,39 @@ def test_layout_rules_allow_caption_on_photo_border():
     assert not has_issue(issues, "readability", "high", "章节文字与照片发生重叠")
 
 
+def test_layout_rules_report_partial_section_caption_rendering():
+    payload = layout_payload(image_ids=["img_1", "img_2"])
+    payload["content"]["captions"] = [
+        {"imageId": "img_1", "text": "窗边咖啡"},
+        {"imageId": "img_2", "text": "路口灯光"},
+    ]
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "两张照片", "imageIds": ["img_1", "img_2"], "body": "咖啡喝完后，走到路口。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "staggered_collage",
+            "y": 220,
+            "height": 760,
+            "images": [
+                {"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0},
+                {"imageId": "img_2", "x": 568, "y": 320, "width": 420, "height": 320, "rotation": 0},
+            ],
+            "texts": [
+                {"role": "body", "x": 112, "y": 700, "width": 820, "fontSize": 32},
+                {"role": "caption", "x": 120, "y": 542, "width": 360, "fontSize": 22},
+            ],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=two_images()))
+
+    assert has_issue(issues, "captionCoverage", "medium", "章节照片说明没有完整渲染")
+
+
 def test_layout_rules_use_actual_section_text_height_for_bounds():
     payload = layout_payload()
     long_body = "这是一段很长的正文，" * 30

@@ -174,12 +174,14 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
     sections = sorted(layout.layout.sections, key=lambda section: section.y)
     body_by_section_id = {section.id: section.body for section in layout.content.sections}
     image_ids_by_section_id = {section.id: section.image_ids for section in layout.content.sections}
+    caption_image_ids = {caption.image_id for caption in layout.content.captions}
     content_section_ids = set(body_by_section_id)
     for index, section in enumerate(sections):
         if section.section_id not in content_section_ids:
             issues.append(rule_issue("sectionReference", "high", [section.section_id], "版式章节没有对应的内容章节"))
         elif rendered_section_image_ids(section) != image_ids_by_section_id[section.section_id]:
             issues.append(rule_issue("sectionImageMatch", "high", [section.section_id], "版式章节图片与内容章节不一致"))
+        issues.extend(check_section_caption_coverage(section, caption_image_ids))
         section_bottom = section.y + section.height
         content_bottom = max(
             [
@@ -205,6 +207,16 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
 
 def rendered_section_image_ids(section: Any) -> list[str]:
     return [image.image_id for image in sorted(section.images, key=lambda item: (item.y, item.x))]
+
+
+def check_section_caption_coverage(section: Any, caption_image_ids: set[str]) -> list[dict[str, Any]]:
+    caption_placements = [text for text in section.texts if text.role == "caption"]
+    if not caption_placements:
+        return []
+    expected_caption_count = sum(1 for image in section.images if image.image_id in caption_image_ids)
+    if len(caption_placements) < expected_caption_count:
+        return [rule_issue("captionCoverage", "medium", [section.section_id], "章节照片说明没有完整渲染")]
+    return []
 
 
 def check_section_readability(layout: JournalLayout) -> list[dict[str, Any]]:
