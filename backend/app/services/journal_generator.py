@@ -10,6 +10,7 @@ from app.services.assets import AssetItem
 from app.services.decoration_placement import place_decorations
 from app.services.diary_copy import normalize_diary_blocks, normalize_diary_text, normalize_title
 from app.services.layout_variants import ALLOWED_SECTION_VARIANTS, build_section_layout
+from app.services.style_recipes import choose_asset_id, recipe_tags_for_section
 from app.services.story_planner import plan_content_sections, split_evenly
 
 CANVAS_WIDTH = 1080
@@ -253,6 +254,8 @@ def normalize_layout_sections(
         section_images = generated_section["images"]
         section_texts = generated_section["texts"]
         section_decorations = normalize_section_decorations(
+            content_section,
+            layout["content"].get("imageUnderstanding", []),
             source.get("decorations"),
             decorations,
             section_images,
@@ -289,6 +292,8 @@ def fallback_first_section_y(layout: dict[str, Any]) -> float:
 
 
 def normalize_section_decorations(
+    content_section: dict[str, Any],
+    image_understanding: list[dict[str, Any]],
     source_decorations: Any,
     fallback_decorations: list[dict[str, Any]],
     section_images: list[dict[str, Any]],
@@ -305,6 +310,7 @@ def normalize_section_decorations(
                     section_texts,
                     asset_by_id,
                     section_index,
+                    preferred_tags=recipe_tags_for_section(content_section, image_understanding),
                     preferred_asset_ids=decoration_asset_ids(decorations, asset_by_id),
                 ),
                 section_images,
@@ -323,7 +329,13 @@ def normalize_section_decorations(
     if fallback_matches:
         return fallback_matches
     return place_decorations(
-        build_template_section_decorations(section_images, section_texts, asset_by_id, section_index),
+        build_template_section_decorations(
+            section_images,
+            section_texts,
+            asset_by_id,
+            section_index,
+            preferred_tags=recipe_tags_for_section(content_section, image_understanding),
+        ),
         section_images,
         section_texts,
         asset_by_id,
@@ -335,15 +347,17 @@ def build_template_section_decorations(
     section_texts: list[dict[str, Any]],
     asset_by_id: dict[str, AssetItem],
     section_index: int,
+    preferred_tags: list[str] | None = None,
     preferred_asset_ids: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     if not section_images and not section_texts:
         return []
 
     decorations: list[dict[str, Any]] = []
-    paper_id = first_asset_id(asset_by_id, "paper", section_index, preferred_asset_ids)
-    tape_id = first_asset_id(asset_by_id, "tape", section_index, preferred_asset_ids)
-    sticker_id = first_asset_id(asset_by_id, "sticker", section_index, preferred_asset_ids)
+    recipe_tags = preferred_tags or ["daily", "warm", "collage"]
+    paper_id = first_asset_id(asset_by_id, "paper", section_index, recipe_tags, preferred_asset_ids)
+    tape_id = first_asset_id(asset_by_id, "tape", section_index, recipe_tags, preferred_asset_ids)
+    sticker_id = first_asset_id(asset_by_id, "sticker", section_index, recipe_tags, preferred_asset_ids)
     body_text = next((text for text in section_texts if text.get("role") == "body"), section_texts[0] if section_texts else None)
     first_image = section_images[0] if section_images else None
 
@@ -403,20 +417,10 @@ def first_asset_id(
     asset_by_id: dict[str, AssetItem],
     category: str,
     offset: int,
+    preferred_tags: list[str] | None = None,
     preferred_asset_ids: list[str] | None = None,
 ) -> str | None:
-    preferred_ids = [
-        asset_id
-        for asset_id in preferred_asset_ids or []
-        if (asset := asset_by_id.get(asset_id)) is not None and asset.category == category and asset.quality_status == "approved"
-    ]
-    if preferred_ids:
-        return preferred_ids[0]
-
-    asset_ids = [asset.id for asset in asset_by_id.values() if asset.category == category and asset.quality_status == "approved"]
-    if not asset_ids:
-        return None
-    return asset_ids[offset % len(asset_ids)]
+    return choose_asset_id(asset_by_id, category, offset, preferred_tags or ["daily"], preferred_asset_ids)
 
 
 def section_y(

@@ -392,6 +392,43 @@ def test_generator_adds_template_decorations_to_sections_without_model_decoratio
     assert paper.y <= body_text.y <= paper.y + paper.height
 
 
+def test_generator_uses_section_theme_tags_for_template_decorations():
+    payload = valid_model_json()
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "窗边咖啡和小票",
+            "scene": "咖啡店",
+            "subjects": ["咖啡", "小票"],
+            "mood": ["放松"],
+        }
+    ]
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "窗边咖啡",
+            "imageIds": ["img_1"],
+            "body": "坐在咖啡店里，桌上有小票和一杯咖啡。",
+            "mood": ["日常"],
+        }
+    ]
+    payload["layout"]["decorations"] = []
+    assets = [
+        asset_item("paper_note_cream_01", "paper"),
+        asset_item("paper_label_coffee_06", "paper", tags=["coffee", "title", "warm"]),
+        asset_item("tape_warm_grid_01", "tape"),
+        asset_item("tape_coffee_06", "tape", tags=["coffee", "warm", "daily"]),
+        asset_item("sticker_leaf_05", "sticker", tags=["nature", "travel"]),
+        asset_item("sticker_coffee_06", "sticker", tags=["coffee", "daily", "warm"]),
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(assets=assets))
+
+    decoration_ids = {decoration.asset_id for decoration in layout.layout.sections[0].decorations}
+    assert {"paper_label_coffee_06", "tape_coffee_06", "sticker_coffee_06"}.issubset(decoration_ids)
+
+
 def test_generator_repositions_model_section_decorations_around_template_content():
     payload = valid_model_json()
     payload["canvas"]["height"] = 3600
@@ -975,12 +1012,12 @@ def three_images():
     ]
 
 
-def asset_item(asset_id, category, source="internal"):
+def asset_item(asset_id, category, source="internal", tags=None):
     return AssetItem(
         id=asset_id,
         name=asset_id,
         category=category,
-        tags=["daily"],
+        tags=tags or ["daily"],
         style=["soft-collage"],
         colors=["#fef6e4"],
         file=f"{asset_id}.svg",
