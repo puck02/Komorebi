@@ -52,10 +52,11 @@ def choose_asset_id(
 
     tag_rank = {tag: index for index, tag in enumerate(preferred_tags)}
 
-    def score(asset: AssetItem) -> tuple[int, int, int, str]:
+    def score(asset: AssetItem) -> tuple[int, int, int, int, str]:
         matching_tag_indexes = [tag_rank[tag] for tag in asset.tags if tag in tag_rank]
         best_tag_index = min(matching_tag_indexes) if matching_tag_indexes else len(tag_rank) + 1
-        return (0 if matching_tag_indexes else 1, best_tag_index, -len(matching_tag_indexes), asset.id)
+        source_rank = 0 if asset.source == "internal" else 1
+        return (0 if matching_tag_indexes else 1, best_tag_index, -len(matching_tag_indexes), source_rank, asset.id)
 
     ranked_assets = sorted(assets, key=score)
     if ranked_assets and score(ranked_assets[0])[0] == 0:

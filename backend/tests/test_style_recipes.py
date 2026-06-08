@@ -69,6 +69,22 @@ def test_choose_asset_id_prefers_more_matching_recipe_tags():
     assert result == "paper_warm_daily_02"
 
 
+def test_choose_asset_id_prefers_internal_asset_when_recipe_match_is_equal():
+    assets = {
+        "ext_streamline_camera": asset(
+            "ext_streamline_camera",
+            "sticker",
+            ["photo", "memory"],
+            source="https://icon-sets.iconify.design/streamline-freehand-color/",
+        ),
+        "sticker_photo_corner_21": asset("sticker_photo_corner_21", "sticker", ["photo", "memory"]),
+    }
+
+    result = choose_asset_id(assets, "sticker", offset=0, preferred_tags=["photo", "memory"])
+
+    assert result == "sticker_photo_corner_21"
+
+
 def test_choose_asset_id_keeps_preferred_asset_when_category_matches():
     assets = {
         "sticker_leaf_05": asset("sticker_leaf_05", "sticker", ["nature", "travel"]),
@@ -86,7 +102,7 @@ def test_choose_asset_id_keeps_preferred_asset_when_category_matches():
     assert result == "sticker_leaf_05"
 
 
-def asset(asset_id: str, category: str, tags: list[str]) -> AssetItem:
+def asset(asset_id: str, category: str, tags: list[str], source: str = "internal") -> AssetItem:
     return AssetItem(
         id=asset_id,
         name=asset_id,
@@ -96,6 +112,6 @@ def asset(asset_id: str, category: str, tags: list[str]) -> AssetItem:
         colors=["#fef6e4"],
         file=f"{asset_id}.svg",
         license="internal",
-        source="internal",
+        source=source,
         quality_status="approved",
     )
