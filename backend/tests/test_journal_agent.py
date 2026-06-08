@@ -133,6 +133,27 @@ def test_agent_fallback_layout_uses_ordered_captions_for_multiple_images():
     assert [image.image_id for image in result.layout.layout.images] == ["img_1", "img_2"]
 
 
+def test_agent_fallback_layout_splits_single_sentence_captions():
+    client = FakeAgentClient(
+        reviews=[],
+        generation_error=GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置"),
+    )
+
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(
+        JournalGenerationRequest(
+            description="周末一起散步，傍晚喝了咖啡，路口的灯亮起来。",
+            images=three_images(),
+            assets=get_approved_assets(),
+        )
+    )
+
+    assert [caption.text for caption in result.layout.content.captions] == [
+        "周末一起散步",
+        "傍晚喝了咖啡",
+        "路口的灯亮起来",
+    ]
+
+
 def test_agent_fallback_layout_adds_functional_section_decorations():
     client = FakeAgentClient(
         reviews=[],
@@ -286,6 +307,14 @@ def two_images():
     return [
         JournalImageInput(id="img_1", width=640, height=480),
         JournalImageInput(id="img_2", width=900, height=1200),
+    ]
+
+
+def three_images():
+    return [
+        JournalImageInput(id="img_1", width=640, height=480),
+        JournalImageInput(id="img_2", width=900, height=1200),
+        JournalImageInput(id="img_3", width=1200, height=900),
     ]
 
 

@@ -115,6 +115,7 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
     caption_texts = fallback_caption_texts(body, max(len(request.images), 1))
     image_id = request.images[0].id if request.images else "img_1"
     mood_tags = normalized_mood_tags(request)
+    sections = fallback_sections(request, body)
     captions_by_image = [
         {"imageId": image.id, "text": caption_texts[index]}
         for index, image in enumerate(request.images)
@@ -127,17 +128,8 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
             "meta": build_meta_text(request),
             "body": [body],
             "captions": captions_by_image or [{"imageId": image_id, "text": caption}],
-            "imageUnderstanding": [
-                {
-                    "imageId": image.id,
-                    "summary": caption_texts[index],
-                    "scene": "",
-                    "subjects": [],
-                    "mood": mood_tags or ["日常"],
-                }
-                for index, image in enumerate(request.images)
-            ],
-            "sections": fallback_sections(request, body),
+            "imageUnderstanding": fallback_image_understanding(request, sections, caption_texts, mood_tags),
+            "sections": sections,
         },
         "layout": {
             "variant": "long_collage",
@@ -178,10 +170,49 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
 
 def fallback_caption_texts(body: str, count: int) -> list[str]:
     sentences = split_sentences(body)
-    source_texts = sentences[:count] if len(sentences) >= count else [body for _ in range(count)]
+    source_texts = sentences[:count] if len(sentences) >= count else fallback_text_units(body)
+    if len(source_texts) < count:
+        source_texts.extend([(source_texts[-1] if source_texts else body) for _ in range(count - len(source_texts))])
     return [
         normalize_diary_text(text, fallback="今日小记").strip(" 。！？!?；;，,")[:14] or "今日小记"
-        for text in source_texts
+        for text in source_texts[:count]
+    ]
+
+
+def fallback_text_units(body: str) -> list[str]:
+    normalized = body.strip("。！？!?；;")
+    for delimiter in ("。", "！", "？", "!", "?", "；", ";", "，", ",", "、"):
+        normalized = normalized.replace(delimiter, "\n")
+    return [
+        unit
+        for unit in [
+            normalize_diary_text(part, fallback="").strip(" 。！？!?；;，,、")
+            for part in normalized.splitlines()
+        ]
+        if unit
+    ]
+
+
+def fallback_image_understanding(
+    request: JournalGenerationRequest,
+    sections: list[dict[str, Any]],
+    caption_texts: list[str],
+    mood_tags: list[str],
+) -> list[dict[str, Any]]:
+    summary_by_image_id: dict[str, str] = {}
+    for section in sections:
+        summary = normalize_diary_text(section.get("body"), fallback="今日小记").strip(" 。！？!?；;，,")[:18]
+        for image_id in section.get("imageIds", []):
+            summary_by_image_id[str(image_id)] = summary
+    return [
+        {
+            "imageId": image.id,
+            "summary": summary_by_image_id.get(image.id) or caption_texts[index],
+            "scene": "",
+            "subjects": [],
+            "mood": mood_tags or ["日常"],
+        }
+        for index, image in enumerate(request.images)
     ]
 
 
