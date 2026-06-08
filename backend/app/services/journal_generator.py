@@ -593,7 +593,7 @@ def normalize_layout_sections(
     for index, content_section in enumerate(content_sections):
         section_id = content_section["id"]
         source = raw_by_id.get(section_id, {})
-        suggested_variant = source.get("variant") if source.get("variant") in ALLOWED_SECTION_VARIANTS else None
+        suggested_variant = suggested_section_variant(source.get("variant"), content_section)
         source_y = positive_number(source.get("y"), next_y)
         y = max(source_y, next_y)
         generated_section = build_section_layout(
@@ -628,11 +628,10 @@ def normalize_layout_sections(
             min_section_height(generated_section, content_section.get("body", "")),
             section_height(section_images, section_texts, section_decorations, y, content_section.get("body", "")),
         )
-        variant = source.get("variant") if source.get("variant") in ALLOWED_SECTION_VARIANTS else generated_section["variant"]
         layout_sections.append(
             {
                 "sectionId": section_id,
-                "variant": str(variant),
+                "variant": str(generated_section["variant"]),
                 "y": y,
                 "height": max(ceil(height), 1),
                 "images": section_images,
@@ -642,6 +641,15 @@ def normalize_layout_sections(
         )
         next_y = y + max(ceil(height), 1) + SECTION_GAP
     return layout_sections
+
+
+def suggested_section_variant(value: Any, content_section: dict[str, Any]) -> str | None:
+    if value not in ALLOWED_SECTION_VARIANTS:
+        return None
+    image_count = len(content_section.get("imageIds") or [])
+    if image_count > 1 and value in {"hero_note", "magazine_whitespace"}:
+        return None
+    return str(value)
 
 
 def fallback_first_section_y(layout: dict[str, Any]) -> float:

@@ -372,6 +372,37 @@ def test_generator_rebuilds_section_pixel_layout_from_templates():
     assert body_text.y > max(image.y + image.height for image in section.images)
 
 
+def test_generator_ignores_single_photo_variant_for_multi_photo_section():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "咖啡和散步",
+            "imageIds": ["img_1", "img_2", "img_3"],
+            "body": "咖啡还热着，路边的光也很好，适合把这些片段收成一页。",
+            "mood": ["温柔"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 180,
+            "height": 520,
+            "images": [],
+            "texts": [],
+            "decorations": [],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    section = layout.layout.sections[0]
+    assert section.variant != "hero_note"
+    assert [image.image_id for image in section.images] == ["img_1", "img_2", "img_3"]
+
+
 def test_generator_adds_template_decorations_to_sections_without_model_decorations():
     payload = valid_model_json()
     payload["content"]["sections"] = [
