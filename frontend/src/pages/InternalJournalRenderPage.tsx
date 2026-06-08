@@ -5,6 +5,7 @@ import JournalCanvas from "../components/JournalCanvas";
 import { getJournalAssetIds } from "../components/journalRenderLayers";
 import type { Asset } from "../types/asset";
 import type { JournalLayout } from "../types/journal";
+import { waitForRenderAssets } from "./internalRenderAssets";
 
 type RenderDraft = {
   layout: JournalLayout;
@@ -41,11 +42,7 @@ export default function InternalJournalRenderPage() {
       const assetUrls = getJournalAssetIds(draftResponse.layout)
         .map((assetId) => assetList.find((asset) => asset.id === assetId)?.file_url)
         .filter((url): url is string => Boolean(url));
-      await Promise.all([
-        document.fonts.ready,
-        ...draftResponse.images.map((image) => preloadImage(image.src)),
-        ...assetUrls.map(preloadImage)
-      ]);
+      await waitForRenderAssets(draftResponse.images.map((image) => image.src), assetUrls);
       if (!shouldIgnore) {
         setIsReady(true);
       }
@@ -66,13 +63,4 @@ export default function InternalJournalRenderPage() {
       <JournalCanvas assets={assets} images={draft.images} layout={draft.layout} scale={1} />
     </main>
   );
-}
-
-function preloadImage(src: string) {
-  return new Promise<void>((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve();
-    image.onerror = () => reject(new Error(`Failed to preload ${src}`));
-    image.src = src;
-  });
 }
