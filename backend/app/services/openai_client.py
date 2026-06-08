@@ -89,6 +89,15 @@ class OpenAIJournalClient:
                 response.raise_for_status()
                 break
             except httpx.HTTPStatusError as exc:
+                if is_transient_status_error(exc) and attempt < OPENAI_MAX_ATTEMPTS:
+                    log_agent_event(
+                        "openai.status_retry",
+                        attempt=attempt,
+                        max_attempts=OPENAI_MAX_ATTEMPTS,
+                        model=model,
+                        status_code=exc.response.status_code,
+                    )
+                    continue
                 raise GenerationError(f"AI 服务返回 {exc.response.status_code}，请检查模型、Key 或第三方渠道配置") from exc
             except httpx.RequestError as exc:
                 log_agent_event(
@@ -108,6 +117,10 @@ class OpenAIJournalClient:
             return json.loads(content)
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
             raise GenerationError("AI 服务返回格式异常，请稍后重试或检查模型服务配置") from exc
+
+
+def is_transient_status_error(error: httpx.HTTPStatusError) -> bool:
+    return 500 <= error.response.status_code < 600
 
 
 def build_generation_message_content(request: JournalGenerationRequest) -> str | list[dict[str, Any]]:

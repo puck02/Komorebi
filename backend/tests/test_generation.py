@@ -1597,6 +1597,30 @@ def test_openai_client_retries_transient_connection_errors(monkeypatch):
     assert layout["content"]["title"] == "慢下来的周末"
 
 
+def test_openai_client_retries_transient_status_errors(monkeypatch):
+    attempts = 0
+
+    def fake_post(url, **kwargs):
+        nonlocal attempts
+        attempts += 1
+        request = httpx.Request("POST", url)
+        if attempts == 1:
+            return httpx.Response(503, request=request, json={"error": {"message": "temporarily unavailable"}})
+        return httpx.Response(
+            200,
+            request=request,
+            json={"choices": [{"message": {"content": json.dumps(valid_model_json())}}]},
+        )
+
+    monkeypatch.setattr("app.services.openai_client.httpx.post", fake_post)
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+
+    layout = client.generate_layout(generation_request())
+
+    assert attempts == 2
+    assert layout["content"]["title"] == "慢下来的周末"
+
+
 def test_openai_client_converts_invalid_json_content_to_generation_error(monkeypatch):
     def fake_post(url, **kwargs):
         request = httpx.Request("POST", url)
