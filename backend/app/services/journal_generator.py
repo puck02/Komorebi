@@ -266,11 +266,18 @@ def fallback_section_bodies(body: str, section_count: int) -> list[str]:
     units = fallback_text_units(body)
     if len(units) >= section_count:
         return [
-            normalize_diary_text("，".join(group) + "。", fallback=body)
+            fallback_section_note(group, fallback=body)
             for group in split_evenly(units, section_count)
             if group
         ]
     return [body for _ in range(section_count)]
+
+
+def fallback_section_note(units: list[str], fallback: str) -> str:
+    text = normalize_diary_text("，".join(units) + "。", fallback=fallback)
+    if len(units) >= 3:
+        return normalize_diary_text(f"这几张先放在一起：{'，'.join(units)}。", fallback=text)
+    return text
 
 
 def fallback_title_from_body(body: str) -> str:

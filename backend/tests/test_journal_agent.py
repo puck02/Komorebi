@@ -168,6 +168,25 @@ def test_agent_fallback_layout_splits_single_sentence_captions():
     ]
 
 
+def test_agent_fallback_section_body_is_not_caption_list():
+    client = FakeAgentClient(
+        reviews=[],
+        generation_error=GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置"),
+    )
+
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(
+        JournalGenerationRequest(
+            description="周末一起散步，傍晚喝了咖啡，路口的灯亮起来。",
+            images=three_images(),
+            assets=get_approved_assets(),
+        )
+    )
+
+    section_body = result.layout.content.sections[0].body
+    assert section_body != "周末一起散步，傍晚喝了咖啡，路口的灯亮起来。"
+    assert "这几张先放在一起" in section_body
+
+
 def test_agent_fallback_layout_adds_functional_section_decorations():
     client = FakeAgentClient(
         reviews=[],
