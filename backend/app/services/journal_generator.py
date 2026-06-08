@@ -75,10 +75,98 @@ class JournalGenerator:
 
         try:
             raw_layout = self.client.generate_layout(model_request)
+        except GenerationError:
+            raw_layout = build_fallback_layout(model_request)
+            cleaned_layout = sanitize_model_layout(raw_layout, model_request)
+            return JournalLayout.model_validate(cleaned_layout)
+        try:
             cleaned_layout = sanitize_model_layout(raw_layout, model_request)
             return JournalLayout.model_validate(cleaned_layout)
         except (KeyError, TypeError, ValueError, ValidationError) as error:
             raise GenerationError("Model returned an invalid journal layout") from error
+
+
+def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
+    body = request.description.strip() or "今天的照片先放在这里。"
+    caption = body.strip(" 。！？!?；;，,")[:14] or "今日小记"
+    image_id = request.images[0].id if request.images else "img_1"
+    captions_by_image = [
+        {"imageId": image.id, "text": caption if index == 0 else f"第 {index + 1} 张照片"}
+        for index, image in enumerate(request.images)
+    ]
+    return {
+        "canvas": {"width": CANVAS_WIDTH, "height": DEFAULT_CANVAS_HEIGHT, "background": "#f8f1e8"},
+        "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["日常"]},
+        "content": {
+            "title": "今日小记",
+            "body": [body],
+            "captions": captions_by_image or [{"imageId": image_id, "text": caption}],
+            "imageUnderstanding": [
+                {
+                    "imageId": image.id,
+                    "summary": caption if index == 0 else f"第 {index + 1} 张照片",
+                    "scene": "",
+                    "subjects": [],
+                    "mood": ["日常"],
+                }
+                for index, image in enumerate(request.images)
+            ],
+            "sections": fallback_sections(request, body),
+        },
+        "layout": {
+            "variant": "long_collage",
+            "images": [
+                {
+                    "imageId": image.id,
+                    "x": 92,
+                    "y": 210,
+                    "width": 420,
+                    "height": 320,
+                    "rotation": 0,
+                }
+                for image in request.images
+            ],
+            "texts": [
+                {"role": "title", "x": 80, "y": 72, "width": 680, "fontSize": 56},
+                {"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32},
+            ],
+            "decorations": [],
+            "sections": [
+                {
+                    "sectionId": "section_1",
+                    "variant": "hero_note",
+                    "y": 220,
+                    "height": 720,
+                    "images": [],
+                    "texts": [],
+                    "decorations": [
+                        {"assetId": "paper_note_cream_01"},
+                        {"assetId": "tape_warm_grid_01"},
+                        {"assetId": "sticker_leaf_05"},
+                    ],
+                }
+            ],
+        },
+    }
+
+
+def fallback_sections(request: JournalGenerationRequest, body: str) -> list[dict[str, Any]]:
+    if not request.images:
+        return [{"id": "section_1", "title": "今日小记", "imageIds": ["img_1"], "body": body, "mood": ["日常"]}]
+
+    sections: list[dict[str, Any]] = []
+    for start in range(0, len(request.images), 3):
+        group = request.images[start : start + 3]
+        sections.append(
+            {
+                "id": f"section_{len(sections) + 1}",
+                "title": "今日小记" if start == 0 else f"第 {start + 1} 张照片",
+                "imageIds": [image.id for image in group],
+                "body": body if start == 0 else f"第 {start + 1} 张照片也放在这里。",
+                "mood": ["日常"],
+            }
+        )
+    return sections
 
 
 def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGenerationRequest) -> dict[str, Any]:

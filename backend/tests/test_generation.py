@@ -968,6 +968,17 @@ def test_invalid_model_json_is_converted_to_generation_error():
         generator.generate(generation_request())
 
 
+def test_generator_returns_fallback_layout_when_model_connection_fails():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+
+    layout = generator.generate(generation_request())
+
+    assert layout.content.title == "今日小记"
+    assert layout.content.body == ["周末一起散步，天气很好，喝了咖啡。"]
+    assert layout.content.captions[0].text == "周末一起散步，天气很好，喝了"
+    assert layout.layout.sections
+
+
 def test_openai_client_requires_api_key_only_when_constructed(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "")
 
@@ -1259,6 +1270,14 @@ class FakeClient:
     def generate_layout(self, request):
         self.request = request
         return self.payload
+
+
+class FailingClient:
+    def __init__(self, error):
+        self.error = error
+
+    def generate_layout(self, request):
+        raise self.error
 
 
 def generation_request(assets=None, images=None):
