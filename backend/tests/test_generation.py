@@ -685,6 +685,43 @@ def test_generator_normalizes_image_understanding_to_provided_images():
     assert layout.content.image_understanding[1].summary == "第 2 张照片的生活片段"
 
 
+def test_generator_fills_missing_captions_from_image_understanding():
+    payload = valid_model_json()
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "窗边咖啡"}]
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": "窗边咖啡",
+            "scene": "咖啡店",
+            "subjects": ["咖啡", "窗边"],
+            "mood": ["轻松"],
+        },
+        {
+            "imageId": "img_2",
+            "summary": "回程路上的云",
+            "scene": "街边",
+            "subjects": ["云", "路灯"],
+            "mood": ["安静"],
+        },
+        {
+            "imageId": "img_3",
+            "summary": "晚饭桌上的小碗",
+            "scene": "餐桌",
+            "subjects": ["晚饭", "小碗"],
+            "mood": ["日常"],
+        },
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    assert [(caption.image_id, caption.text) for caption in layout.content.captions] == [
+        ("img_1", "窗边咖啡"),
+        ("img_2", "回程路上的云"),
+        ("img_3", "晚饭桌上的小碗"),
+    ]
+
+
 def test_generator_normalizes_common_model_field_variants():
     payload = valid_model_json()
     payload["canvas"]["background"] = {"type": "solid", "color": "#fff7ef"}

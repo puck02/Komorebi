@@ -101,6 +101,8 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     layout["layout"]["images"] = [
         placement for placement in layout["layout"].get("images", []) if placement.get("imageId") in image_ids
     ]
+    normalize_image_understanding(layout, request.images)
+
     captions = layout["content"].get("captions")
     if not isinstance(captions, list):
         captions = [
@@ -114,7 +116,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     layout["content"]["captions"] = [
         caption for caption in captions if caption.get("imageId") in image_ids and str(caption.get("text") or "").strip()
     ]
-    normalize_image_understanding(layout, request.images)
+    layout["content"]["captions"] = fill_missing_captions(layout["content"]["captions"], layout["content"]["imageUnderstanding"])
 
     normalize_story_layout(layout, request.images)
 
@@ -201,6 +203,37 @@ def normalize_image_understanding(layout: dict[str, Any], request_images: list[J
             }
         )
     layout["content"]["imageUnderstanding"] = normalized
+
+
+def fill_missing_captions(
+    captions: list[dict[str, Any]],
+    image_understanding: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    captions_by_id = {caption.get("imageId"): caption for caption in captions}
+    next_captions: list[dict[str, Any]] = []
+    for item in image_understanding:
+        image_id = item.get("imageId")
+        if not isinstance(image_id, str):
+            continue
+        caption = captions_by_id.get(image_id)
+        if caption is not None:
+            next_captions.append(caption)
+            continue
+        next_captions.append({"imageId": image_id, "text": caption_from_understanding(item)})
+    return next_captions
+
+
+def caption_from_understanding(item: dict[str, Any]) -> str:
+    summary = normalize_diary_text(item.get("summary"))
+    if summary and not summary.startswith("第 "):
+        return summary[:18]
+    subjects = [str(subject).strip() for subject in item.get("subjects") or [] if str(subject).strip()]
+    if subjects:
+        return "、".join(subjects[:2])[:18]
+    scene = normalize_diary_text(item.get("scene"))
+    if scene:
+        return scene[:18]
+    return "今天的照片"
 
 
 def normalize_string_list(value: Any) -> list[str]:
