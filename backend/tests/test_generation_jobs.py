@@ -9,15 +9,19 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_db
 from app.api.routes.generation_jobs import get_generation_job_submitter
+from app.core.config import get_settings
 from app.db.base import Base
 from app.main import app
 from app.models import asset, generation_job, image, journal, user  # noqa: F401
 from app.models.generation_job import GenerationJob
+from app.models.journal import Journal
+from app.services.generation_jobs import run_generation_job
 
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("STORAGE_ROOT", str(tmp_path / "storage"))
+    get_settings.cache_clear()
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -44,6 +48,7 @@ def client(tmp_path, monkeypatch):
     finally:
         app.dependency_overrides.clear()
         Base.metadata.drop_all(bind=engine)
+        get_settings.cache_clear()
 
 
 def test_create_generation_job_requires_auth(client):
@@ -100,6 +105,33 @@ def test_create_generation_job_returns_failed_job_when_submitter_fails(client):
         saved_job = db.get(GenerationJob, job["id"])
         assert saved_job.status == "failed"
         assert saved_job.error_message == "生成任务启动失败，请稍后重试"
+
+
+def test_created_generation_job_completes_with_local_fallback_when_openai_key_missing(client, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    get_settings.cache_clear()
+    token = register_and_login(client, "owner@example.com")
+    image_id = upload_image(client, token)
+    response = create_generation_job(client, token, image_id)
+    job_id = response.json()["id"]
+
+    run_generation_job(job_id, session_factory=client.session_factory)
+
+    read_response = client.get(
+        f"/api/journal-generation-jobs/{job_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert read_response.status_code == 200
+    job = read_response.json()
+    assert job["status"] == "completed"
+    assert job["stage"] == "completed"
+    assert job["errorMessage"] is None
+    assert job["journalId"] is not None
+    with client.session_factory() as db:
+        journal = db.get(Journal, job["journalId"])
+        assert journal.title == "周末一起散步"
+        assert journal.layout_json["content"]["body"] == ["周末一起散步。"]
 
 
 def test_user_cannot_read_another_users_generation_job(client):

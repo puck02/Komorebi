@@ -108,6 +108,24 @@ def test_agent_returns_draft_when_visual_rendering_fails():
     assert client.revision_inputs == []
 
 
+def test_agent_returns_fallback_when_unreviewed_draft_has_hard_rule_issues():
+    client = FakeAgentClient(reviews=[review(score=90, passed=True)])
+    renderer = FailingRenderer(RuntimeError("Page.goto: Page crashed"))
+    hard_rule_issues = [{"type": "readability", "severity": "high", "description": "文字遮挡图片"}]
+
+    result = JournalAgent(client, renderer, rule_checker=lambda _layout, _request: hard_rule_issues).generate(
+        generation_request()
+    )
+
+    assert result.layout.content.title == "周末一起散步"
+    assert result.layout.content.body == ["周末一起散步。"]
+    assert result.score == 0
+    assert result.revision_round == 0
+    assert result.passed is False
+    assert client.review_inputs == []
+    assert client.revision_inputs == []
+
+
 def test_agent_returns_fallback_layout_when_initial_generation_ai_connection_fails():
     client = FakeAgentClient(
         reviews=[],

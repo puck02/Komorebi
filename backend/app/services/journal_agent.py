@@ -181,14 +181,28 @@ class JournalAgent:
     ) -> JournalAgentResult:
         cleaned = sanitize_model_layout(raw_layout, request)
         layout = JournalLayout.model_validate(cleaned)
+        rule_issues = self.rule_checker(layout, request)
         log_agent_event(
             "agent.review_unavailable",
             **log_context,
             revision_round=revision_round,
             error_type=error.__class__.__name__,
             error_message=str(error) or error.__class__.__name__,
+            rule_issues=issue_summary(rule_issues),
             **layout_observability_summary(layout, request.assets),
         )
+        if any(issue.get("severity") == "high" for issue in rule_issues):
+            fallback = JournalLayout.model_validate(sanitize_model_layout(build_fallback_layout(request), request))
+            log_agent_event(
+                "agent.review_unavailable_fallback_generated",
+                **log_context,
+                revision_round=revision_round,
+                error_type=error.__class__.__name__,
+                error_message=str(error) or error.__class__.__name__,
+                rule_issues=issue_summary(rule_issues),
+                **layout_observability_summary(fallback, request.assets),
+            )
+            return JournalAgentResult(fallback, 0, revision_round, False)
         return JournalAgentResult(layout, 0, revision_round, False)
 
     def _result_from_fallback_layout(
