@@ -1,10 +1,15 @@
-import { waitForRenderAssets } from "./internalRenderAssets";
+import { loadOptionalRenderAssets, waitForRenderAssets } from "./internalRenderAssets";
 
 const originalDocument = globalThis.document;
 const originalImage = globalThis.Image;
 
 async function run() {
   mockDocumentFontsReady();
+
+  const fallbackAssets = await loadOptionalRenderAssets(async () => {
+    throw new Error("Assets unavailable");
+  });
+  assertEqual(fallbackAssets.length, 0, "assets fallback length");
 
   installMockImage((src) => src.includes("broken-photo") || src.includes("broken-sticker"));
   await waitForRenderAssets(["/images/good-photo.webp"], ["/assets/broken-sticker.svg"]);
@@ -56,4 +61,10 @@ async function assertRejects(action: () => Promise<void>, expectedMessage: strin
     throw error;
   }
   throw new Error(`Expected promise to reject with ${expectedMessage}`);
+}
+
+function assertEqual(actual: unknown, expected: unknown, label: string) {
+  if (actual !== expected) {
+    throw new Error(`${label}: expected ${String(expected)}, got ${String(actual)}`);
+  }
 }

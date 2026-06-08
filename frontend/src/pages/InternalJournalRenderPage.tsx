@@ -5,7 +5,7 @@ import JournalCanvas from "../components/JournalCanvas";
 import { getJournalAssetIds } from "../components/journalRenderLayers";
 import type { Asset } from "../types/asset";
 import type { JournalLayout } from "../types/journal";
-import { waitForRenderAssets } from "./internalRenderAssets";
+import { loadOptionalRenderAssets, waitForRenderAssets } from "./internalRenderAssets";
 
 type RenderDraft = {
   layout: JournalLayout;
@@ -32,7 +32,7 @@ export default function InternalJournalRenderPage() {
           }
           return response.json() as Promise<RenderDraft>;
         }),
-        getAssets()
+        loadOptionalRenderAssets(getAssets)
       ]);
       if (shouldIgnore) {
         return;

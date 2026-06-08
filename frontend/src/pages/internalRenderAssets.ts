@@ -1,3 +1,11 @@
+export async function loadOptionalRenderAssets<T>(loadAssets: () => Promise<T[]>): Promise<T[]> {
+  try {
+    return await loadAssets();
+  } catch {
+    return [];
+  }
+}
+
 export async function waitForRenderAssets(imageUrls: string[], assetUrls: string[]) {
   await Promise.all([
     document.fonts.ready,
