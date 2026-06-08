@@ -16,6 +16,25 @@ def test_plan_sections_from_body_when_model_sections_missing():
     assert [section["body"] for section in sections] == ["早餐在窗边吃。", "后来走到海边。"]
 
 
+def test_plan_sections_uses_image_understanding_when_body_runs_out():
+    layout = {
+        "content": {
+            "body": ["早餐在窗边吃。"],
+            "imageUnderstanding": [
+                {"imageId": "img_3", "summary": "海边蓝色遮阳伞", "scene": "海边", "subjects": []},
+                {"imageId": "img_4", "summary": "傍晚岸边的长椅", "scene": "岸边", "subjects": []},
+            ],
+            "sections": [],
+        },
+        "theme": {"mood": ["日常"]},
+    }
+
+    sections = plan_content_sections(layout, ["img_1", "img_2", "img_3", "img_4"])
+
+    assert [section["imageIds"] for section in sections] == [["img_1", "img_2"], ["img_3", "img_4"]]
+    assert sections[1]["body"] == "海边蓝色遮阳伞、傍晚岸边的长椅，今天就记这一点。"
+
+
 def test_plan_sections_splits_non_adjacent_model_section():
     layout = {
         "content": {

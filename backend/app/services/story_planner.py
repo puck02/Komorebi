@@ -15,7 +15,7 @@ def plan_content_sections(layout: dict[str, Any], image_ids: list[str]) -> list[
             section_image_ids = normalized_section_image_ids(raw_section, image_id_set, used_image_ids)
             if not section_image_ids:
                 continue
-            body = section_body(raw_section, layout, index)
+            body = section_body(raw_section, layout, index, section_image_ids)
             title = str(raw_section.get("title") or section_title_from_body(body, index + 1)).strip()
             mood = normalize_string_list(raw_section.get("mood"))
             raw_section_id = str(raw_section.get("id") or f"section_{len(sections) + 1}")
@@ -81,7 +81,7 @@ def build_sections_from_body(layout: dict[str, Any], image_ids: list[str]) -> li
     for index, group in enumerate(image_groups):
         if not group:
             continue
-        body = paragraphs[index] if index < len(paragraphs) else "这一组照片也想好好留下。"
+        body = paragraphs[index] if index < len(paragraphs) else section_body_from_understanding(layout, group)
         sections.append(
             build_section(
                 f"section_{len(sections) + 1}",
@@ -110,7 +110,7 @@ def build_missing_image_sections(
     sections: list[dict[str, Any]] = []
     for group in split_adjacent_image_ids(missing_image_ids, image_ids):
         body_index = existing_section_count + len(sections)
-        body = paragraphs[body_index] if body_index < len(paragraphs) else "这一组照片也想好好留下。"
+        body = paragraphs[body_index] if body_index < len(paragraphs) else section_body_from_understanding(layout, group)
         sections.append(
             build_section(
                 f"section_{existing_section_count + len(sections) + 1}",
@@ -144,14 +144,42 @@ def unique_section_id(section_id: str, sections: list[dict[str, Any]]) -> str:
     return f"{section_id}_{suffix}"
 
 
-def section_body(raw_section: dict[str, Any], layout: dict[str, Any], index: int) -> str:
+def section_body(raw_section: dict[str, Any], layout: dict[str, Any], index: int, section_image_ids: list[str]) -> str:
     body = str(raw_section.get("body") or "").strip()
     if body:
         return body
     paragraphs = normalized_body(layout)
     if index < len(paragraphs):
         return paragraphs[index]
-    return "这一组照片也想好好留下。"
+    return section_body_from_understanding(layout, section_image_ids)
+
+
+def section_body_from_understanding(layout: dict[str, Any], image_ids: list[str]) -> str:
+    understanding_by_id = {
+        item.get("imageId"): item
+        for item in layout.get("content", {}).get("imageUnderstanding", [])
+        if isinstance(item, dict)
+    }
+    parts = [
+        concrete_understanding_text(understanding_by_id[image_id])
+        for image_id in image_ids
+        if image_id in understanding_by_id
+    ]
+    parts = [part for part in parts if part]
+    if not parts:
+        return "这一组照片也想好好留下。"
+    return f"{'、'.join(parts[:2])}，今天就记这一点。"
+
+
+def concrete_understanding_text(item: dict[str, Any]) -> str:
+    for key in ("summary", "scene"):
+        text = str(item.get(key) or "").strip()
+        if text:
+            return text[:18]
+    subjects = normalize_string_list(item.get("subjects"))
+    if subjects:
+        return "、".join(subjects[:2])[:18]
+    return ""
 
 
 def normalized_body(layout: dict[str, Any]) -> list[str]:
