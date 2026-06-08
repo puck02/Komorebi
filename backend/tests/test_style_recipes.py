@@ -58,6 +58,17 @@ def test_choose_asset_id_rotates_between_equally_matching_assets():
     assert result == "paper_note_linen_11"
 
 
+def test_choose_asset_id_prefers_more_matching_recipe_tags():
+    assets = {
+        "paper_daily_01": asset("paper_daily_01", "paper", ["daily", "note"]),
+        "paper_warm_daily_02": asset("paper_warm_daily_02", "paper", ["daily", "warm", "note"]),
+    }
+
+    result = choose_asset_id(assets, "paper", offset=0, preferred_tags=["daily", "warm", "collage"])
+
+    assert result == "paper_warm_daily_02"
+
+
 def test_choose_asset_id_keeps_preferred_asset_when_category_matches():
     assets = {
         "sticker_leaf_05": asset("sticker_leaf_05", "sticker", ["nature", "travel"]),

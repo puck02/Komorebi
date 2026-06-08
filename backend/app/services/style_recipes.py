@@ -52,15 +52,15 @@ def choose_asset_id(
 
     tag_rank = {tag: index for index, tag in enumerate(preferred_tags)}
 
-    def score(asset: AssetItem) -> tuple[int, int, str]:
+    def score(asset: AssetItem) -> tuple[int, int, int, str]:
         matching_tag_indexes = [tag_rank[tag] for tag in asset.tags if tag in tag_rank]
         best_tag_index = min(matching_tag_indexes) if matching_tag_indexes else len(tag_rank) + 1
-        return (0 if matching_tag_indexes else 1, best_tag_index, asset.id)
+        return (0 if matching_tag_indexes else 1, best_tag_index, -len(matching_tag_indexes), asset.id)
 
     ranked_assets = sorted(assets, key=score)
     if ranked_assets and score(ranked_assets[0])[0] == 0:
         best_score = score(ranked_assets[0])
-        equally_matched_assets = [asset for asset in ranked_assets if score(asset)[:2] == best_score[:2]]
+        equally_matched_assets = [asset for asset in ranked_assets if score(asset)[:3] == best_score[:3]]
         return equally_matched_assets[offset % len(equally_matched_assets)].id
     return assets[offset % len(assets)].id
 
