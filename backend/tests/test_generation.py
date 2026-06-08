@@ -1249,6 +1249,36 @@ def test_review_and_revision_prompts_check_asset_richness(monkeypatch):
     assert "不要改变未被点名的问题区域" in captured[1]
 
 
+def test_review_and_revision_prompts_include_user_context(monkeypatch):
+    captured = []
+
+    def fake_post(url, **kwargs):
+        request = httpx.Request("POST", url)
+        captured.append(kwargs["json"]["messages"][0]["content"][0]["text"])
+        payload = valid_review_json() if len(captured) == 1 else valid_model_json()
+        return httpx.Response(200, request=request, json={"choices": [{"message": {"content": json.dumps(payload)}}]})
+
+    monkeypatch.setattr("app.services.openai_client.httpx.post", fake_post)
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+    request = JournalGenerationRequest(
+        description="周末一起散步，天气很好，喝了咖啡。",
+        journal_date="2026-05-20",
+        location="上海",
+        mood_tags=["轻松"],
+        images=[JournalImageInput(id="img_1", width=640, height=480, data_url="data:image/webp;base64,photo")],
+        assets=load_assets(),
+    )
+
+    client.review_layout(request, valid_model_json(), "data:image/webp;base64,screenshot", [])
+    client.revise_layout(request, valid_model_json(), "data:image/webp;base64,screenshot", valid_review_json(), revision_round=1, best_score=70)
+
+    for prompt in captured:
+        assert "用户补充信息" in prompt
+        assert "2026-05-20" in prompt
+        assert "上海" in prompt
+        assert "轻松" in prompt
+
+
 def test_layout_rules_report_sparse_repetitive_or_external_poor_decorations():
     request = generation_request(
         assets=[
