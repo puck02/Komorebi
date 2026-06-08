@@ -121,11 +121,15 @@ def test_agent_fallback_layout_uses_ordered_captions_for_multiple_images():
     )
 
     result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(
-        generation_request(images=two_images())
+        JournalGenerationRequest(
+            description="周末一起散步。傍晚喝了咖啡。",
+            images=two_images(),
+            assets=get_approved_assets(),
+        )
     )
 
     assert [caption.image_id for caption in result.layout.content.captions] == ["img_1", "img_2"]
-    assert [caption.text for caption in result.layout.content.captions] == ["周末一起散步", "第 2 张照片"]
+    assert [caption.text for caption in result.layout.content.captions] == ["周末一起散步", "傍晚喝了咖啡"]
     assert [image.image_id for image in result.layout.layout.images] == ["img_1", "img_2"]
 
 

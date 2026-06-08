@@ -106,11 +106,11 @@ class JournalGenerator:
 
 def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
     body = request.description.strip() or "今天的照片先放在这里。"
-    caption = body.strip(" 。！？!?；;，,")[:14] or "今日小记"
+    caption_texts = fallback_caption_texts(body, max(len(request.images), 1))
     image_id = request.images[0].id if request.images else "img_1"
     mood_tags = normalized_mood_tags(request)
     captions_by_image = [
-        {"imageId": image.id, "text": caption if index == 0 else f"第 {index + 1} 张照片"}
+        {"imageId": image.id, "text": caption_texts[index]}
         for index, image in enumerate(request.images)
     ]
     return {
@@ -124,7 +124,7 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
             "imageUnderstanding": [
                 {
                     "imageId": image.id,
-                    "summary": caption if index == 0 else f"第 {index + 1} 张照片",
+                    "summary": caption_texts[index],
                     "scene": "",
                     "subjects": [],
                     "mood": mood_tags or ["日常"],
@@ -168,6 +168,15 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
             ],
         },
     }
+
+
+def fallback_caption_texts(body: str, count: int) -> list[str]:
+    sentences = split_sentences(body)
+    source_texts = sentences[:count] if len(sentences) >= count else [body for _ in range(count)]
+    return [
+        normalize_diary_text(text, fallback="今日小记").strip(" 。！？!?；;，,")[:14] or "今日小记"
+        for text in source_texts
+    ]
 
 
 def fallback_title(request: JournalGenerationRequest) -> str:
