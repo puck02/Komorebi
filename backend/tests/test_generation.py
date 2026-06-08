@@ -8,12 +8,14 @@ from app.schemas.journal import JournalLayout
 from app.services.assets import AssetItem, get_approved_assets, load_assets
 from app.services.decoration_placement import overlaps_photo_safe_area
 from app.services.journal_generator import (
+    build_fallback_layout,
     GenerationError,
     JournalGenerationRequest,
     JournalGenerator,
     JournalImageInput,
     check_layout_rules,
     normalize_canvas_height,
+    sanitize_model_layout,
 )
 from app.services.openai_client import (
     OpenAIConfigurationError,
@@ -1580,6 +1582,27 @@ def test_fallback_layout_uses_theme_recipe_stickers_when_ai_is_unavailable(descr
 
     decoration_ids = {decoration.asset_id for decoration in layout.layout.sections[0].decorations}
     assert len(decoration_ids.intersection(expected_asset_ids)) >= 2
+
+
+def test_sanitize_model_layout_preserves_theme_sticker_combo_on_second_pass():
+    request = JournalGenerationRequest(
+        description="今天把冲印照片、胶片和旧邮票夹在这一页，旁边还贴了便签。",
+        images=[JournalImageInput(id="img_1", width=640, height=480)],
+        assets=load_assets(),
+        journal_date="2026-06-09",
+        location="工作室",
+        mood_tags=["安静"],
+    )
+    first_pass = sanitize_model_layout(build_fallback_layout(request), request)
+
+    second_pass = sanitize_model_layout(first_pass, request)
+
+    decoration_ids = {
+        decoration["assetId"]
+        for section in second_pass["layout"]["sections"]
+        for decoration in section["decorations"]
+    }
+    assert {"sticker_film_strip_30", "sticker_postage_stamp_29"}.issubset(decoration_ids)
 
 
 def test_fallback_layout_uses_human_section_note_instead_of_template_phrase():

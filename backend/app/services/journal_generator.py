@@ -874,6 +874,16 @@ def complementary_sticker_asset_id(
     preferred_tags: list[str],
     preferred_asset_ids: list[str] | None = None,
 ) -> str | None:
+    preferred_sticker_ids = [
+        asset_id
+        for asset_id in preferred_asset_ids or []
+        if (asset := asset_by_id.get(asset_id)) is not None
+        and asset.category == "sticker"
+        and asset.quality_status == "approved"
+        and asset.id != primary_asset_id
+    ]
+    if preferred_sticker_ids:
+        return preferred_sticker_ids[0]
     if preferred_asset_ids:
         return None
     if not should_add_complementary_sticker(preferred_tags):
