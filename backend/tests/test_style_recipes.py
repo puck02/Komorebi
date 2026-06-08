@@ -85,6 +85,23 @@ def test_choose_asset_id_prefers_internal_asset_when_recipe_match_is_equal():
     assert result == "sticker_photo_corner_21"
 
 
+def test_choose_asset_id_rotates_only_within_same_source_priority_group():
+    assets = {
+        "ext_streamline_camera": asset(
+            "ext_streamline_camera",
+            "sticker",
+            ["photo", "memory"],
+            source="https://icon-sets.iconify.design/streamline-freehand-color/",
+        ),
+        "sticker_photo_corner_21": asset("sticker_photo_corner_21", "sticker", ["photo", "memory"]),
+        "sticker_camera_07": asset("sticker_camera_07", "sticker", ["photo", "memory"]),
+    }
+
+    result = choose_asset_id(assets, "sticker", offset=2, preferred_tags=["photo", "memory"])
+
+    assert result == "sticker_camera_07"
+
+
 def test_choose_asset_id_keeps_preferred_asset_when_category_matches():
     assets = {
         "sticker_leaf_05": asset("sticker_leaf_05", "sticker", ["nature", "travel"]),

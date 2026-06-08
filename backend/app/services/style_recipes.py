@@ -61,7 +61,7 @@ def choose_asset_id(
     ranked_assets = sorted(assets, key=score)
     if ranked_assets and score(ranked_assets[0])[0] == 0:
         best_score = score(ranked_assets[0])
-        equally_matched_assets = [asset for asset in ranked_assets if score(asset)[:3] == best_score[:3]]
+        equally_matched_assets = [asset for asset in ranked_assets if score(asset)[:4] == best_score[:4]]
         return equally_matched_assets[offset % len(equally_matched_assets)].id
     return assets[offset % len(assets)].id
 
