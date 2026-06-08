@@ -103,6 +103,41 @@ def test_place_decorations_moves_sticker_out_of_text_and_photo_safe_area():
     assert not overlaps_photo_safe_area(placed[0], [image_placement()])
 
 
+def test_place_decorations_clamps_unstable_sticker_size():
+    sticker = {"assetId": "sticker_leaf", "x": 720, "y": 220, "width": 980, "height": 760, "rotation": 24}
+    text = {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}
+
+    placed = place_decorations(
+        [sticker],
+        image_placements=[image_placement()],
+        text_placements=[text],
+        asset_by_id={"sticker_leaf": asset_item("sticker_leaf", "sticker")},
+    )
+
+    assert placed
+    assert placed[0]["width"] <= 180
+    assert placed[0]["height"] <= 180
+    assert -12 <= placed[0]["rotation"] <= 12
+    assert placed[0]["x"] + placed[0]["width"] <= 1080
+    assert not overlaps_photo_safe_area(placed[0], [image_placement()])
+
+
+def test_place_decorations_clamps_unstable_texture_size():
+    texture = {"assetId": "texture_dots_01", "x": -120, "y": 80, "width": 1800, "height": 1200, "rotation": 18}
+
+    placed = place_decorations(
+        [texture],
+        image_placements=[image_placement()],
+        text_placements=[],
+        asset_by_id={"texture_dots_01": asset_item("texture_dots_01", "texture")},
+    )
+
+    assert placed[0]["width"] <= 720
+    assert placed[0]["height"] <= 420
+    assert -4 <= placed[0]["rotation"] <= 4
+    assert 0 <= placed[0]["x"] <= 1080 - placed[0]["width"]
+
+
 def test_place_decorations_snaps_photo_corner_sticker_to_photo_corner():
     photo_corner = {"assetId": "sticker_photo_corner_21", "x": 534, "y": 234, "width": 112, "height": 112, "rotation": 0}
     text = {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}

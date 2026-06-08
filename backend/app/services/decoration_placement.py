@@ -9,6 +9,12 @@ TAPE_MAX_WIDTH = 260
 TAPE_MAX_HEIGHT = 70
 TAPE_MIN_WIDTH = 150
 TAPE_MIN_HEIGHT = 38
+STICKER_MAX_SIZE = 180
+STICKER_MIN_SIZE = 64
+TEXTURE_MAX_WIDTH = 720
+TEXTURE_MAX_HEIGHT = 420
+TEXTURE_MIN_WIDTH = 220
+TEXTURE_MIN_HEIGHT = 160
 PHOTO_CORNER_MAX_SIZE = 128
 PHOTO_CORNER_MIN_SIZE = 40
 MAX_DECORATIONS = 22
@@ -43,7 +49,7 @@ def place_decorations(
             placed.append(snap_tape_to_target(decoration, [*paper_backings, *image_placements]))
             continue
         if function == "texture":
-            placed.append(clamp_decoration_to_canvas(decoration))
+            placed.append(place_texture(decoration))
             continue
         if function == "photo_corner":
             photo_corner = place_photo_corner_sticker(decoration, image_placements, text_placements)
@@ -178,7 +184,8 @@ def place_sticker(
     image_placements: list[dict[str, Any]],
     text_placements: list[dict[str, Any]],
 ) -> dict[str, Any] | None:
-    candidate = clamp_decoration_to_canvas(decoration)
+    candidate = normalize_generic_sticker(decoration)
+    candidate = clamp_decoration_to_canvas(candidate)
     if not overlaps_photo_safe_area(candidate, image_placements) and not overlaps_any_text(candidate, text_placements):
         return candidate
 
@@ -192,6 +199,24 @@ def place_sticker(
         if not overlaps_photo_safe_area(next_candidate, image_placements) and not overlaps_any_text(next_candidate, text_placements):
             return next_candidate
     return None
+
+
+def normalize_generic_sticker(decoration: dict[str, Any]) -> dict[str, Any]:
+    width = min(max(positive_number(decoration.get("width"), 112), STICKER_MIN_SIZE), STICKER_MAX_SIZE)
+    height = min(max(positive_number(decoration.get("height"), 112), STICKER_MIN_SIZE), STICKER_MAX_SIZE)
+    next_decoration = dict(decoration)
+    next_decoration["width"] = width
+    next_decoration["height"] = height
+    next_decoration["rotation"] = clamp_number(positive_number(decoration.get("rotation"), 0), -12, 12)
+    return next_decoration
+
+
+def place_texture(decoration: dict[str, Any]) -> dict[str, Any]:
+    next_decoration = dict(decoration)
+    next_decoration["width"] = min(max(positive_number(decoration.get("width"), 600), TEXTURE_MIN_WIDTH), TEXTURE_MAX_WIDTH)
+    next_decoration["height"] = min(max(positive_number(decoration.get("height"), 360), TEXTURE_MIN_HEIGHT), TEXTURE_MAX_HEIGHT)
+    next_decoration["rotation"] = clamp_number(positive_number(decoration.get("rotation"), 0), -4, 4)
+    return clamp_decoration_to_canvas(next_decoration)
 
 
 def place_photo_corner_sticker(
