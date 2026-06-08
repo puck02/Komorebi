@@ -125,15 +125,18 @@ def test_user_cannot_generate_with_another_users_images(client):
     assert response.status_code == 404
 
 
-def test_generate_journal_returns_clear_error_when_model_request_fails(client):
+def test_generate_journal_saves_local_fallback_when_model_request_fails(client):
     token = register_and_login(client, "owner@example.com")
     image_id = upload_image(client, token)
     client.fake_generator.error = GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")
 
     response = generate_journal(client, token, image_id, "周末一起散步")
 
-    assert response.status_code == 502
-    assert response.json()["detail"] == "AI 服务连接失败，请稍后重试或检查模型服务配置"
+    assert response.status_code == 201
+    body = response.json()
+    assert body["title"] == "周末一起散步"
+    assert body["imageIds"] == [image_id]
+    assert body["layout"]["content"]["body"] == ["周末一起散步。"]
 
 
 def test_generate_journal_saves_and_lists_only_current_users_journals(client):

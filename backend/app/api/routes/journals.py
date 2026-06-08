@@ -10,13 +10,14 @@ from app.api.deps import get_current_user, get_db
 from app.models.image import Image as ImageModel
 from app.models.journal import Journal
 from app.models.user import User
-from app.schemas.journal import JournalGenerateRequest, JournalRead, JournalUpdateRequest
+from app.schemas.journal import JournalGenerateRequest, JournalLayout, JournalRead, JournalUpdateRequest
 from app.services.assets import get_approved_assets
 from app.services.journal_generator import (
     GenerationError,
     JournalGenerationRequest,
     JournalGenerator,
     JournalImageInput,
+    build_fallback_layout,
     sanitize_model_layout,
 )
 from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient
@@ -43,22 +44,19 @@ def generate_journal(
     generator: JournalGenerator = Depends(get_journal_generator),
 ) -> JournalRead:
     images = get_owned_images(db, current_user.id, payload.image_ids)
+    generation_request = JournalGenerationRequest(
+        description=payload.description,
+        images=[image_to_generation_input(image) for image in images],
+        assets=get_approved_assets(),
+        journal_date=payload.journal_date,
+        location=payload.location,
+        mood_tags=payload.mood_tags,
+    )
     try:
-        layout = generator.generate(
-            JournalGenerationRequest(
-                description=payload.description,
-                images=[image_to_generation_input(image) for image in images],
-                assets=get_approved_assets(),
-                journal_date=payload.journal_date,
-                location=payload.location,
-                mood_tags=payload.mood_tags,
-            )
-        )
-    except GenerationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(exc) or "AI 生成失败，请稍后重试",
-        ) from exc
+        layout = generator.generate(generation_request)
+    except GenerationError:
+        layout_json = sanitize_model_layout(build_fallback_layout(generation_request), generation_request)
+        layout = JournalLayout.model_validate(layout_json)
 
     journal = Journal(
         user_id=current_user.id,

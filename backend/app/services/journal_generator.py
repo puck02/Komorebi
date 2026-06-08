@@ -113,7 +113,7 @@ class JournalGenerator:
 
 
 def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
-    body = request.description.strip() or "今天的照片先放在这里。"
+    body = normalize_fallback_body(request.description)
     caption_texts = fallback_caption_texts(body, max(len(request.images), 1))
     image_id = request.images[0].id if request.images else "img_1"
     mood_tags = normalized_mood_tags(request)
@@ -168,6 +168,13 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
             ],
         },
     }
+
+
+def normalize_fallback_body(value: str) -> str:
+    body = normalize_diary_text(value, fallback="今天的照片先放在这里。")
+    if body and body[-1] not in "。！？!?；;":
+        return f"{body}。"
+    return body
 
 
 def fallback_caption_texts(body: str, count: int) -> list[str]:
