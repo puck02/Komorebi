@@ -35,8 +35,8 @@ def test_plan_sections_splits_non_adjacent_model_section():
 
     sections = plan_content_sections(layout, ["img_1", "img_2", "img_3"])
 
-    assert [section["id"] for section in sections] == ["mixed_1", "mixed_2"]
-    assert [section["imageIds"] for section in sections] == [["img_1"], ["img_3"]]
+    assert [image_id for section in sections for image_id in section["imageIds"]] == ["img_1", "img_2", "img_3"]
+    assert [section["imageIds"] for section in sections] == [["img_1"], ["img_2"], ["img_3"]]
 
 
 def test_plan_sections_splits_groups_larger_than_three_images():
@@ -93,6 +93,24 @@ def test_plan_sections_keeps_each_image_once_in_order_when_model_duplicates():
     sections = plan_content_sections(layout, ["img_1", "img_2", "img_3"])
 
     assert [image_id for section in sections for image_id in section["imageIds"]] == ["img_1", "img_2", "img_3"]
+
+
+def test_plan_sections_adds_images_missing_from_model_sections():
+    layout = {
+        "content": {
+            "body": ["第一张已经写了。", "后面两张也要补上。"],
+            "sections": [
+                {"id": "a", "title": "A", "imageIds": ["img_1"], "body": "第一张已经写了。", "mood": []}
+            ],
+        },
+        "theme": {"mood": []},
+    }
+
+    sections = plan_content_sections(layout, ["img_1", "img_2", "img_3"])
+
+    assert [image_id for section in sections for image_id in section["imageIds"]] == ["img_1", "img_2", "img_3"]
+    assert sections[-1]["imageIds"] == ["img_2", "img_3"]
+    assert sections[-1]["body"] == "后面两张也要补上。"
 
 
 def test_split_adjacent_image_ids_sorts_by_original_order():

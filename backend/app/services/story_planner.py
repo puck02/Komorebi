@@ -26,7 +26,8 @@ def plan_content_sections(layout: dict[str, Any], image_ids: list[str]) -> list[
                 used_image_ids.update(adjacent_group)
 
     if sections:
-        return sections
+        sections.extend(build_missing_image_sections(layout, image_ids, used_image_ids, len(sections)))
+        return sort_sections_by_image_order(sections, image_ids)
     return build_sections_from_body(layout, image_ids)
 
 
@@ -91,6 +92,45 @@ def build_sections_from_body(layout: dict[str, Any], image_ids: list[str]) -> li
             )
         )
     return sections
+
+
+def build_missing_image_sections(
+    layout: dict[str, Any],
+    image_ids: list[str],
+    used_image_ids: set[str],
+    existing_section_count: int,
+) -> list[dict[str, Any]]:
+    missing_image_ids = [image_id for image_id in image_ids if image_id not in used_image_ids]
+    if not missing_image_ids:
+        return []
+
+    paragraphs = normalized_body(layout)
+    mood = normalize_string_list(layout.get("theme", {}).get("mood") if isinstance(layout.get("theme"), dict) else [])
+    sections: list[dict[str, Any]] = []
+    for group in split_adjacent_image_ids(missing_image_ids, image_ids):
+        body_index = existing_section_count + len(sections)
+        body = paragraphs[body_index] if body_index < len(paragraphs) else "这一组照片也想好好留下。"
+        sections.append(
+            build_section(
+                f"section_{existing_section_count + len(sections) + 1}",
+                section_title_from_body(body, existing_section_count + len(sections) + 1),
+                group,
+                body,
+                mood,
+                existing_section_count + len(sections) + 1,
+            )
+        )
+    return sections
+
+
+def sort_sections_by_image_order(sections: list[dict[str, Any]], image_ids: list[str]) -> list[dict[str, Any]]:
+    order_by_id = {image_id: index for index, image_id in enumerate(image_ids)}
+
+    def first_image_order(section: dict[str, Any]) -> int:
+        section_image_ids = section.get("imageIds") or []
+        return min((order_by_id.get(image_id, len(image_ids)) for image_id in section_image_ids), default=len(image_ids))
+
+    return sorted(sections, key=first_image_order)
 
 
 def section_body(raw_section: dict[str, Any], layout: dict[str, Any], index: int) -> str:

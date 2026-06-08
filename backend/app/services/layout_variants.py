@@ -178,12 +178,27 @@ def build_timeline_strip_images(images: list[Any], start_y: float, section_index
 
 
 def build_photo_wall_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
-    placements = []
-    width = 286
-    for index, image in enumerate(images):
-        x = SECTION_SIDE_PADDING + (index % 3) * (width + 34)
-        y = start_y + (index // 3) * 320 + (18 if index % 2 else 0)
-        placements.append(placement(image, x, y, width, section_index + index, rotation=[-1, 0.8, -0.6][index % 3]))
+    if not images:
+        return []
+    if len(images) < 3:
+        return build_staggered_collage_images(images, start_y, section_index)
+
+    placements = [placement(images[0], SECTION_SIDE_PADDING, start_y, 430, section_index, rotation=-1)]
+    side_width = 276
+    side_x = 622
+    side_y = start_y + 18
+    for index, image in enumerate(images[1:3], start=1):
+        placements.append(
+            placement(
+                image,
+                side_x,
+                side_y,
+                side_width,
+                section_index + index,
+                rotation=[1.2, -0.8][(index - 1) % 2],
+            )
+        )
+        side_y += placements[-1]["height"] + IMAGE_GAP
     return placements
 
 

@@ -111,6 +111,28 @@ def test_build_section_layout_places_images_and_text_inside_section():
     assert all(layout["y"] <= item["y"] <= layout["y"] + layout["height"] for item in [*layout["images"], *layout["texts"]])
 
 
+def test_photo_wall_layout_has_a_clear_primary_photo():
+    images = [image("img_1", 640, 480), image("img_2", 640, 480), image("img_3", 640, 480)]
+    section_data = content_section("section_1", ["img_1", "img_2", "img_3"], body="三张都是晚饭桌上的小记录。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[
+            {"imageId": "img_1", "summary": "晚餐", "scene": "餐桌", "subjects": ["食物"], "mood": []},
+            {"imageId": "img_2", "summary": "晚餐", "scene": "餐桌", "subjects": ["食物"], "mood": []},
+            {"imageId": "img_3", "summary": "晚餐", "scene": "餐桌", "subjects": ["食物"], "mood": []},
+        ],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="photo_wall",
+    )
+
+    areas = [item["width"] * item["height"] for item in layout["images"]]
+    assert max(areas) / min(areas) >= 1.25
+
+
 def test_generator_replaces_invalid_section_variant_with_rule_choice():
     payload = valid_model_json()
     payload["content"]["imageUnderstanding"] = [

@@ -343,8 +343,8 @@ def test_generator_rebuilds_section_pixel_layout_from_templates():
 
     section = layout.layout.sections[0]
     assert section.variant == "photo_wall"
-    assert [image.x for image in section.images] == [92, 412, 732]
-    assert [image.width for image in section.images] == [286, 286, 286]
+    assert [image.x for image in section.images] == [92, 622, 622]
+    assert [image.width for image in section.images] == [430, 276, 276]
     body_text = section.texts[0]
     assert body_text.x == 112
     assert body_text.width == 820
@@ -580,7 +580,7 @@ def test_generator_splits_non_adjacent_model_sections():
 
     layout = generator.generate(generation_request(images=three_images()))
 
-    assert [section.image_ids for section in layout.content.sections] == [["img_1"], ["img_3"]]
+    assert [section.image_ids for section in layout.content.sections] == [["img_1"], ["img_2"], ["img_3"]]
 
 
 def test_generator_normalizes_image_understanding_to_provided_images():
