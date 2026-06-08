@@ -13,6 +13,32 @@ def test_layout_rules_report_image_order_mismatch():
     assert has_issue(issues, "imageOrder", "high", "图片集合或顺序与用户确认结果不一致")
 
 
+def test_layout_rules_report_section_image_order_mismatch():
+    payload = layout_payload(image_ids=["img_1", "img_2"])
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_2", "img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "staggered_collage",
+            "y": 220,
+            "height": 760,
+            "images": [
+                {"imageId": "img_2", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0},
+                {"imageId": "img_1", "x": 568, "y": 320, "width": 420, "height": 320, "rotation": 0},
+            ],
+            "texts": [{"role": "body", "x": 112, "y": 720, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=two_images()))
+
+    assert has_issue(issues, "imageOrder", "high", "图片集合或顺序与用户确认结果不一致")
+
+
 def test_layout_rules_report_text_photo_overlap_and_decoration_overflow():
     payload = layout_payload()
     payload["layout"]["texts"].append({"role": "body", "x": 120, "y": 230, "width": 300, "fontSize": 32})

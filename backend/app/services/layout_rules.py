@@ -46,10 +46,20 @@ def check_layout_rules(layout: JournalLayout, request: Any) -> list[dict[str, An
 
 def check_image_order(layout: JournalLayout, request: Any) -> list[dict[str, Any]]:
     expected_image_ids = [image.id for image in request.images]
-    actual_image_ids = [image.image_id for image in layout.layout.images]
+    actual_image_ids = rendered_image_ids(layout)
     if actual_image_ids != expected_image_ids:
         return [rule_issue("imageOrder", "high", actual_image_ids, "图片集合或顺序与用户确认结果不一致")]
     return []
+
+
+def rendered_image_ids(layout: JournalLayout) -> list[str]:
+    if layout.layout.sections:
+        return [
+            image.image_id
+            for section in sorted(layout.layout.sections, key=lambda item: item.y)
+            for image in sorted(section.images, key=lambda item: (item.y, item.x))
+        ]
+    return [image.image_id for image in layout.layout.images]
 
 
 def check_readability(layout: JournalLayout) -> list[dict[str, Any]]:
