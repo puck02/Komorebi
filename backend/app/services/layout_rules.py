@@ -355,7 +355,18 @@ def check_decoration_function(layout: JournalLayout, request: Any) -> list[dict[
 def paper_backs_text(paper: Any, text: Any, body: str) -> bool:
     paper_rect = rect_from_item(paper.model_dump(by_alias=True))
     text_rect = (text.x, text.y, text.width, section_text_height(text, body))
-    return rects_overlap(paper_rect, text_rect)
+    text_area = text_rect[2] * text_rect[3]
+    if text_area <= 0:
+        return False
+    return rect_intersection_area(paper_rect, text_rect) / text_area >= 0.55
+
+
+def rect_intersection_area(first: tuple[float, float, float, float], second: tuple[float, float, float, float]) -> float:
+    first_x, first_y, first_width, first_height = first
+    second_x, second_y, second_width, second_height = second
+    overlap_width = min(first_x + first_width, second_x + second_width) - max(first_x, second_x)
+    overlap_height = min(first_y + first_height, second_y + second_height) - max(first_y, second_y)
+    return max(overlap_width, 0) * max(overlap_height, 0)
 
 
 def check_section_image_spacing(section: Any) -> list[dict[str, Any]]:
