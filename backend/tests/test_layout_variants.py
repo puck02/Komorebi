@@ -133,6 +133,28 @@ def test_photo_wall_layout_has_a_clear_primary_photo():
     assert max(areas) / min(areas) >= 1.25
 
 
+def test_ticket_memo_two_photo_layout_places_text_below_photos():
+    images = [image("img_1", 640, 480), image("img_2", 900, 1200)]
+    section_data = content_section("section_1", ["img_1", "img_2"], body="坐在咖啡店里，桌上有小票和一杯咖啡。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="ticket_memo",
+    )
+
+    image_bottom = max(image["y"] + image["height"] for image in layout["images"])
+    text = layout["texts"][0]
+    assert text["y"] >= image_bottom + 56
+    assert text["x"] == 112
+    assert text["width"] == 820
+    assert layout["images"][1]["x"] - (layout["images"][0]["x"] + layout["images"][0]["width"]) >= 32
+
+
 def test_generator_replaces_invalid_section_variant_with_rule_choice():
     payload = valid_model_json()
     payload["content"]["imageUnderstanding"] = [

@@ -959,7 +959,6 @@ def test_layout_rules_report_sparse_repetitive_or_external_poor_decorations():
     issues = check_layout_rules(layout, request)
 
     issue_descriptions = [issue["description"] for issue in issues]
-    assert "装饰数量偏少，画面丰富度不足" in issue_descriptions
     assert "素材重复使用过多，画面变化不足" in issue_descriptions
     assert "外部素材使用偏少，素材库丰富度没有体现出来" in issue_descriptions
 

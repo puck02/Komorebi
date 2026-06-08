@@ -10,6 +10,7 @@ MIN_DECORATIONS = 12
 MIN_EXTERNAL_STICKERS = 2
 MIN_SECTION_GAP = 80
 MIN_IMAGE_GAP = 32
+SECTION_BOUNDS_EPSILON = 1
 DECORATION_CATEGORY_LIMITS = {
     "paper": 4,
     "sticker": 8,
@@ -64,6 +65,11 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
     external_sticker_count = 0
     image_dicts = all_image_dicts(layout)
     rendered_decorations = all_rendered_decorations(layout)
+    paper_dicts = [
+        decoration.model_dump(by_alias=True)
+        for decoration in rendered_decorations
+        if (asset := asset_by_id.get(decoration.asset_id)) is not None and asset.category == "paper"
+    ]
 
     for decoration in rendered_decorations:
         asset = asset_by_id.get(decoration.asset_id)
@@ -81,12 +87,13 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
         decoration_dict = decoration.model_dump(by_alias=True)
         if asset.category == "sticker" and overlaps_photo_safe_area(decoration_dict, image_dicts):
             issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "贴纸覆盖照片主体安全区"))
-        if asset.category == "tape" and not overlaps_any_photo_edge(decoration_dict, image_dicts):
+        if asset.category == "tape" and not tape_attached_to_target(decoration_dict, image_dicts, paper_dicts):
             issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "胶带没有贴近照片边缘"))
 
     if len(rendered_decorations) > MAX_DECORATIONS:
         issues.append(rule_issue("decorationDensity", "high", [], "装饰总数超过限制"))
-    if len(asset_by_id) >= MIN_DECORATIONS and len(rendered_decorations) < MIN_DECORATIONS:
+    min_decorations = minimum_decoration_count(layout)
+    if len(asset_by_id) >= min_decorations and len(rendered_decorations) < min_decorations:
         issues.append(rule_issue("decorationDensity", "medium", [], "装饰数量偏少，画面丰富度不足"))
     repeated_asset_ids = [asset_id for asset_id, count in asset_counts.items() if count > 1]
     if repeated_asset_ids and len(asset_by_id) > len(asset_counts):
@@ -102,24 +109,14 @@ def check_decorations(layout: JournalLayout, request: Any) -> list[dict[str, Any
     return issues
 
 
-def check_single_decoration(
-    decoration: Any,
-    asset_by_id: dict[str, Any],
+def tape_attached_to_target(
+    decoration: dict[str, Any],
     image_dicts: list[dict[str, Any]],
-    canvas_height: float,
-) -> list[dict[str, Any]]:
-    issues: list[dict[str, Any]] = []
-    asset = asset_by_id.get(decoration.asset_id)
-    if asset is None:
-        return [rule_issue("asset", "high", [decoration.asset_id], "使用了未审核或不存在的素材")]
-    if not rect_inside_canvas((decoration.x, decoration.y, decoration.width, decoration.height), canvas_height):
-        issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "素材超出画布范围"))
-    decoration_dict = decoration.model_dump(by_alias=True)
-    if asset.category == "sticker" and overlaps_photo_safe_area(decoration_dict, image_dicts):
-        issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "贴纸覆盖照片主体安全区"))
-    if asset.category == "tape" and not overlaps_any_photo_edge(decoration_dict, image_dicts):
-        issues.append(rule_issue("decorationPlacement", "high", [decoration.asset_id], "胶带没有贴近照片边缘"))
-    return issues
+    paper_dicts: list[dict[str, Any]],
+) -> bool:
+    if overlaps_any_photo_edge(decoration, image_dicts):
+        return True
+    return overlaps_any_photo_edge(decoration, paper_dicts)
 
 
 def all_image_dicts(layout: JournalLayout) -> list[dict[str, Any]]:
@@ -135,6 +132,12 @@ def section_decorations(layout: JournalLayout) -> list[Any]:
 def all_rendered_decorations(layout: JournalLayout) -> list[Any]:
     decorations = section_decorations(layout)
     return decorations if decorations else list(layout.layout.decorations)
+
+
+def minimum_decoration_count(layout: JournalLayout) -> int:
+    if layout.layout.sections:
+        return min(MIN_DECORATIONS, max(len(layout.layout.sections) * 3, 3))
+    return MIN_DECORATIONS
 
 
 def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
@@ -154,7 +157,7 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
                 *[decoration.y + decoration.height for decoration in section.decorations],
             ]
         )
-        if content_bottom > section_bottom:
+        if content_bottom - section_bottom > SECTION_BOUNDS_EPSILON:
             issues.append(rule_issue("sectionBounds", "high", [section.section_id], "章节高度没有覆盖内部内容"))
         if index > 0:
             previous = sections[index - 1]

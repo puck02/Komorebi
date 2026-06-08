@@ -92,11 +92,13 @@ def build_section_layout(
     text_y = image_bottom + TEXT_PHOTO_GAP
     if variant in {"magazine_whitespace", "ticket_memo"} and image_placements:
         text_y = min(text_y, start_y + 420)
+    if variant == "ticket_memo" and len(image_placements) >= 2:
+        text_y = image_bottom + TEXT_PHOTO_GAP
     text = {
         "role": "body",
-        "x": text_x_for_variant(variant),
+        "x": text_x_for_variant(variant, len(image_placements)),
         "y": text_y,
-        "width": text_width_for_variant(variant),
+        "width": text_width_for_variant(variant, len(image_placements)),
         "fontSize": SECTION_TEXT_FONT_SIZE,
     }
     body = str(section.get("body") or "")
@@ -148,7 +150,7 @@ def build_ticket_memo_images(images: list[Any], start_y: float, section_index: i
     placements = []
     for index, image in enumerate(images[:2]):
         width = 520 if index == 0 else 340
-        x = 92 if index == 0 else 642
+        x = 92 if index == 0 else 648
         y = start_y + (0 if index == 0 else 72)
         placements.append(placement(image, x, y, width, section_index + index, rotation=[-2.5, 3][index]))
     return placements
@@ -265,17 +267,21 @@ def photo_height_for_width(image: Any, width: float) -> float:
     return max(min(height, 620), 260)
 
 
-def text_x_for_variant(variant: str) -> float:
+def text_x_for_variant(variant: str, image_count: int = 0) -> float:
     if variant == "magazine_whitespace":
         return 642
+    if variant == "ticket_memo" and image_count >= 2:
+        return 112
     if variant == "ticket_memo":
         return 612
     return 112
 
 
-def text_width_for_variant(variant: str) -> float:
+def text_width_for_variant(variant: str, image_count: int = 0) -> float:
     if variant == "magazine_whitespace":
         return 350
+    if variant == "ticket_memo" and image_count >= 2:
+        return SECTION_TEXT_WIDTH
     if variant == "ticket_memo":
         return 360
     return SECTION_TEXT_WIDTH

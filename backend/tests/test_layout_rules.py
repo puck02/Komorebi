@@ -39,6 +39,35 @@ def test_layout_rules_report_tape_not_attached_to_edge():
     assert has_issue(issues, "decorationPlacement", "high", "胶带没有贴近照片边缘")
 
 
+def test_layout_rules_allow_tape_attached_to_section_paper():
+    payload = layout_payload()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 760,
+            "images": [{"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 750, "width": 820, "fontSize": 32}],
+            "decorations": [
+                {"assetId": "paper_approved", "x": 70, "y": 720, "width": 904, "height": 160, "rotation": 0},
+                {"assetId": "tape_approved", "x": 160, "y": 696, "width": 220, "height": 54, "rotation": -8},
+            ],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(
+        layout,
+        generation_request(assets=[asset_item("paper_approved", "paper"), asset_item("tape_approved", "tape")]),
+    )
+
+    assert not has_issue(issues, "decorationPlacement", "high", "胶带没有贴近照片边缘")
+
+
 def test_layout_rules_check_section_decoration_assets_and_placement():
     payload = layout_payload()
     payload["content"]["sections"] = [
@@ -77,6 +106,10 @@ def test_layout_rules_count_section_decorations_for_density():
         {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
     ]
     payload["layout"]["decorations"] = []
+    payload["layout"]["images"] = [
+        {"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0},
+        {"imageId": "img_2", "x": 92, "y": 960, "width": 420, "height": 320, "rotation": 0},
+    ]
     payload["layout"]["sections"] = [
         {
             "sectionId": "section_1",
@@ -94,6 +127,32 @@ def test_layout_rules_count_section_decorations_for_density():
     layout = JournalLayout.model_validate(payload)
     request = generation_request(
         assets=[asset_item(f"sticker_{index}", "sticker") for index in range(12)]
+    )
+
+    issues = check_layout_rules(layout, request)
+
+    assert not has_issue(issues, "decorationDensity", "medium", "装饰数量偏少，画面丰富度不足")
+
+
+def test_layout_rules_use_section_count_for_section_decoration_minimum():
+    payload = layout_payload()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []},
+        {"id": "section_2", "title": "第二段", "imageIds": ["img_2"], "body": "第二段正文。", "mood": []},
+    ]
+    payload["layout"]["decorations"] = []
+    payload["layout"]["images"] = [
+        {"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0},
+        {"imageId": "img_2", "x": 92, "y": 960, "width": 420, "height": 320, "rotation": 0},
+    ]
+    payload["layout"]["sections"] = [
+        section_payload("section_1", "img_1", 220, [f"sticker_{index}" for index in range(3)]),
+        section_payload("section_2", "img_2", 920, [f"sticker_{index}" for index in range(3, 6)]),
+    ]
+    layout = JournalLayout.model_validate(payload)
+    request = generation_request(
+        images=two_images(),
+        assets=[asset_item(f"sticker_{index}", "sticker") for index in range(12)],
     )
 
     issues = check_layout_rules(layout, request)
@@ -159,6 +218,31 @@ def test_layout_rules_report_section_content_beyond_declared_height():
     issues = check_layout_rules(layout, generation_request())
 
     assert has_issue(issues, "sectionBounds", "high", "章节高度没有覆盖内部内容")
+
+
+def test_layout_rules_allow_subpixel_section_bound_rounding():
+    payload = layout_payload()
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "第一段", "imageIds": ["img_1"], "body": "第一段正文。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 276.8,
+            "height": 707.3333333333333,
+            "images": [{"imageId": "img_1", "x": 92, "y": 276.8, "width": 520, "height": 390, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 858.1333333333333, "width": 820, "fontSize": 32}],
+            "decorations": [
+                {"assetId": "paper_approved", "x": 70, "y": 824.1333333333333, "width": 904, "height": 160, "rotation": 0}
+            ],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(assets=[asset_item("paper_approved", "paper")]))
+
+    assert not has_issue(issues, "sectionBounds", "high", "章节高度没有覆盖内部内容")
 
 
 def test_layout_rules_report_section_text_photo_overlap():
@@ -345,6 +429,21 @@ def asset_item(asset_id, category, source="internal"):
         source=source,
         quality_status="approved",
     )
+
+
+def section_payload(section_id, image_id, y, decoration_ids):
+    return {
+        "sectionId": section_id,
+        "variant": "hero_note",
+        "y": y,
+        "height": 620,
+        "images": [{"imageId": image_id, "x": 92, "y": y + 40, "width": 420, "height": 320, "rotation": 0}],
+        "texts": [{"role": "body", "x": 112, "y": y + 420, "width": 820, "fontSize": 32}],
+        "decorations": [
+            {"assetId": asset_id, "x": 760, "y": y + 40 + index * 72, "width": 80, "height": 80, "rotation": 0}
+            for index, asset_id in enumerate(decoration_ids)
+        ],
+    }
 
 
 class FakeAgentClient:
