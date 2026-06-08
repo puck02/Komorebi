@@ -338,6 +338,25 @@ def test_layout_rules_report_cliche_copy_quality_issue():
     assert has_issue(issues, "copyQuality", "medium", "正文存在明显 AI 套话，手帐记录不够具体")
 
 
+def test_layout_rules_report_placeholder_copy_quality_issue():
+    payload = layout_payload()
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "今天的照片"}]
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "第一段",
+            "imageIds": ["img_1"],
+            "body": "这一组照片也想好好留下。",
+            "mood": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert has_issue(issues, "copyQuality", "medium", "正文存在占位式描述，手帐记录不够具体")
+
+
 def test_layout_rules_report_multi_image_section_without_visual_focus():
     payload = layout_payload(image_ids=["img_1", "img_2", "img_3"])
     payload["content"]["sections"] = [
@@ -516,7 +535,7 @@ def layout_payload(title="初稿", image_ids=None):
         "content": {
             "title": title,
             "body": ["今天走了很久，回来时刚好喝到一杯热咖啡。"],
-            "captions": [{"imageId": image_ids[0], "text": "今天的照片"}],
+            "captions": [{"imageId": image_ids[0], "text": "热咖啡还在桌上"}],
         },
         "layout": {
             "variant": "long_collage",

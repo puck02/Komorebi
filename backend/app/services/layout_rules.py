@@ -18,6 +18,18 @@ DECORATION_CATEGORY_LIMITS = {
     "tape": 8,
     "texture": 2,
 }
+PLACEHOLDER_COPY = {
+    "今天的照片",
+    "照片说明",
+    "这张照片",
+    "生活片段",
+    "第一段",
+    "第二段",
+    "第三段",
+    "第四段",
+    "这一组照片也想好好留下",
+    "今天的照片先放在这里",
+}
 
 
 def check_layout_rules(layout: JournalLayout, request: Any) -> list[dict[str, Any]]:
@@ -197,11 +209,19 @@ def check_copy_quality(layout: JournalLayout) -> list[dict[str, Any]]:
         layout.content.title,
         *layout.content.body,
         *(caption.text for caption in layout.content.captions),
+        *(section.title for section in layout.content.sections),
         *(section.body for section in layout.content.sections),
     ]
     if any(has_cliche_copy(part) for part in copy_parts):
         return [rule_issue("copyQuality", "medium", [], "正文存在明显 AI 套话，手帐记录不够具体")]
+    if any(is_placeholder_copy(part) for part in copy_parts):
+        return [rule_issue("copyQuality", "medium", [], "正文存在占位式描述，手帐记录不够具体")]
     return []
+
+
+def is_placeholder_copy(value: Any) -> bool:
+    text = str(value or "").strip(" 。！？!?；;，,")
+    return text.startswith("片段 ") or text in PLACEHOLDER_COPY
 
 
 def check_visual_focus(layout: JournalLayout) -> list[dict[str, Any]]:
