@@ -275,18 +275,33 @@ def section_text_height(text: Any, body: str) -> float:
 
 
 def check_copy_quality(layout: JournalLayout) -> list[dict[str, Any]]:
+    section_bodies = [section.body for section in layout.content.sections]
     copy_parts = [
         layout.content.title,
         *layout.content.body,
         *(caption.text for caption in layout.content.captions),
         *(section.title for section in layout.content.sections),
-        *(section.body for section in layout.content.sections),
+        *section_bodies,
     ]
     if any(has_cliche_copy(part) for part in copy_parts):
         return [rule_issue("copyQuality", "medium", [], "正文存在明显 AI 套话，手帐记录不够具体")]
     if any(is_placeholder_copy(part) for part in copy_parts):
         return [rule_issue("copyQuality", "medium", [], "正文存在占位式描述，手帐记录不够具体")]
+    if has_repeated_section_body(section_bodies):
+        return [rule_issue("copyQuality", "medium", [], "章节正文重复，手帐记录不够具体")]
     return []
+
+
+def has_repeated_section_body(section_bodies: list[Any]) -> bool:
+    seen: set[str] = set()
+    for body in section_bodies:
+        text = copy_signal_text(body)
+        if len(text) < MIN_SECTION_BODY_CHARS:
+            continue
+        if text in seen:
+            return True
+        seen.add(text)
+    return False
 
 
 def is_placeholder_copy(value: Any) -> bool:

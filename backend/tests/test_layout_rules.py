@@ -550,6 +550,39 @@ def test_layout_rules_report_placeholder_copy_quality_issue():
     assert has_issue(issues, "copyQuality", "medium", "正文存在占位式描述，手帐记录不够具体")
 
 
+def test_layout_rules_report_repeated_section_body_copy():
+    payload = layout_payload(image_ids=["img_1", "img_2"])
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "窗边", "imageIds": ["img_1"], "body": "咖啡还热着，窗外刚亮。", "mood": []},
+        {"id": "section_2", "title": "路口", "imageIds": ["img_2"], "body": "咖啡还热着，窗外刚亮。", "mood": []},
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 620,
+            "images": [{"imageId": "img_1", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 620, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        },
+        {
+            "sectionId": "section_2",
+            "variant": "hero_note",
+            "y": 920,
+            "height": 620,
+            "images": [{"imageId": "img_2", "x": 92, "y": 960, "width": 420, "height": 320, "rotation": 0}],
+            "texts": [{"role": "body", "x": 112, "y": 1320, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        },
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=two_images()))
+
+    assert has_issue(issues, "copyQuality", "medium", "章节正文重复，手帐记录不够具体")
+
+
 def test_layout_rules_report_numbered_caption_as_placeholder_copy():
     payload = layout_payload()
     payload["content"]["captions"] = [{"imageId": "img_1", "text": "第 2 张照片"}]
