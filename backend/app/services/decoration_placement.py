@@ -65,6 +65,11 @@ def place_decorations(
             if seal is not None:
                 placed.append(seal)
             continue
+        if function == "stamp":
+            stamp = place_stamp_sticker(decoration, paper_backings, image_placements, text_placements)
+            if stamp is not None:
+                placed.append(stamp)
+            continue
         if function in {"envelope", "tag"}:
             ephemera = place_paper_edge_sticker(decoration, paper_backings, image_placements, text_placements, function)
             if ephemera is not None:
@@ -99,6 +104,8 @@ def infer_asset_function(asset: AssetItem) -> str:
         return "seal"
     if "envelope" in text or "信封" in text:
         return "envelope"
+    if "stamp" in text or "邮票" in text or "日期章" in text:
+        return "stamp"
     if "tag" in text or "label" in text or "吊牌" in text:
         return "tag"
     if "flower" in text:
@@ -315,6 +322,38 @@ def place_paper_edge_sticker(
     if overlaps_any_text(candidate, text_placements) or overlaps_photo_safe_area(candidate, image_placements):
         return place_sticker(decoration, image_placements, text_placements)
     return candidate
+
+
+def place_stamp_sticker(
+    decoration: dict[str, Any],
+    paper_backings: list[dict[str, Any]],
+    image_placements: list[dict[str, Any]],
+    text_placements: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    if not paper_backings:
+        return place_sticker(decoration, image_placements, text_placements)
+
+    target = nearest_rect(decoration, paper_backings)
+    target_x, target_y, target_width, target_height = rect_from_item(target)
+    width = min(max(positive_number(decoration.get("width"), 82), 70), 92)
+    height = min(max(positive_number(decoration.get("height"), 82), 70), 92)
+    anchors = [
+        (target_x + target_width - width * 0.62, target_y - height * 0.82),
+        (target_x - width * 0.38, target_y - height * 0.82),
+        (target_x + target_width - width * 0.62, target_y + target_height - height * 0.62),
+        (target_x - width * 0.38, target_y + target_height - height * 0.62),
+    ]
+    for x, y in anchors:
+        candidate = dict(decoration)
+        candidate["width"] = width
+        candidate["height"] = height
+        candidate["x"] = x
+        candidate["y"] = y
+        candidate["rotation"] = clamp_number(positive_number(decoration.get("rotation"), -2), -6, 6)
+        candidate = clamp_decoration_to_canvas(candidate)
+        if not overlaps_any_text(candidate, text_placements) and not overlaps_photo_safe_area(candidate, image_placements):
+            return candidate
+    return place_sticker(decoration, image_placements, text_placements)
 
 
 def sticker_anchors(

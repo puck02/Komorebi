@@ -20,6 +20,8 @@ def test_infer_asset_function_from_category_tags_and_id():
     assert infer_asset_function(asset_item("sticker_wax_seal_31", "sticker", tags=["seal", "letter"])) == "seal"
     assert infer_asset_function(asset_item("sticker_tiny_envelope_33", "sticker", tags=["letter", "note"])) == "envelope"
     assert infer_asset_function(asset_item("sticker_kraft_tag_32", "sticker", tags=["tag", "label"])) == "tag"
+    assert infer_asset_function(asset_item("sticker_postage_stamp_29", "sticker", tags=["stamp", "memory"])) == "stamp"
+    assert infer_asset_function(asset_item("sticker_date_stamp_35", "sticker", tags=["date", "stamp", "memory"])) == "stamp"
 
 
 def test_infer_asset_function_keeps_ticket_sticker_as_sticker():
@@ -218,6 +220,37 @@ def test_place_decorations_tucks_letter_tag_stickers_near_paper_edge():
         assert ephemera["y"] + ephemera["height"] > paper["y"]
         assert not overlaps_any_text(ephemera, [text])
         assert not overlaps_photo_safe_area(ephemera, [image_placement()])
+
+
+def test_place_decorations_attaches_stamp_stickers_to_paper_corner():
+    text = {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}
+    for asset_id, tags in [
+        ("sticker_postage_stamp_29", ["stamp", "travel", "memory"]),
+        ("sticker_date_stamp_35", ["date", "stamp", "memory"]),
+    ]:
+        placed = place_decorations(
+            [
+                {"assetId": "paper_note", "x": 0, "y": 0, "width": 120, "height": 80, "rotation": 0},
+                {"assetId": asset_id, "x": 122, "y": 770, "width": 160, "height": 160, "rotation": 0},
+            ],
+            image_placements=[image_placement()],
+            text_placements=[text],
+            asset_by_id={
+                "paper_note": asset_item("paper_note", "paper", tags=["note"]),
+                asset_id: asset_item(asset_id, "sticker", tags=tags),
+            },
+        )
+
+        paper = placed[0]
+        stamp = placed[1]
+        assert stamp["x"] < paper["x"] + paper["width"]
+        assert stamp["x"] + stamp["width"] > paper["x"]
+        assert stamp["y"] < paper["y"] + paper["height"]
+        assert stamp["y"] + stamp["height"] > paper["y"]
+        assert stamp["width"] <= 92
+        assert stamp["height"] <= 92
+        assert not overlaps_any_text(stamp, [text])
+        assert not overlaps_photo_safe_area(stamp, [image_placement()])
 
 
 def test_generator_places_paper_near_body_text():
