@@ -101,6 +101,31 @@ def test_choose_section_variant_uses_magazine_whitespace_for_text_forward_single
     assert variant == "magazine_whitespace"
 
 
+def test_magazine_whitespace_text_stays_below_external_caption():
+    images = [image("img_1", 1200, 900)]
+    section_data = content_section(
+        "section_1",
+        ["img_1"],
+        body="那一刻没有发生什么特别的事，只是光落下来，屋子安静，我突然觉得今天可以慢一点。",
+        mood=["安静", "留白"],
+    )
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="magazine_whitespace",
+    )
+
+    body_text = next(text for text in layout["texts"] if text["role"] == "body")
+    caption_text = next(text for text in layout["texts"] if text["role"] == "caption")
+    caption_bottom = caption_text["y"] + caption_text["fontSize"] * 2.4
+    assert body_text["y"] >= caption_bottom + 18
+
+
 def test_build_section_layout_places_images_and_text_inside_section():
     images = [image("img_1", 640, 480), image("img_2", 900, 1200), image("img_3", 1200, 900)]
     section_data = content_section("section_1", ["img_1", "img_2", "img_3"], body="这三张照片放在一起刚好是一段周末。")

@@ -105,7 +105,7 @@ def build_section_layout(
     if caption_texts:
         text_y = max(text_y, caption_bottom + SECTION_CAPTION_TEXT_GAP)
     if variant in {"magazine_whitespace", "ticket_memo"} and image_placements:
-        text_y = min(text_y, start_y + 420)
+        text_y = max(min(text_y, start_y + 420), caption_bottom + SECTION_CAPTION_TEXT_GAP)
     if variant == "ticket_memo" and len(image_placements) >= 2:
         text_y = max(image_bottom + TEXT_PHOTO_GAP, caption_bottom + SECTION_CAPTION_TEXT_GAP)
     text = {
