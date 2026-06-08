@@ -589,6 +589,79 @@ def test_generator_uses_section_theme_tags_for_template_decorations():
     assert {"paper_label_coffee_06", "tape_coffee_06", "sticker_coffee_06"}.issubset(decoration_ids)
 
 
+@pytest.mark.parametrize(
+    ("summary", "scene", "subjects", "section_title", "section_body", "expected_sticker"),
+    [
+        (
+            "桌面上的相片和照片角",
+            "手账页",
+            ["照片", "相册"],
+            "照片拼贴",
+            "把几张拍立得和相册小角贴在一起。",
+            "sticker_photo_corner_21",
+        ),
+        (
+            "展览门票和票根",
+            "展览",
+            ["票根"],
+            "展览票根",
+            "票根和小卡片都夹在这一页。",
+            "sticker_ticket_stub_24",
+        ),
+        (
+            "便签纸和手写记录",
+            "桌面",
+            ["便签"],
+            "今日便签",
+            "纸条上写了今天的几件小事。",
+            "sticker_paperclip_note_26",
+        ),
+    ],
+)
+def test_generator_uses_scrapbook_recipe_stickers_for_template_decorations(
+    summary,
+    scene,
+    subjects,
+    section_title,
+    section_body,
+    expected_sticker,
+):
+    payload = valid_model_json()
+    payload["content"]["imageUnderstanding"] = [
+        {
+            "imageId": "img_1",
+            "summary": summary,
+            "scene": scene,
+            "subjects": subjects,
+            "mood": [],
+        }
+    ]
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": section_title,
+            "imageIds": ["img_1"],
+            "body": section_body,
+            "mood": ["日常"],
+        }
+    ]
+    payload["layout"]["decorations"] = []
+    assets = [
+        asset_item("paper_note_cream_01", "paper"),
+        asset_item("tape_warm_grid_01", "tape"),
+        asset_item("sticker_leaf_05", "sticker", tags=["nature", "travel"]),
+        asset_item("sticker_photo_corner_21", "sticker", tags=["photo", "memory", "collage"]),
+        asset_item("sticker_ticket_stub_24", "sticker", tags=["ticket", "travel", "memory"]),
+        asset_item("sticker_paperclip_note_26", "sticker", tags=["note", "daily", "collage"]),
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(assets=assets))
+
+    decoration_ids = {decoration.asset_id for decoration in layout.layout.sections[0].decorations}
+    assert expected_sticker in decoration_ids
+
+
 def test_generator_repositions_model_section_decorations_around_template_content():
     payload = valid_model_json()
     payload["canvas"]["height"] = 3600
