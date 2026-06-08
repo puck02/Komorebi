@@ -36,6 +36,22 @@ def test_place_decorations_uses_note_paper_as_text_backing():
     assert not overlaps_photo_safe_area(paper, [image_placement()])
 
 
+def test_place_decorations_expands_note_paper_to_text_height():
+    decorations = [{"assetId": "paper_note", "x": 0, "y": 0, "width": 120, "height": 80, "rotation": 0}]
+    text = {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32, "height": 230}
+
+    placed = place_decorations(
+        decorations,
+        image_placements=[image_placement()],
+        text_placements=[text],
+        asset_by_id={"paper_note": asset_item("paper_note", "paper", tags=["note"])},
+    )
+
+    paper = placed[0]
+    assert paper["y"] <= text["y"]
+    assert paper["y"] + paper["height"] >= text["y"] + text["height"] + 28
+
+
 def test_place_decorations_snaps_tape_to_nearest_paper_or_photo_edge():
     decorations = [
         {"assetId": "paper_note", "x": 0, "y": 0, "width": 120, "height": 80, "rotation": 0},

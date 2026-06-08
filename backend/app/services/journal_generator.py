@@ -354,6 +354,13 @@ def normalize_layout_sections(
         )
         section_images = generated_section["images"]
         section_texts = generated_section["texts"]
+        for text in section_texts:
+            if text.get("role") == "body":
+                text["height"] = estimate_paragraph_height(
+                    content_section.get("body", ""),
+                    positive_number(text.get("fontSize"), BODY_FONT_SIZE),
+                    positive_number(text.get("width"), BODY_WIDTH),
+                )
         section_decorations = normalize_section_decorations(
             content_section,
             layout["content"].get("imageUnderstanding", []),

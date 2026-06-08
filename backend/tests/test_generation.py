@@ -392,6 +392,46 @@ def test_generator_adds_template_decorations_to_sections_without_model_decoratio
     assert paper.y <= body_text.y <= paper.y + paper.height
 
 
+def test_generator_expands_template_paper_to_actual_body_height():
+    payload = valid_model_json()
+    long_body = "这是一段很长的正文，" * 30
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "长正文",
+            "imageIds": ["img_1"],
+            "body": long_body,
+            "mood": ["日常"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "hero_note",
+            "y": 220,
+            "height": 520,
+            "images": [],
+            "texts": [],
+            "decorations": [],
+        }
+    ]
+    payload["layout"]["decorations"] = []
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(assets=[asset_item("paper_note_cream_01", "paper")]))
+
+    section = layout.layout.sections[0]
+    paper = next(decoration for decoration in section.decorations if decoration.asset_id == "paper_note_cream_01")
+    body_text = section.texts[0]
+    text_bottom = body_text.y + estimated_paragraph_height(
+        layout.content.sections[0].body,
+        body_text.font_size,
+        body_text.width,
+    )
+    assert paper.y <= body_text.y
+    assert paper.y + paper.height >= text_bottom + 28
+
+
 def test_generator_uses_section_theme_tags_for_template_decorations():
     payload = valid_model_json()
     payload["content"]["imageUnderstanding"] = [
