@@ -15,6 +15,11 @@ CLICHE_PHRASES = (
     "氛围感",
     "美好瞬间",
     "生活碎片",
+    "像一首小诗",
+    "愿这份美好延续",
+    "留下这一刻",
+    "记录这一刻",
+    "把这一刻留下",
     "治愈",
     "仪式感",
 )
@@ -147,7 +152,15 @@ def tidy_text(text: str) -> str:
     text = text.replace("很满", "").replace("都是和。", "").replace("都是和，", "")
     text = text.replace("照片里的很满，", "").replace("照片里的，", "")
     text = text.replace("刚刚好", "")
+    text = drop_empty_opening_stub(text)
     return text.strip(" ")
+
+
+def drop_empty_opening_stub(text: str) -> str:
+    for stub in ("今天。", "今天，", "今天、", "今天；"):
+        if text.startswith(stub) and len(text) > len(stub):
+            return text[len(stub) :].lstrip(" 。！？!?；;，,、")
+    return text
 
 
 def is_empty_observation(text: str) -> bool:

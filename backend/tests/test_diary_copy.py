@@ -53,8 +53,25 @@ def test_normalize_diary_text_removes_template_journal_phrases():
     assert "咖啡还放在窗边" in result
 
 
+def test_normalize_diary_text_removes_poetic_ai_closing_lines():
+    text = "今天像一首小诗，愿这份美好延续。咖啡还热着，窗外下着雨。留下这一刻。"
+
+    result = normalize_diary_text(text)
+
+    assert "像一首小诗" not in result
+    assert "愿这份美好延续" not in result
+    assert "留下这一刻" not in result
+    assert result == "咖啡还热着，窗外下着雨。"
+
+
 def test_normalize_diary_text_uses_fallback_when_cliche_cleanup_leaves_no_observation():
     result = normalize_diary_text("今日份小确幸，照片里的氛围感很满，都是美好瞬间和生活碎片。", fallback="今天先记到这里。")
+
+    assert result == "今天先记到这里。"
+
+
+def test_normalize_diary_text_uses_fallback_when_poetic_cleanup_leaves_no_observation():
+    result = normalize_diary_text("今天像一首小诗，愿这份美好延续。留下这一刻。", fallback="今天先记到这里。")
 
     assert result == "今天先记到这里。"
 
@@ -121,4 +138,5 @@ def test_has_cliche_copy_detects_ai_like_phrases():
     assert has_cliche_copy("照片里是被阳光放慢的一天，适合把这些片段收成一页。") is True
     assert has_cliche_copy("咖啡、散步和好天气都刚刚好。") is True
     assert has_cliche_copy("今日份小确幸，都是很有氛围感的美好瞬间。") is True
+    assert has_cliche_copy("今天像一首小诗，愿这份美好延续。") is True
     assert has_cliche_copy("咖啡还热着，窗边坐了一会儿。") is False
