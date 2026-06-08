@@ -257,7 +257,11 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     layout["layout"]["images"] = [
         placement for placement in layout["layout"].get("images", []) if placement.get("imageId") in image_ids
     ]
-    normalize_image_understanding(layout, request.images)
+    normalize_image_understanding(
+        layout,
+        request.images,
+        fallback_caption_texts(request.description, max(len(request.images), 1)),
+    )
 
     captions = layout["content"].get("captions")
     if not isinstance(captions, list):
@@ -340,7 +344,11 @@ def normalize_sections(
     layout["layout"]["sections"] = normalize_layout_sections(layout, content_sections, request_images, asset_by_id)
 
 
-def normalize_image_understanding(layout: dict[str, Any], request_images: list[JournalImageInput]) -> None:
+def normalize_image_understanding(
+    layout: dict[str, Any],
+    request_images: list[JournalImageInput],
+    fallback_summaries: list[str],
+) -> None:
     raw_items = layout["content"].get("imageUnderstanding")
     if raw_items is None:
         raw_items = layout["content"].get("image_understanding")
@@ -357,10 +365,11 @@ def normalize_image_understanding(layout: dict[str, Any], request_images: list[J
     normalized: list[dict[str, Any]] = []
     for index, image in enumerate(request_images):
         raw_item = raw_by_id.get(image.id, {})
+        fallback_summary = fallback_summaries[index] if index < len(fallback_summaries) else "今日小记"
         normalized.append(
             {
                 "imageId": image.id,
-                "summary": str(raw_item.get("summary") or f"第 {index + 1} 张照片的生活片段").strip(),
+                "summary": str(raw_item.get("summary") or fallback_summary).strip(),
                 "scene": str(raw_item.get("scene") or "").strip(),
                 "subjects": normalize_string_list(raw_item.get("subjects")),
                 "mood": normalize_string_list(raw_item.get("mood")),

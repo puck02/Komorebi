@@ -914,7 +914,7 @@ def test_generator_normalizes_image_understanding_to_provided_images():
 
     assert [item.image_id for item in layout.content.image_understanding] == ["img_1", "img_2", "img_3"]
     assert layout.content.image_understanding[0].summary == "窗边咖啡"
-    assert layout.content.image_understanding[1].summary == "第 2 张照片的生活片段"
+    assert layout.content.image_understanding[1].summary == "周末一起散步，天气很好，喝了"
 
 
 def test_generator_fills_missing_captions_from_image_understanding():
@@ -973,18 +973,24 @@ def test_generator_replaces_generic_caption_with_image_understanding():
     assert layout.content.captions[0].text == "窗边咖啡和小票"
 
 
-def test_generator_replaces_missing_understanding_caption_with_ordered_label():
+def test_generator_replaces_missing_understanding_caption_with_description_phrases():
     payload = valid_model_json()
     payload["content"].pop("captions")
     payload["content"].pop("imageUnderstanding", None)
     generator = JournalGenerator(FakeClient(payload))
 
-    layout = generator.generate(generation_request(images=three_images()))
+    layout = generator.generate(
+        JournalGenerationRequest(
+            description="周末一起散步。傍晚喝了咖啡。路口灯亮起来。",
+            images=three_images(),
+            assets=get_approved_assets(tags=["warm", "daily"]),
+        )
+    )
 
     assert [(caption.image_id, caption.text) for caption in layout.content.captions] == [
-        ("img_1", "第 1 张照片"),
-        ("img_2", "第 2 张照片"),
-        ("img_3", "第 3 张照片"),
+        ("img_1", "周末一起散步"),
+        ("img_2", "傍晚喝了咖啡"),
+        ("img_3", "路口灯亮起来"),
     ]
 
 
