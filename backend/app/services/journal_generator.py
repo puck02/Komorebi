@@ -114,7 +114,7 @@ class JournalGenerator:
 
 def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
     body = normalize_fallback_body(request.description)
-    caption_texts = fallback_caption_texts(body, max(len(request.images), 1))
+    caption_texts = fallback_caption_texts(body, max(len(request.images), 1), request)
     image_id = request.images[0].id if request.images else "img_1"
     mood_tags = normalized_mood_tags(request)
     sections = fallback_sections(request, body)
@@ -173,12 +173,49 @@ def normalize_fallback_body(value: str) -> str:
     return body
 
 
-def fallback_caption_texts(body: str, count: int) -> list[str]:
+def fallback_caption_texts(body: str, count: int, request: JournalGenerationRequest | None = None) -> list[str]:
     sentences = split_sentences(body)
     source_texts = sentences[:count] if len(sentences) >= count else fallback_text_units(body)
-    if len(source_texts) < count:
-        source_texts.extend([(source_texts[-1] if source_texts else body) for _ in range(count - len(source_texts))])
-    return [normalize_caption_text(text, fallback="今日小记") for text in source_texts[:count]]
+    captions = [normalize_caption_text(text, fallback="今日小记") for text in source_texts[:count]]
+    while len(captions) < count:
+        captions.append(fallback_caption_label(request, len(captions) + 1, captions))
+    return captions[:count]
+
+
+def fallback_caption_label(
+    request: JournalGenerationRequest | None,
+    index: int,
+    existing_captions: list[str],
+) -> str:
+    base = fallback_caption_label_base(request)
+    label = f"{base} {index}"
+    if label not in existing_captions:
+        return label
+    suffix = index + 1
+    while f"{base} {suffix}" in existing_captions:
+        suffix += 1
+    return f"{base} {suffix}"
+
+
+def fallback_caption_label_base(request: JournalGenerationRequest | None) -> str:
+    text = " ".join(
+        [
+            str(request.description if request is not None else ""),
+            str(request.location if request is not None and request.location else ""),
+            *([str(tag) for tag in request.mood_tags or []] if request is not None else []),
+        ]
+    )
+    if any(keyword in text for keyword in ("展览", "展厅", "博物馆", "作品", "艺术")):
+        return "展览片段"
+    if any(keyword in text for keyword in ("旅行", "路上", "车站", "地铁", "公交", "散步", "路线")):
+        return "路上片段"
+    if any(keyword in text for keyword in ("咖啡", "茶", "甜品", "餐厅", "餐桌", "饭")):
+        return "餐桌片段"
+    if any(keyword in text for keyword in ("雨", "伞", "夜", "灯")):
+        return "天气片段"
+    if any(keyword in text for keyword in ("猫", "狗", "宠物")):
+        return "相处片段"
+    return "日常片段"
 
 
 def normalize_caption_text(value: Any, *, fallback: str = "今天的照片") -> str:
@@ -277,13 +314,30 @@ def fallback_section_bodies(body: str, section_count: int) -> list[str]:
 
 
 def fallback_section_note(units: list[str], fallback: str, index: int = 0) -> str:
-    text = normalize_diary_text("，".join(units) + "。", fallback=fallback)
-    if len(units) >= 3:
+    cleaned_units = [unit.strip(" 。！？!?；;，,、") for unit in units if unit.strip(" 。！？!?；;，,、")]
+    text = normalize_diary_text("，".join(cleaned_units) + "。", fallback=fallback)
+    if len(cleaned_units) == 1:
+        prefix = FALLBACK_SINGLE_SECTION_NOTE_PREFIXES[index % len(FALLBACK_SINGLE_SECTION_NOTE_PREFIXES)]
+        return normalize_diary_text(f"{prefix}{cleaned_units[0]}。", fallback=text)
+    if len(cleaned_units) == 2:
+        prefix = FALLBACK_PAIR_SECTION_NOTE_PREFIXES[index % len(FALLBACK_PAIR_SECTION_NOTE_PREFIXES)]
+        return normalize_diary_text(f"{prefix}{cleaned_units[0]}，也记一下{cleaned_units[1]}。", fallback=text)
+    if len(cleaned_units) >= 3:
         prefix = FALLBACK_SECTION_NOTE_PREFIXES[index % len(FALLBACK_SECTION_NOTE_PREFIXES)]
-        return normalize_diary_text(f"{prefix}{'、'.join(units)}。", fallback=text)
+        return normalize_diary_text(f"{prefix}{'、'.join(cleaned_units)}。", fallback=text)
     return text
 
 
+FALLBACK_SINGLE_SECTION_NOTE_PREFIXES = (
+    "这一张先放这里，",
+    "后面这张也留着，",
+    "这一页继续记，",
+)
+FALLBACK_PAIR_SECTION_NOTE_PREFIXES = (
+    "这一段先记",
+    "后面几张接着放",
+    "这部分先留下",
+)
 FALLBACK_SECTION_NOTE_PREFIXES = (
     "这一组放在一起看，",
     "后面几张接着记，",

@@ -6,6 +6,7 @@ from app.schemas.journal import JournalLayout
 from app.services.assets import get_approved_assets
 from app.services.journal_agent import JournalAgent
 from app.services.journal_generator import GenerationError, JournalGenerationRequest, JournalImageInput
+from app.services.layout_rules import check_layout_rules
 
 
 def test_agent_stops_after_first_review_when_quality_threshold_passes():
@@ -255,9 +256,59 @@ def test_agent_fallback_layout_splits_large_image_sets_without_repeating_body():
         ["img_4"],
     ]
     assert [section.body for section in result.layout.content.sections] == [
-        "周末一起散步，傍晚喝了咖啡。",
-        "路口的灯亮起来。",
+        "这一段先记周末一起散步，也记一下傍晚喝了咖啡。",
+        "后面这张也留着，路口的灯亮起来。",
     ]
+
+
+def test_agent_fallback_layout_avoids_repeated_captions_for_large_image_sets():
+    client = FakeAgentClient(
+        reviews=[],
+        generation_error=GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置"),
+    )
+
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(
+        JournalGenerationRequest(
+            description="今天去看展览了，有几个作品挺诡异的哈哈。总体体验不错。伤心的是回来路上耳机仓掉了。",
+            images=[
+                JournalImageInput(id=f"img_{index}", width=4096 if index % 2 else 3072, height=3072 if index % 2 else 4096)
+                for index in range(1, 9)
+            ],
+            assets=get_approved_assets(),
+            location="油罐艺术公园",
+            mood_tags=["疲惫"],
+        )
+    )
+
+    caption_texts = [caption.text for caption in result.layout.content.captions]
+    assert len(caption_texts) == 8
+    assert len(set(caption_texts)) == 8
+    assert "展览片段 5" in caption_texts
+
+
+def test_agent_fallback_layout_passes_copy_rules_for_large_image_sets():
+    client = FakeAgentClient(
+        reviews=[],
+        generation_error=GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置"),
+    )
+    request = JournalGenerationRequest(
+        description="今天去看展览了，有几个作品挺诡异的哈哈。总体体验不错。伤心的是回来路上耳机仓掉了。",
+        images=[
+            JournalImageInput(id=f"img_{index}", width=4096 if index % 2 else 3072, height=3072 if index % 2 else 4096)
+            for index in range(1, 9)
+        ],
+        assets=get_approved_assets(),
+        location="油罐艺术公园",
+        mood_tags=["疲惫"],
+    )
+
+    result = JournalAgent(client, FakeRenderer(), rule_checker=no_rule_issues).generate(request)
+
+    assert [
+        issue
+        for issue in check_layout_rules(result.layout, request)
+        if issue["type"] == "copyQuality"
+    ] == []
 
 
 def test_agent_fallback_layout_splits_single_sentence_into_human_section_notes():
@@ -275,8 +326,8 @@ def test_agent_fallback_layout_splits_single_sentence_into_human_section_notes()
     )
 
     assert [section.body for section in result.layout.content.sections] == [
-        "周末一起散步，傍晚喝了咖啡。",
-        "路口的灯亮起来。",
+        "这一段先记周末一起散步，也记一下傍晚喝了咖啡。",
+        "后面这张也留着，路口的灯亮起来。",
     ]
 
 
