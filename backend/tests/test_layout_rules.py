@@ -516,6 +516,16 @@ def test_layout_rules_report_placeholder_copy_quality_issue():
     assert has_issue(issues, "copyQuality", "medium", "正文存在占位式描述，手帐记录不够具体")
 
 
+def test_layout_rules_report_numbered_caption_as_placeholder_copy():
+    payload = layout_payload()
+    payload["content"]["captions"] = [{"imageId": "img_1", "text": "第 2 张照片"}]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request())
+
+    assert has_issue(issues, "copyQuality", "medium", "正文存在占位式描述，手帐记录不够具体")
+
+
 def test_layout_rules_report_section_body_too_short_for_human_journal():
     payload = layout_payload()
     payload["content"]["sections"] = [

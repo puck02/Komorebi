@@ -274,7 +274,11 @@ def check_copy_quality(layout: JournalLayout) -> list[dict[str, Any]]:
 
 def is_placeholder_copy(value: Any) -> bool:
     text = str(value or "").strip(" 。！？!?；;，,")
-    return text.startswith("片段 ") or text in PLACEHOLDER_COPY
+    return text.startswith("片段 ") or numbered_photo_label(text) or text in PLACEHOLDER_COPY
+
+
+def numbered_photo_label(text: str) -> bool:
+    return text.startswith("第 ") and "张照片" in text
 
 
 def copy_signal_text(value: Any) -> str:
