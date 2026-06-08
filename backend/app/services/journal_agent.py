@@ -149,7 +149,10 @@ class JournalAgent:
         layout = JournalLayout.model_validate(cleaned)
         rule_issues = self.rule_checker(layout, request)
         notify("reviewing", revision_round, None)
-        screenshot_data_url = self.renderer.render(layout.model_dump(by_alias=True), request)
+        try:
+            screenshot_data_url = self.renderer.render(layout.model_dump(by_alias=True), request)
+        except Exception as error:
+            raise GenerationError("视觉渲染失败，请稍后重试") from error
         review = self.client.review_layout(request, layout.model_dump(by_alias=True), screenshot_data_url, rule_issues)
         score = float(review.get("score", 0))
         notify("reviewed", revision_round, score)

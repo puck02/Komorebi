@@ -94,6 +94,20 @@ def test_agent_returns_draft_when_initial_review_ai_connection_fails():
     assert client.revision_inputs == []
 
 
+def test_agent_returns_draft_when_visual_rendering_fails():
+    client = FakeAgentClient(reviews=[review(score=90, passed=True)])
+    renderer = FailingRenderer(RuntimeError("Page.goto: Page crashed"))
+
+    result = JournalAgent(client, renderer, rule_checker=no_rule_issues).generate(generation_request())
+
+    assert result.layout.content.title == "初稿"
+    assert result.score == 0
+    assert result.revision_round == 0
+    assert result.passed is False
+    assert client.review_inputs == []
+    assert client.revision_inputs == []
+
+
 def test_agent_returns_fallback_layout_when_initial_generation_ai_connection_fails():
     client = FakeAgentClient(
         reviews=[],
@@ -293,6 +307,14 @@ class FakeRenderer:
     def render(self, layout, request):
         self.layouts.append(deepcopy(layout))
         return "data:image/webp;base64,screenshot"
+
+
+class FailingRenderer:
+    def __init__(self, error):
+        self.error = error
+
+    def render(self, layout, request):
+        raise self.error
 
 
 def generation_request(images=None):

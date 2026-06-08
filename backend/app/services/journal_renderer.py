@@ -1,5 +1,6 @@
 from base64 import b64encode
 from io import BytesIO
+from threading import Lock
 from typing import Callable
 
 from PIL import Image as PillowImage
@@ -7,6 +8,9 @@ from PIL import Image as PillowImage
 from app.core.config import get_settings
 from app.services.journal_generator import JournalGenerationRequest
 from app.services.render_drafts import RenderDraftRegistry, render_draft_registry
+
+CHROME_RENDER_ARGS = ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--no-zygote"]
+SCREENSHOT_LOCK = Lock()
 
 
 class PlaywrightJournalRenderer:
@@ -32,18 +36,19 @@ def capture_journal_screenshot(url: str) -> bytes:
     from playwright.sync_api import sync_playwright
 
     settings = get_settings()
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(
-            executable_path=settings.playwright_chromium_executable,
-            args=["--no-sandbox", "--disable-dev-shm-usage"],
-        )
-        try:
-            page = browser.new_page(viewport={"width": 1160, "height": 900})
-            page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-            page.locator('[data-render-ready="true"]').wait_for(timeout=30_000)
-            return page.locator(".journal-canvas").screenshot(type="png")
-        finally:
-            browser.close()
+    with SCREENSHOT_LOCK:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(
+                executable_path=settings.playwright_chromium_executable,
+                args=CHROME_RENDER_ARGS,
+            )
+            try:
+                page = browser.new_page(viewport={"width": 1160, "height": 900})
+                page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                page.locator('[data-render-ready="true"]').wait_for(timeout=30_000)
+                return page.locator(".journal-canvas").screenshot(type="png")
+            finally:
+                browser.close()
 
 
 def webp_data_url(image_bytes: bytes) -> str:
