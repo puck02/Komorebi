@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.asset import AssetPermissionsRead, AssetQualityStatusUpdate, AssetRead
+from app.services.admin import is_admin_user
 from app.services.assets import AssetItem, get_asset, get_approved_assets, load_assets, update_asset_quality_status
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
@@ -43,7 +43,7 @@ def read_asset_permissions(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AssetPermissionsRead:
-    return AssetPermissionsRead(can_manage_assets=is_asset_admin(db, current_user))
+    return AssetPermissionsRead(can_manage_assets=is_admin_user(db, current_user))
 
 
 @router.patch("/{asset_id}/quality-status", response_model=AssetRead)
@@ -53,7 +53,7 @@ def update_asset_status(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AssetRead:
-    if not is_asset_admin(db, current_user):
+    if not is_admin_user(db, current_user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the asset administrator can update assets")
 
     try:
@@ -71,11 +71,6 @@ def get_asset_or_404(asset_id: str) -> AssetItem:
     if asset is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Asset not found")
     return asset
-
-
-def is_asset_admin(db: Session, current_user: User) -> bool:
-    first_user = db.scalar(select(User).order_by(User.created_at, User.id).limit(1))
-    return first_user is not None and first_user.id == current_user.id
 
 
 def asset_to_read(asset: AssetItem) -> AssetRead:

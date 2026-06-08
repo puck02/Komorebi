@@ -11,6 +11,7 @@ from app.models.image import Image as ImageModel
 from app.models.journal import Journal
 from app.models.user import User
 from app.schemas.journal import JournalGenerateRequest, JournalLayout, JournalRead, JournalUpdateRequest
+from app.services.admin import get_effective_ai_settings
 from app.services.assets import get_approved_assets
 from app.services.journal_generator import (
     GenerationError,
@@ -26,9 +27,17 @@ from app.services.thumbnails import generate_display_image
 router = APIRouter(prefix="/api/journals", tags=["journals"])
 
 
-def get_journal_generator() -> JournalGenerator:
+def get_journal_generator(db: Session = Depends(get_db)) -> JournalGenerator:
     try:
-        return JournalGenerator(OpenAIJournalClient())
+        ai_settings = get_effective_ai_settings(db)
+        return JournalGenerator(
+            OpenAIJournalClient(
+                api_key=ai_settings.api_key,
+                base_url=ai_settings.base_url,
+                model=ai_settings.model,
+                review_model=ai_settings.review_model,
+            )
+        )
     except OpenAIConfigurationError as exc:
         return JournalGenerator(UnavailableJournalClient(exc))
 

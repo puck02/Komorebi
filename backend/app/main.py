@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api.routes.admin import router as admin_router
 from app.api.routes.assets import router as assets_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.generation_jobs import router as generation_jobs_router
@@ -23,6 +24,7 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+app.include_router(admin_router)
 app.include_router(assets_router)
 app.include_router(auth_router)
 app.include_router(generation_jobs_router)

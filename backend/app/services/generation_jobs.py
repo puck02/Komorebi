@@ -12,6 +12,7 @@ from app.models.image import Image as ImageModel
 from app.models.journal import Journal
 from app.schemas.journal import JournalGenerateRequest, JournalLayout
 from app.services.agent_observability import log_agent_event
+from app.services.admin import get_effective_ai_settings
 from app.services.assets import get_approved_assets
 from app.services.journal_agent import JournalAgent, JournalAgentResult
 from app.services.journal_generator import (
@@ -32,15 +33,24 @@ def submit_generation_job(job_id: str) -> None:
     GENERATION_EXECUTOR.submit(run_generation_job, job_id)
 
 
-def build_journal_agent() -> JournalAgent:
-    return JournalAgent(OpenAIJournalClient(), PlaywrightJournalRenderer())
+def build_journal_agent(db: Session) -> JournalAgent:
+    ai_settings = get_effective_ai_settings(db)
+    return JournalAgent(
+        OpenAIJournalClient(
+            api_key=ai_settings.api_key,
+            base_url=ai_settings.base_url,
+            model=ai_settings.model,
+            review_model=ai_settings.review_model,
+        ),
+        PlaywrightJournalRenderer(),
+    )
 
 
 def run_generation_job(
     job_id: str,
     *,
     session_factory: sessionmaker[Session] = SessionLocal,
-    agent_factory: Callable[[], JournalAgent] = build_journal_agent,
+    agent_factory: Callable[[], JournalAgent] | None = None,
 ) -> None:
     with session_factory() as db:
         job = db.get(GenerationJob, job_id)
@@ -71,7 +81,8 @@ def run_generation_job(
                 mood_tag_count=len(payload.mood_tags),
             )
             try:
-                result = agent_factory().generate(
+                agent = agent_factory() if agent_factory is not None else build_journal_agent(db)
+                result = agent.generate(
                     request,
                     on_progress=lambda stage, revision_round, score: update_job_progress(db, job, stage, revision_round, score),
                     log_context={"job_id": job.id, "user_id": job.user_id},

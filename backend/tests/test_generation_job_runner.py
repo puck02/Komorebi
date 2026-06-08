@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.base import Base
+from app.models.ai_settings import AiSettings
 from app.models.generation_job import GenerationJob
 from app.models.image import Image
 from app.models.journal import Journal
@@ -172,6 +173,56 @@ def test_runner_completes_job_when_agent_returns_fallback_result(tmp_path):
         assert job.best_score == 0
         assert job.journal_id is not None
         assert job.error_message is None
+
+
+def test_runner_uses_saved_admin_ai_settings_for_default_agent(tmp_path, monkeypatch):
+    session_factory = make_session_factory()
+    job_id = seed_job(session_factory, tmp_path)
+    captured = {}
+
+    class CapturingOpenAIClient:
+        def __init__(self, api_key, base_url, model, review_model):
+            captured["api_key"] = api_key
+            captured["base_url"] = base_url
+            captured["model"] = model
+            captured["review_model"] = review_model
+
+        def generate_layout(self, request):
+            return layout_payload(request.images[0].id)
+
+        def review_layout(self, request, layout, screenshot_data_url, rule_issues):
+            return {"score": 90, "passed": True, "issues": []}
+
+        def revise_layout(self, request, layout, screenshot_data_url, review, revision_round, best_score):
+            return layout
+
+    class FakeRenderer:
+        def render(self, layout, request):
+            return "data:image/webp;base64,screenshot"
+
+    with session_factory() as db:
+        db.add(
+            AiSettings(
+                id="default",
+                base_url="https://example.test/v1",
+                api_key="dummy-saved-api-key",
+                model="gpt-5.5",
+                review_model="gpt-5.4-mini",
+            )
+        )
+        db.commit()
+
+    monkeypatch.setattr("app.services.generation_jobs.OpenAIJournalClient", CapturingOpenAIClient)
+    monkeypatch.setattr("app.services.generation_jobs.PlaywrightJournalRenderer", FakeRenderer)
+
+    run_generation_job(job_id, session_factory=session_factory)
+
+    assert captured == {
+        "api_key": "dummy-saved-api-key",
+        "base_url": "https://example.test/v1",
+        "model": "gpt-5.5",
+        "review_model": "gpt-5.4-mini",
+    }
 
 
 def test_runner_logs_generation_job_failure(tmp_path, caplog):

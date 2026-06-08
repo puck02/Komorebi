@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import get_settings
 from app.db.base import Base
-from app.models import asset, generation_job, image, journal, user  # noqa: F401
+from app.models import ai_settings, asset, generation_job, image, journal, user  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:
