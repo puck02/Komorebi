@@ -228,10 +228,27 @@ def check_section_caption_coverage(section: Any, caption_image_ids: set[str]) ->
     caption_placements = [text for text in section.texts if text.role == "caption"]
     if not caption_placements:
         return []
-    expected_caption_count = sum(1 for image in section.images if image.image_id in caption_image_ids)
-    if len(caption_placements) < expected_caption_count:
+    expected_caption_images = [
+        image
+        for image in sorted(section.images, key=lambda item: (item.y, item.x))
+        if image.image_id in caption_image_ids
+    ]
+    if len(caption_placements) < len(expected_caption_images):
         return [rule_issue("captionCoverage", "medium", [section.section_id], "章节照片说明没有完整渲染")]
+    for image, caption in zip(expected_caption_images, caption_placements):
+        if not caption_attached_to_image(caption, image):
+            return [rule_issue("captionPlacement", "medium", [section.section_id], "照片说明没有贴近对应照片")]
     return []
+
+
+def caption_attached_to_image(caption: Any, image: Any) -> bool:
+    caption_rect = (caption.x, caption.y, caption.width, section_text_height(caption, ""))
+    image_rect = (image.x, image.y, image.width, image.height)
+    if rect_intersection_area(caption_rect, expand_rect(image_rect, 18)) <= 0:
+        return False
+    caption_center_x = caption.x + caption.width / 2
+    image_bottom = image.y + image.height
+    return image.x <= caption_center_x <= image.x + image.width and image_bottom - 72 <= caption.y <= image_bottom + 28
 
 
 def check_section_readability(layout: JournalLayout) -> list[dict[str, Any]]:
