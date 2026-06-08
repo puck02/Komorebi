@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { getGenerationJob } from "../api/generationJobs";
 import { Button } from "../components/ui/button";
+import { generationJobErrorMessage } from "./generationJobStatus";
 
 const STAGE_LABELS: Record<string, string> = {
   queued: "正在准备照片",
@@ -35,6 +36,7 @@ export default function GenerationJobPage() {
   }, [jobQuery.data, navigate]);
 
   const job = jobQuery.data;
+  const errorMessage = generationJobErrorMessage(job, jobQuery.isError ? jobQuery.error : null);
   const stage = job?.stage ?? "queued";
   const stageLabel = STAGE_LABELS[stage] ?? "正在精修手帐";
   const revisionLabel = stage === "revising" && job ? ` · 第 ${job.revisionRound}/${job.maxRevisionRounds} 轮` : "";
@@ -51,10 +53,10 @@ export default function GenerationJobPage() {
         <div className="generation-mark" aria-hidden="true">
           <Sparkles size={26} />
         </div>
-        {jobQuery.isError || job?.status === "failed" ? (
+        {errorMessage ? (
           <>
             <h1>这次没有生成成功</h1>
-            <p>{job?.errorMessage ?? (jobQuery.error instanceof Error ? jobQuery.error.message : "请稍后重新生成。")}</p>
+            <p>{errorMessage}</p>
             <Button asChild variant="ghost">
               <Link to="/">
                 <ArrowLeft size={16} />
