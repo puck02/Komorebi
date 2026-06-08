@@ -184,7 +184,7 @@ def test_agent_fallback_section_body_is_not_caption_list():
 
     section_body = result.layout.content.sections[0].body
     assert section_body != "周末一起散步，傍晚喝了咖啡，路口的灯亮起来。"
-    assert "这几张先放在一起" in section_body
+    assert section_body == "顺着照片看下来：周末一起散步、傍晚喝了咖啡、路口的灯亮起来。"
 
 
 def test_agent_fallback_layout_adds_functional_section_decorations():

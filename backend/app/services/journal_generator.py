@@ -266,18 +266,26 @@ def fallback_section_bodies(body: str, section_count: int) -> list[str]:
     units = fallback_text_units(body)
     if len(units) >= section_count:
         return [
-            fallback_section_note(group, fallback=body)
-            for group in split_evenly(units, section_count)
+            fallback_section_note(group, fallback=body, index=index)
+            for index, group in enumerate(split_evenly(units, section_count))
             if group
         ]
     return [body for _ in range(section_count)]
 
 
-def fallback_section_note(units: list[str], fallback: str) -> str:
+def fallback_section_note(units: list[str], fallback: str, index: int = 0) -> str:
     text = normalize_diary_text("，".join(units) + "。", fallback=fallback)
     if len(units) >= 3:
-        return normalize_diary_text(f"这几张先放在一起：{'，'.join(units)}。", fallback=text)
+        prefix = FALLBACK_SECTION_NOTE_PREFIXES[index % len(FALLBACK_SECTION_NOTE_PREFIXES)]
+        return normalize_diary_text(f"{prefix}{'、'.join(units)}。", fallback=text)
     return text
+
+
+FALLBACK_SECTION_NOTE_PREFIXES = (
+    "顺着照片看下来：",
+    "这一段先留给：",
+    "这几样就放一组：",
+)
 
 
 def fallback_title_from_body(body: str) -> str:

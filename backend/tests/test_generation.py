@@ -1368,6 +1368,42 @@ def test_fallback_layout_uses_location_and_mood_context():
     assert layout.content.sections[0].mood == ["轻松"]
 
 
+def test_fallback_layout_uses_human_section_note_instead_of_template_phrase():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+
+    layout = generator.generate(
+        JournalGenerationRequest(
+            description="周末一起散步，傍晚喝了咖啡，路口的灯亮起来。",
+            images=three_images(),
+            assets=load_assets(),
+        )
+    )
+
+    section_body = layout.content.sections[0].body
+    assert section_body == "顺着照片看下来：周末一起散步、傍晚喝了咖啡、路口的灯亮起来。"
+    assert "这几张先放在一起" not in section_body
+
+
+def test_fallback_layout_rotates_human_section_note_prefixes():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+
+    layout = generator.generate(
+        JournalGenerationRequest(
+            description="早上整理照片，午后喝了茶，傍晚去了车站，夜里看了电影，回家写了便签，睡前把票根夹好。",
+            images=[
+                JournalImageInput(id=f"img_{index}", width=640, height=480)
+                for index in range(1, 7)
+            ],
+            assets=load_assets(),
+        )
+    )
+
+    assert [section.body for section in layout.content.sections] == [
+        "顺着照片看下来：早上整理照片、午后喝了茶、傍晚去了车站。",
+        "这一段先留给：夜里看了电影、回家写了便签、睡前把票根夹好。",
+    ]
+
+
 def test_openai_client_requires_api_key_only_when_constructed(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "")
 
