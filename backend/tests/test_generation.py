@@ -1637,6 +1637,23 @@ def test_openai_client_converts_invalid_json_content_to_generation_error(monkeyp
         client.generate_layout(generation_request())
 
 
+def test_openai_client_accepts_json_wrapped_in_code_fence(monkeypatch):
+    def fake_post(url, **kwargs):
+        request = httpx.Request("POST", url)
+        return httpx.Response(
+            200,
+            request=request,
+            json={"choices": [{"message": {"content": f"```json\n{json.dumps(valid_model_json())}\n```"}}]},
+        )
+
+    monkeypatch.setattr("app.services.openai_client.httpx.post", fake_post)
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+
+    layout = client.generate_layout(generation_request())
+
+    assert layout["content"]["title"] == "慢下来的周末"
+
+
 def test_openai_client_converts_status_errors_to_generation_error(monkeypatch):
     def fake_post(url, **kwargs):
         request = httpx.Request("POST", url)

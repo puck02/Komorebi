@@ -114,13 +114,22 @@ class OpenAIJournalClient:
         try:
             payload = response.json()
             content = payload["choices"][0]["message"]["content"]
-            return json.loads(content)
+            return parse_model_json_content(content)
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
             raise GenerationError("AI 服务返回格式异常，请稍后重试或检查模型服务配置") from exc
 
 
 def is_transient_status_error(error: httpx.HTTPStatusError) -> bool:
     return 500 <= error.response.status_code < 600
+
+
+def parse_model_json_content(content: Any) -> dict[str, Any]:
+    text = str(content or "").strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if lines and lines[0].strip().startswith("```") and lines[-1].strip() == "```":
+            text = "\n".join(lines[1:-1]).strip()
+    return json.loads(text)
 
 
 def build_generation_message_content(request: JournalGenerationRequest) -> str | list[dict[str, Any]]:
