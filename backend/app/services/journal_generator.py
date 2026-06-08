@@ -33,6 +33,7 @@ PHOTO_RIGHT_X = 568
 PHOTO_ROW_GAP = 56
 LONG_BODY_SPLIT_TARGET = 58
 GENERIC_CAPTIONS = {"今天的照片", "照片说明", "这张照片", "生活片段"}
+GENERIC_SECTION_BODIES = {"这一组照片也想好好留下", "今天的照片先放在这里", "今天的照片"}
 
 
 class GenerationError(RuntimeError):
@@ -254,14 +255,36 @@ def normalize_string_list(value: Any) -> list[str]:
 def normalize_content_sections(layout: dict[str, Any], request_images: list[JournalImageInput]) -> list[dict[str, Any]]:
     image_ids = [image.id for image in request_images]
     sections = plan_content_sections(layout, image_ids)
+    understanding_by_id = {item.get("imageId"): item for item in layout["content"].get("imageUnderstanding", [])}
     return [
         {
             **section,
             "title": normalize_title(section.get("title"), fallback=f"片段 {index + 1}"),
-            "body": normalize_diary_text(section.get("body"), fallback="这一组照片也想好好留下。"),
+            "body": normalize_section_body(section, understanding_by_id),
         }
         for index, section in enumerate(sections)
     ]
+
+
+def normalize_section_body(section: dict[str, Any], understanding_by_id: dict[Any, dict[str, Any]]) -> str:
+    body = normalize_diary_text(section.get("body"), fallback="这一组照片也想好好留下。")
+    if not is_generic_section_body(body):
+        return body
+
+    summaries = [
+        caption_from_understanding(understanding_by_id[image_id])
+        for image_id in section.get("imageIds", [])
+        if image_id in understanding_by_id
+    ]
+    concrete_parts = [summary for summary in summaries if not is_generic_caption(summary)]
+    if not concrete_parts:
+        return body
+    return f"{'、'.join(concrete_parts[:2])}，今天就记这一点。"
+
+
+def is_generic_section_body(value: Any) -> bool:
+    text = str(value or "").strip(" 。！？!?；;，,")
+    return text in GENERIC_SECTION_BODIES
 
 
 def normalize_layout_sections(
