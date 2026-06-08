@@ -16,6 +16,10 @@ def test_infer_asset_function_from_category_tags_and_id():
     assert infer_asset_function(asset_item("sticker_flower_04", "sticker", tags=["flower"])) == "flower"
     assert infer_asset_function(asset_item("sticker_star_08", "sticker", tags=["daily"])) == "star"
     assert infer_asset_function(asset_item("texture_dots_01", "texture")) == "texture"
+    assert infer_asset_function(asset_item("sticker_film_strip_30", "sticker", tags=["film", "photo"])) == "film"
+    assert infer_asset_function(asset_item("sticker_wax_seal_31", "sticker", tags=["seal", "letter"])) == "seal"
+    assert infer_asset_function(asset_item("sticker_tiny_envelope_33", "sticker", tags=["letter", "note"])) == "envelope"
+    assert infer_asset_function(asset_item("sticker_kraft_tag_32", "sticker", tags=["tag", "label"])) == "tag"
 
 
 def test_infer_asset_function_keeps_ticket_sticker_as_sticker():
@@ -140,6 +144,80 @@ def test_place_decorations_snaps_clip_sticker_to_paper_edge():
     assert clip["y"] < paper["y"] + 20
     assert clip["y"] + clip["height"] > paper["y"]
     assert not overlaps_photo_safe_area(clip, [image_placement()])
+
+
+def test_place_decorations_snaps_film_sticker_to_photo_edge():
+    film = {"assetId": "sticker_film_strip_30", "x": 760, "y": 760, "width": 190, "height": 150, "rotation": 0}
+    text = {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}
+    image = image_placement()
+
+    placed = place_decorations(
+        [film],
+        image_placements=[image],
+        text_placements=[text],
+        asset_by_id={"sticker_film_strip_30": asset_item("sticker_film_strip_30", "sticker", tags=["film", "photo"])},
+    )
+
+    placed_film = placed[0]
+    image_right = image["x"] + image["width"]
+    assert placed_film["x"] < image_right < placed_film["x"] + placed_film["width"]
+    assert image["y"] <= placed_film["y"] <= image["y"] + image["height"]
+    assert not overlaps_photo_safe_area(placed_film, [image])
+    assert not overlaps_any_text(placed_film, [text])
+
+
+def test_place_decorations_attaches_wax_seal_to_paper_edge_without_covering_text():
+    decorations = [
+        {"assetId": "paper_note", "x": 0, "y": 0, "width": 120, "height": 80, "rotation": 0},
+        {"assetId": "sticker_wax_seal_31", "x": 122, "y": 770, "width": 160, "height": 160, "rotation": 0},
+    ]
+    text = {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}
+
+    placed = place_decorations(
+        decorations,
+        image_placements=[image_placement()],
+        text_placements=[text],
+        asset_by_id={
+            "paper_note": asset_item("paper_note", "paper", tags=["note"]),
+            "sticker_wax_seal_31": asset_item("sticker_wax_seal_31", "sticker", tags=["seal", "letter"]),
+        },
+    )
+
+    paper = placed[0]
+    seal = placed[1]
+    assert paper["x"] + paper["width"] - seal["width"] <= seal["x"] <= paper["x"] + paper["width"]
+    assert paper["y"] + paper["height"] - seal["height"] <= seal["y"] <= paper["y"] + paper["height"]
+    assert not overlaps_any_text(seal, [text])
+    assert not overlaps_photo_safe_area(seal, [image_placement()])
+
+
+def test_place_decorations_tucks_letter_tag_stickers_near_paper_edge():
+    text = {"role": "body", "x": 112, "y": 760, "width": 820, "fontSize": 32}
+    for asset_id, tags in [
+        ("sticker_tiny_envelope_33", ["letter", "note"]),
+        ("sticker_kraft_tag_32", ["tag", "label"]),
+    ]:
+        placed = place_decorations(
+            [
+                {"assetId": "paper_note", "x": 0, "y": 0, "width": 120, "height": 80, "rotation": 0},
+                {"assetId": asset_id, "x": 122, "y": 770, "width": 160, "height": 160, "rotation": 0},
+            ],
+            image_placements=[image_placement()],
+            text_placements=[text],
+            asset_by_id={
+                "paper_note": asset_item("paper_note", "paper", tags=["note"]),
+                asset_id: asset_item(asset_id, "sticker", tags=tags),
+            },
+        )
+
+        paper = placed[0]
+        ephemera = placed[1]
+        assert ephemera["x"] < paper["x"] + paper["width"]
+        assert ephemera["x"] + ephemera["width"] > paper["x"]
+        assert ephemera["y"] < paper["y"] + paper["height"]
+        assert ephemera["y"] + ephemera["height"] > paper["y"]
+        assert not overlaps_any_text(ephemera, [text])
+        assert not overlaps_photo_safe_area(ephemera, [image_placement()])
 
 
 def test_generator_places_paper_near_body_text():

@@ -50,10 +50,25 @@ def place_decorations(
             if photo_corner is not None:
                 placed.append(photo_corner)
             continue
+        if function == "film":
+            film = place_film_sticker(decoration, image_placements, text_placements)
+            if film is not None:
+                placed.append(film)
+            continue
         if function == "clip":
             clip = place_clip_sticker(decoration, paper_backings, image_placements, text_placements)
             if clip is not None:
                 placed.append(clip)
+            continue
+        if function == "seal":
+            seal = place_seal_sticker(decoration, paper_backings, image_placements, text_placements)
+            if seal is not None:
+                placed.append(seal)
+            continue
+        if function in {"envelope", "tag"}:
+            ephemera = place_paper_edge_sticker(decoration, paper_backings, image_placements, text_placements, function)
+            if ephemera is not None:
+                placed.append(ephemera)
             continue
         sticker = place_sticker(decoration, image_placements, text_placements)
         if sticker is not None:
@@ -76,8 +91,16 @@ def infer_asset_function(asset: AssetItem) -> str:
         return "note"
     if "photo_corner" in text or "photo corner" in text:
         return "photo_corner"
+    if "film" in text or "胶片" in text or "底片" in text:
+        return "film"
     if "clip" in text or "paperclip" in text or "paper clip" in text:
         return "clip"
+    if "seal" in text or "wax" in text or "封蜡" in text:
+        return "seal"
+    if "envelope" in text or "信封" in text:
+        return "envelope"
+    if "tag" in text or "label" in text or "吊牌" in text:
+        return "tag"
     if "flower" in text:
         return "flower"
     if "star" in text:
@@ -189,6 +212,30 @@ def place_photo_corner_sticker(
     return candidate
 
 
+def place_film_sticker(
+    decoration: dict[str, Any],
+    image_placements: list[dict[str, Any]],
+    text_placements: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    if not image_placements:
+        return place_sticker(decoration, image_placements, text_placements)
+
+    target = nearest_rect(decoration, image_placements)
+    target_x, target_y, target_width, target_height = rect_from_item(target)
+    width = min(max(positive_number(decoration.get("width"), 180), 118), 220)
+    height = min(max(positive_number(decoration.get("height"), 130), 82), 170)
+    candidate = dict(decoration)
+    candidate["width"] = width
+    candidate["height"] = height
+    candidate["x"] = target_x + target_width - width * 0.34
+    candidate["y"] = target_y + target_height * 0.16
+    candidate["rotation"] = clamp_number(positive_number(decoration.get("rotation"), 4), -8, 8)
+    candidate = clamp_decoration_to_canvas(candidate)
+    if overlaps_photo_safe_area(candidate, image_placements) or overlaps_any_text(candidate, text_placements):
+        return place_sticker(decoration, image_placements, text_placements)
+    return candidate
+
+
 def place_clip_sticker(
     decoration: dict[str, Any],
     paper_backings: list[dict[str, Any]],
@@ -210,6 +257,62 @@ def place_clip_sticker(
     candidate["rotation"] = clamp_number(positive_number(decoration.get("rotation"), -3), -7, 7)
     candidate = clamp_decoration_to_canvas(candidate)
     if overlaps_photo_safe_area(candidate, image_placements):
+        return place_sticker(decoration, image_placements, text_placements)
+    return candidate
+
+
+def place_seal_sticker(
+    decoration: dict[str, Any],
+    paper_backings: list[dict[str, Any]],
+    image_placements: list[dict[str, Any]],
+    text_placements: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    if not paper_backings:
+        return place_sticker(decoration, image_placements, text_placements)
+
+    target = nearest_rect(decoration, paper_backings)
+    target_x, target_y, target_width, target_height = rect_from_item(target)
+    width = min(max(positive_number(decoration.get("width"), 82), 64), 88)
+    height = min(max(positive_number(decoration.get("height"), 82), 64), 88)
+    candidate = dict(decoration)
+    candidate["width"] = width
+    candidate["height"] = height
+    candidate["x"] = target_x + target_width - width * 0.42
+    candidate["y"] = target_y + target_height - height * 0.92
+    candidate["rotation"] = clamp_number(positive_number(decoration.get("rotation"), -2), -6, 6)
+    candidate = clamp_decoration_to_canvas(candidate)
+    if overlaps_any_text(candidate, text_placements) or overlaps_photo_safe_area(candidate, image_placements):
+        return place_sticker(decoration, image_placements, text_placements)
+    return candidate
+
+
+def place_paper_edge_sticker(
+    decoration: dict[str, Any],
+    paper_backings: list[dict[str, Any]],
+    image_placements: list[dict[str, Any]],
+    text_placements: list[dict[str, Any]],
+    function: str,
+) -> dict[str, Any] | None:
+    if not paper_backings:
+        return place_sticker(decoration, image_placements, text_placements)
+
+    target = nearest_rect(decoration, paper_backings)
+    target_x, target_y, target_width, target_height = rect_from_item(target)
+    width = min(max(positive_number(decoration.get("width"), 108), 82), 112)
+    height = min(max(positive_number(decoration.get("height"), 82), 64), 92)
+    candidate = dict(decoration)
+    candidate["width"] = width
+    candidate["height"] = height
+    if function == "tag":
+        candidate["x"] = target_x + target_width - width * 0.34
+        candidate["y"] = target_y + 18
+        candidate["rotation"] = clamp_number(positive_number(decoration.get("rotation"), 4), -8, 8)
+    else:
+        candidate["x"] = target_x + target_width - width * 0.34
+        candidate["y"] = target_y + target_height - height * 0.78
+        candidate["rotation"] = clamp_number(positive_number(decoration.get("rotation"), -4), -8, 8)
+    candidate = clamp_decoration_to_canvas(candidate)
+    if overlaps_any_text(candidate, text_placements) or overlaps_photo_safe_area(candidate, image_placements):
         return place_sticker(decoration, image_placements, text_placements)
     return candidate
 
