@@ -22,6 +22,7 @@ DOG_KEYWORDS = {"狗", "小狗", "狗狗", "牵引绳"}
 HOUSEPLANT_KEYWORDS = {"盆栽", "绿植", "植物", "叶子", "花盆"}
 PHOTO_KEYWORDS = {"照片", "相片", "相册", "拍立得", "照片角", "冲印", "合影"}
 TICKET_KEYWORDS = {"票根", "门票", "车票", "入场券", "展览", "电影票", "小票", "收据", "小卡片"}
+EXHIBITION_KEYWORDS = {"看展", "展厅", "美术馆", "博物馆", "艺术馆", "画展", "装置", "导览图", "展签"}
 NOTE_KEYWORDS = {"便签", "纸条", "手写", "记录", "笔记", "备忘", "小事"}
 CHECKLIST_KEYWORDS = {"清单", "待办", "勾选", "打勾", "事项", "todo", "checklist"}
 BUS_TICKET_KEYWORDS = {"公交", "公交车票", "巴士", "车票", "通勤", "路线"}
@@ -38,6 +39,8 @@ def recipe_tags_for_section(
     image_understanding: list[dict[str, Any]],
 ) -> list[str]:
     text = section_keyword_text(section, image_understanding)
+    if any(keyword in text for keyword in EXHIBITION_KEYWORDS):
+        return ["exhibition", "art", "ticket", "memory"]
     if any(keyword in text for keyword in MOVIE_KEYWORDS) and any(keyword in text for keyword in TICKET_KEYWORDS):
         return ["movie", "ticket", "night", "memory"]
     if any(keyword in text for keyword in SHOPPING_KEYWORDS) and any(keyword in text for keyword in RECEIPT_KEYWORDS):

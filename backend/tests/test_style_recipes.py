@@ -135,6 +135,15 @@ def test_recipe_tags_for_section_detects_movie_ticket():
     assert tags[:4] == ["movie", "ticket", "night", "memory"]
 
 
+def test_recipe_tags_for_section_detects_exhibition_art_ticket():
+    section = {"title": "看展这段", "body": "展览里的装置作品有点诡异，门票和导览图都夹在这一页。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "艺术展览和装置作品", "scene": "展厅", "subjects": ["作品", "门票"], "mood": []}]
+
+    tags = recipe_tags_for_section(section, understanding)
+
+    assert tags[:4] == ["exhibition", "art", "ticket", "memory"]
+
+
 def test_recipe_tags_for_section_detects_shopping_receipt():
     section = {"title": "买到喜欢的", "body": "购物小票、纸袋和收据放在照片旁边。", "imageIds": ["img_1"]}
     understanding = [{"imageId": "img_1", "summary": "购物小票和纸袋", "scene": "店里", "subjects": ["小票", "纸袋"], "mood": []}]

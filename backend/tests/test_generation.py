@@ -1792,6 +1792,7 @@ def test_fallback_layout_uses_location_and_mood_context():
     [
         ("今天把冲印照片、胶片和旧邮票夹在这一页。", {"sticker_film_strip_30", "sticker_postage_stamp_29"}),
         ("信封、封蜡和牛皮纸标签都贴在便签旁边。", {"sticker_tiny_envelope_33", "sticker_wax_seal_31", "sticker_kraft_tag_32"}),
+        ("今天去看展览，装置作品旁边留着门票和导览图。", {"paper_exhibition_ticket_19", "sticker_gallery_map_50"}),
     ],
 )
 def test_fallback_layout_uses_theme_recipe_stickers_when_ai_is_unavailable(description, expected_asset_ids):

@@ -1473,6 +1473,29 @@
     "qualityStatus": "approved"
   },
   {
+    "id": "paper_exhibition_ticket_19",
+    "name": "Exhibition Ticket 19",
+    "category": "paper",
+    "tags": [
+      "exhibition",
+      "art",
+      "ticket",
+      "memory"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#efe7d5",
+      "#6d665c"
+    ],
+    "file": "stickers/paper_exhibition_ticket_19.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
     "id": "sticker_fountain_pen_36",
     "name": "Fountain Pen 36",
     "category": "sticker",
@@ -1776,6 +1799,75 @@
       "#edf0d2"
     ],
     "file": "stickers/sticker_houseplant_49.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_gallery_map_50",
+    "name": "Gallery Map 50",
+    "category": "sticker",
+    "tags": [
+      "exhibition",
+      "art",
+      "ticket",
+      "memory"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#6f7f8b",
+      "#f3ead8"
+    ],
+    "file": "stickers/sticker_gallery_map_50.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_gallery_label_51",
+    "name": "Gallery Label 51",
+    "category": "sticker",
+    "tags": [
+      "exhibition",
+      "art",
+      "label",
+      "note"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#725f52",
+      "#fff7e8"
+    ],
+    "file": "stickers/sticker_gallery_label_51.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_installation_art_52",
+    "name": "Installation Art 52",
+    "category": "sticker",
+    "tags": [
+      "exhibition",
+      "art",
+      "memory",
+      "collage"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#6c6275",
+      "#eadfc7"
+    ],
+    "file": "stickers/sticker_installation_art_52.svg",
     "license": "internal",
     "source": "internal",
     "qualityStatus": "approved"

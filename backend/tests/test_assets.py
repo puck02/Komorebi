@@ -254,7 +254,16 @@ def test_train_sticker_is_not_rendered_as_rain_cloud():
 
 
 def test_reviewed_internal_assets_do_not_contain_rough_fill_noise():
-    reviewed_asset_ids = {"paper_stamp_10", "sticker_sun_01", "sticker_pet_paw_17", "sticker_bow_20"}
+    reviewed_asset_ids = {
+        "paper_stamp_10",
+        "sticker_sun_01",
+        "sticker_pet_paw_17",
+        "sticker_bow_20",
+        "paper_exhibition_ticket_19",
+        "sticker_gallery_map_50",
+        "sticker_gallery_label_51",
+        "sticker_installation_art_52",
+    }
 
     for asset in load_assets():
         if asset.id in reviewed_asset_ids:
