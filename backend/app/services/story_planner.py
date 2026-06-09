@@ -11,6 +11,7 @@ def plan_content_sections(
     layout: dict[str, Any],
     image_ids: list[str],
     suggested_variant: str | None = None,
+    suggested_group_limit: int | None = None,
 ) -> list[dict[str, Any]]:
     image_id_set = set(image_ids)
     raw_sections = layout.get("content", {}).get("sections")
@@ -32,7 +33,7 @@ def plan_content_sections(
             adjacent_groups = split_adjacent_image_ids(
                 section_image_ids,
                 image_ids,
-                max_group_size=section_image_limit(variant),
+                max_group_size=section_image_limit(variant, suggested_group_limit),
             )
             for group_index, adjacent_group in enumerate(adjacent_groups):
                 section_id = raw_section_id if len(adjacent_groups) == 1 else f"{raw_section_id}_{group_index + 1}"
@@ -41,9 +42,18 @@ def plan_content_sections(
                 used_image_ids.update(adjacent_group)
 
     if sections:
-        sections.extend(build_missing_image_sections(layout, image_ids, used_image_ids, len(sections), suggested_variant))
+        sections.extend(
+            build_missing_image_sections(
+                layout,
+                image_ids,
+                used_image_ids,
+                len(sections),
+                suggested_variant,
+                suggested_group_limit,
+            )
+        )
         return sort_sections_by_image_order(sections, image_ids)
-    return build_sections_from_body(layout, image_ids, suggested_variant)
+    return build_sections_from_body(layout, image_ids, suggested_variant, suggested_group_limit)
 
 
 def split_adjacent_image_ids(
@@ -95,9 +105,10 @@ def build_sections_from_body(
     layout: dict[str, Any],
     image_ids: list[str],
     suggested_variant: str | None = None,
+    suggested_group_limit: int | None = None,
 ) -> list[dict[str, Any]]:
     paragraphs = normalized_body(layout)
-    section_count = section_count_from_body(len(image_ids), len(paragraphs), suggested_variant)
+    section_count = section_count_from_body(len(image_ids), len(paragraphs), suggested_variant, suggested_group_limit)
     image_groups = split_evenly(image_ids, section_count)
     mood = normalize_string_list(layout.get("theme", {}).get("mood") if isinstance(layout.get("theme"), dict) else [])
     sections: list[dict[str, Any]] = []
@@ -120,9 +131,16 @@ def build_sections_from_body(
     return sections
 
 
-def section_count_from_body(image_count: int, paragraph_count: int, suggested_variant: str | None) -> int:
+def section_count_from_body(
+    image_count: int,
+    paragraph_count: int,
+    suggested_variant: str | None,
+    suggested_group_limit: int | None = None,
+) -> int:
     if image_count <= 0:
         return 1
+    if suggested_group_limit is not None and suggested_group_limit > 0:
+        return max(paragraph_count, ceil(image_count / suggested_group_limit), 1)
     if suggested_variant in {"pocket_grid", "detail_index", "moodboard_stack"}:
         max_images = SECTION_VARIANT_IMAGE_LIMITS.get(suggested_variant, image_count)
         if image_count <= max_images:
@@ -140,6 +158,7 @@ def build_missing_image_sections(
     used_image_ids: set[str],
     existing_section_count: int,
     suggested_variant: str | None = None,
+    suggested_group_limit: int | None = None,
 ) -> list[dict[str, Any]]:
     missing_image_ids = [image_id for image_id in image_ids if image_id not in used_image_ids]
     if not missing_image_ids:
@@ -148,7 +167,11 @@ def build_missing_image_sections(
     paragraphs = normalized_body(layout)
     mood = normalize_string_list(layout.get("theme", {}).get("mood") if isinstance(layout.get("theme"), dict) else [])
     sections: list[dict[str, Any]] = []
-    for group in split_adjacent_image_ids(missing_image_ids, image_ids, max_group_size=section_image_limit(suggested_variant)):
+    for group in split_adjacent_image_ids(
+        missing_image_ids,
+        image_ids,
+        max_group_size=section_image_limit(suggested_variant, suggested_group_limit),
+    ):
         body_index = existing_section_count + len(sections)
         body = paragraphs[body_index] if body_index < len(paragraphs) else section_body_from_understanding(layout, group)
         sections.append(
@@ -172,7 +195,9 @@ def section_variant(raw_section: dict[str, Any]) -> str | None:
     return None
 
 
-def section_image_limit(variant: str | None) -> int:
+def section_image_limit(variant: str | None, suggested_group_limit: int | None = None) -> int:
+    if suggested_group_limit is not None and suggested_group_limit > 0:
+        return suggested_group_limit
     if variant is None:
         return DEFAULT_SECTION_IMAGE_LIMIT
     return SECTION_VARIANT_IMAGE_LIMITS.get(variant, DEFAULT_SECTION_IMAGE_LIMIT)

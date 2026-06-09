@@ -761,6 +761,8 @@ def build_caption_placements(variant: str, image_placements: list[dict[str, Any]
 
 
 def caption_images_for_variant(variant: str, image_placements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if variant == "moodboard_stack" and len(image_placements) >= 2:
+        return []
     if variant in {"detail_index", "field_notes", "letter_page", "moodboard_stack", "quiet_story", "ticket_day"} and len(image_placements) >= 3:
         return []
     return [image for image in image_placements if caption_y_for_image(image, image_placements) >= image["y"] + image["height"] - 72]

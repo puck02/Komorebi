@@ -17,7 +17,12 @@ from app.services.diary_copy import (
     split_sentences,
 )
 from app.services.layout_variants import ALLOWED_SECTION_VARIANTS, build_section_layout
-from app.services.journal_templates import SECTION_VARIANT_IMAGE_LIMITS, TEMPLATE_SECTION_VARIANTS
+from app.services.journal_templates import (
+    SECTION_VARIANT_IMAGE_LIMITS,
+    template_primary_section_variant,
+    template_section_group_limit,
+    template_section_variant_recipe,
+)
 from app.services.style_recipes import choose_asset_id, recipe_tags_for_section
 from app.services.story_planner import plan_content_sections, split_evenly
 
@@ -322,7 +327,12 @@ def fallback_sections(request: JournalGenerationRequest, body: str) -> list[dict
                 "imageIds": [image.id for image in group],
                 "body": section_bodies[section_index],
                 "mood": mood_tags,
-                "variant": section_variant_for_template(request.template_id, len(group)),
+                "variant": section_variant_for_template(
+                    request.template_id,
+                    len(group),
+                    section_index=section_index,
+                    total_sections=len(image_groups),
+                ),
             }
         )
     return sections
@@ -336,6 +346,12 @@ def fallback_image_groups(request: JournalGenerationRequest) -> list[list[Journa
         return [group for group in split_evenly(request.images, 2) if group]
     if variant == "chapter_scroll":
         return [request.images[start : start + 3] for start in range(0, len(request.images), 3)]
+    template_group_limit = template_section_group_limit(request.template_id)
+    if template_group_limit is not None and len(request.images) > template_group_limit:
+        return [
+            request.images[start : start + template_group_limit]
+            for start in range(0, len(request.images), template_group_limit)
+        ]
     group_size = SECTION_VARIANT_IMAGE_LIMITS.get(variant or "", 3)
     group_size = max(min(group_size, len(request.images)), 1)
     return [request.images[start : start + group_size] for start in range(0, len(request.images), group_size)]
@@ -346,11 +362,40 @@ def normalized_template_id(request: JournalGenerationRequest) -> str | None:
     return template_id or None
 
 
-def section_variant_for_template(template_id: str | None, image_count: int) -> str | None:
-    variant = TEMPLATE_SECTION_VARIANTS.get(str(template_id or "").strip())
-    if variant is None:
+def section_variant_for_template(
+    template_id: str | None,
+    image_count: int,
+    *,
+    section_index: int = 0,
+    total_sections: int = 1,
+) -> str | None:
+    recipe = template_section_variant_recipe(template_id)
+    if not recipe:
         return None
+    if total_sections <= 1:
+        variant = recipe[0]
+    else:
+        variant = recipe[min(section_index, len(recipe) - 1)]
+    if not section_variant_supports_image_count(variant, image_count):
+        variant = first_supported_template_variant(template_id, image_count)
     return variant
+
+
+def first_supported_template_variant(template_id: str | None, image_count: int) -> str | None:
+    for variant in template_section_variant_recipe(template_id):
+        if section_variant_supports_image_count(variant, image_count):
+            return variant
+    return template_primary_section_variant(template_id)
+
+
+def section_variant_supports_image_count(variant: str | None, image_count: int) -> bool:
+    if variant is None:
+        return False
+    if image_count > 1 and variant in {"hero_note", "magazine_whitespace"}:
+        return False
+    if image_count > 2 and variant == "ticket_memo":
+        return False
+    return image_count <= SECTION_VARIANT_IMAGE_LIMITS.get(variant, max(image_count, 1))
 
 
 def fallback_section_bodies(body: str, section_count: int) -> list[str]:
@@ -710,11 +755,24 @@ def normalize_content_sections(
     preserve_saved_text: bool = False,
 ) -> list[dict[str, Any]]:
     image_ids = [image.id for image in request_images]
-    sections = plan_content_sections(layout, image_ids, section_variant_for_template(template_id, len(request_images)))
+    sections = plan_content_sections(
+        layout,
+        image_ids,
+        section_variant_for_template(template_id, len(request_images)),
+        template_section_group_limit(template_id),
+    )
     understanding_by_id = {item.get("imageId"): item for item in layout["content"].get("imageUnderstanding", [])}
+    total_sections = len(sections)
     return [
         {
             **section,
+            "variant": section_variant_for_template(
+                template_id,
+                len(section.get("imageIds") or []),
+                section_index=index,
+                total_sections=total_sections,
+            )
+            or section.get("variant"),
             "title": normalize_section_title_for_mode(
                 section,
                 understanding_by_id,
@@ -862,7 +920,12 @@ def normalize_layout_sections(
     for index, content_section in enumerate(content_sections):
         section_id = content_section["id"]
         source = raw_by_id.get(section_id, {})
-        template_variant = section_variant_for_template(template_id, len(content_section.get("imageIds") or []))
+        template_variant = section_variant_for_template(
+            template_id,
+            len(content_section.get("imageIds") or []),
+            section_index=index,
+            total_sections=len(content_sections),
+        )
         suggested_variant = suggested_section_variant(
             template_variant,
             content_section,

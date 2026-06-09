@@ -152,13 +152,13 @@ def test_generator_keeps_model_pocket_grid_story_section_larger_than_three_image
     assert [section.variant for section in layout.layout.sections] == ["pocket_grid"]
 
 
-def test_fallback_split_scene_creates_two_story_sections():
+def test_fallback_split_scene_creates_two_story_sections_with_companion_variant():
     request = generation_request(images=[JournalImageInput(id=f"img_{index}", width=640, height=480) for index in range(1, 5)], template_id="split_scene")
 
     layout = JournalLayout.model_validate(sanitize_model_layout(build_fallback_layout(request), request))
 
     assert [section.image_ids for section in layout.content.sections] == [["img_1", "img_2"], ["img_3", "img_4"]]
-    assert [section.variant for section in layout.layout.sections] == ["split_scene", "split_scene"]
+    assert [section.variant for section in layout.layout.sections] == ["split_scene", "before_after"]
 
 
 def test_fallback_chapter_scroll_keeps_long_story_as_readable_chapters():
@@ -171,7 +171,21 @@ def test_fallback_chapter_scroll_keeps_long_story_as_readable_chapters():
         ["img_4", "img_5", "img_6"],
         ["img_7"],
     ]
-    assert [section.variant for section in layout.layout.sections] == ["chapter_scroll", "chapter_scroll", "chapter_scroll"]
+    assert [section.variant for section in layout.layout.sections] == ["chapter_scroll", "timeline_trip", "letter_page"]
+
+
+def test_fallback_story_template_varies_section_variants_for_long_memory():
+    request = generation_request(
+        images=[JournalImageInput(id=f"img_{index}", width=900 if index % 2 else 640, height=1200 if index % 2 else 480) for index in range(1, 8)],
+        template_id="scrapbook_story",
+    )
+
+    layout = JournalLayout.model_validate(sanitize_model_layout(build_fallback_layout(request), request))
+
+    variants = [section.variant for section in layout.layout.sections]
+    assert variants[0] == "scrapbook_story"
+    assert len(set(variants)) >= 2
+    assert set(variants).issubset({"scrapbook_story", "moodboard_stack", "ticket_day", "letter_page"})
 
 
 def test_fallback_chapter_scroll_with_mixed_orientation_avoids_caption_overlaps():
@@ -2342,6 +2356,7 @@ def test_generation_prompt_includes_selected_template_story_guide(template_id, e
 
     assert f'"templateId": "{template_id}"' in prompt
     assert "当前用户选择的模板说明" in prompt
+    assert "章节变体序列" in prompt
     for phrase in expected_phrases:
         assert phrase in prompt
 

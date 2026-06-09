@@ -318,6 +318,24 @@ def test_moodboard_stack_layout_overlaps_story_fragments_without_becoming_grid()
     assert len({round(item["y"] / 40) for item in layout["images"]}) >= 3
 
 
+def test_moodboard_stack_uses_sparse_captions_for_two_overlapping_photos():
+    images = [image("img_1", 640, 480), image("img_2", 900, 1200)]
+    section_data = content_section("section_1", ["img_1", "img_2"], body="这两张没有严格顺序，就是今天几个开心的小碎片。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=1,
+        total_sections=2,
+        start_y=220,
+        suggested_variant="moodboard_stack",
+    )
+
+    assert layout["variant"] == "moodboard_stack"
+    assert [text for text in layout["texts"] if text["role"] == "caption"] == []
+
+
 def test_recipe_memo_layout_uses_compact_photo_and_text_column():
     images = [image("img_1", 900, 1200), image("img_2", 640, 480)]
     section_data = content_section("section_1", ["img_1", "img_2"], body="咖啡、面包和一点甜味，今天的餐桌刚好可以写成小配方。")

@@ -124,6 +124,37 @@ def test_plan_sections_keeps_large_pocket_grid_section_with_template_variant():
     assert sections[0]["variant"] == "pocket_grid"
 
 
+def test_plan_sections_splits_large_story_template_section_with_group_limit():
+    layout = {
+        "content": {
+            "body": ["这几张照片想按故事分成几段。"],
+            "sections": [
+                {
+                    "id": "story",
+                    "title": "剪贴回忆",
+                    "imageIds": ["img_1", "img_2", "img_3", "img_4", "img_5", "img_6", "img_7"],
+                    "body": "这几张照片想按故事分成几段。",
+                    "mood": ["日常"],
+                }
+            ],
+        },
+        "theme": {"mood": []},
+    }
+
+    sections = plan_content_sections(
+        layout,
+        ["img_1", "img_2", "img_3", "img_4", "img_5", "img_6", "img_7"],
+        suggested_variant="scrapbook_story",
+        suggested_group_limit=3,
+    )
+
+    assert [section["imageIds"] for section in sections] == [
+        ["img_1", "img_2", "img_3"],
+        ["img_4", "img_5", "img_6"],
+        ["img_7"],
+    ]
+
+
 def test_plan_sections_from_body_keeps_pocket_grid_as_one_story_section():
     layout = {
         "content": {

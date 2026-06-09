@@ -7,7 +7,7 @@ from app.core.config import get_settings
 from app.services.agent_observability import log_agent_event
 from app.services.assets import AssetItem
 from app.services.journal_generator import GenerationError, JournalGenerationRequest
-from app.services.journal_templates import allowed_section_variant_text
+from app.services.journal_templates import allowed_section_variant_text, template_section_variant_recipe
 
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
 OPENAI_TIMEOUT_SECONDS = 300
@@ -362,7 +362,9 @@ def build_template_story_guide(request: JournalGenerationRequest) -> str:
     guide = TEMPLATE_STORY_GUIDES.get(template_id)
     if not guide:
         return ""
-    return f"当前用户选择的模板说明：{guide}"
+    recipe = template_section_variant_recipe(template_id)
+    recipe_text = f" 多章节时优先按这个章节变体序列推进故事：{'、'.join(recipe)}。" if recipe else ""
+    return f"当前用户选择的模板说明：{guide}{recipe_text}"
 
 
 def build_user_context(request: JournalGenerationRequest) -> dict[str, Any]:
