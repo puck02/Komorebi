@@ -32,7 +32,7 @@ const sectionLayers = getJournalRenderLayers(sectionLayout);
 assertEqual(sectionLayers.usesSections, true);
 assertDeepEqual(sectionLayers.images.map((image) => image.imageId), ["img_1", "img_2"]);
 assertDeepEqual(sectionLayers.sectionTitleTexts.map((text) => text.paragraph), ["第一段"]);
-assertDeepEqual(sectionLayers.sectionTitleTexts.map((text) => text.key), ["section_1-title"]);
+assertDeepEqual(sectionLayers.sectionTitleTexts.map((text) => text.key), ["title:section:section_1"]);
 assertDeepEqual(sectionLayers.bodyTexts.map((text) => text.placement.y), [590, 1180]);
 assertDeepEqual(sectionLayers.captionTexts.map((text) => text.paragraph), ["窗边这杯咖啡"]);
 assertDeepEqual(sectionLayers.captionTexts.map((text) => text.placement.y), [550]);
@@ -108,7 +108,7 @@ const explicitCaptionImageLayout = makeLayout({
 });
 const explicitCaptionImageLayers = getJournalRenderLayers(explicitCaptionImageLayout);
 assertDeepEqual(explicitCaptionImageLayers.captionTexts.map((text) => text.paragraph), ["回程路上的云"]);
-assertDeepEqual(explicitCaptionImageLayers.captionTexts.map((text) => text.key), ["section_1-caption-img_2"]);
+assertDeepEqual(explicitCaptionImageLayers.captionTexts.map((text) => text.key), ["caption:image:img_2"]);
 
 const legacyLayout = makeLayout({ sections: [] });
 const legacyLayers = getJournalRenderLayers(legacyLayout);
@@ -116,6 +116,7 @@ assertEqual(legacyLayers.usesSections, false);
 assertDeepEqual(legacyLayers.images.map((image) => image.imageId), ["img_1"]);
 assertDeepEqual(legacyLayers.metaTexts.map((text) => text.paragraph), ["2026-05-20 / 上海 / 松快"]);
 assertDeepEqual(legacyLayers.bodyTexts.map((text) => text.paragraph), ["第一段正文。", "第二段正文。"]);
+assertDeepEqual(legacyLayers.bodyTexts.map((text) => text.key), ["body:legacy:0", "body:legacy:1"]);
 assertDeepEqual(legacyLayers.captionTexts.map((text) => text.paragraph), ["窗边这杯咖啡"]);
 assertDeepEqual(getJournalAssetIds(legacyLayout), ["tape_legacy", "sticker_global"]);
 

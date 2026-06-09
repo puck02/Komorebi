@@ -1,4 +1,5 @@
 import type { UpdateJournalPayload } from "../api/journals";
+import { parseJournalTextKey } from "../lib/journalTextKeys";
 import type { JournalLayout } from "../types/journal";
 
 export function buildJournalTextUpdatePayload(
@@ -12,23 +13,24 @@ export function buildJournalTextUpdatePayload(
   if (key === "meta") {
     return { meta: value };
   }
-  if (key.startsWith("legacy-body-")) {
-    const index = Number(key.replace("legacy-body-", ""));
+  const target = parseJournalTextKey(key);
+  if (target?.type === "legacyBody") {
+    const index = target.index;
     const body = [...layout.content.body];
     if (Number.isInteger(index) && index >= 0 && index < body.length) {
       body[index] = value;
     }
     return { body };
   }
-  if (key.includes("-title")) {
-    const sectionId = key.replace(/-title$/, "");
+  if (target?.type === "sectionTitle") {
+    const sectionId = target.sectionId;
     const sections = (layout.content.sections ?? []).map((section) =>
       section.id === sectionId ? { ...section, title: value } : section
     );
     return { sections };
   }
-  if (key.includes("-body")) {
-    const sectionId = key.replace(/-body$/, "");
+  if (target?.type === "sectionBody") {
+    const sectionId = target.sectionId;
     const sections = (layout.content.sections ?? []).map((section) =>
       section.id === sectionId ? { ...section, body: value } : section
     );
@@ -38,8 +40,8 @@ export function buildJournalTextUpdatePayload(
     });
     return { body, sections };
   }
-  if (key.includes("-caption-")) {
-    const imageId = key.split("-caption-")[1];
+  if (target?.type === "caption") {
+    const imageId = target.imageId;
     const captions = layout.content.captions.map((caption) =>
       caption.imageId === imageId ? { ...caption, text: value } : caption
     );

@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 
 import JournalCanvas from "./JournalCanvas";
+import { makeJournalTextKey } from "../lib/journalTextKeys";
 import type { JournalLayout } from "../types/journal";
 
 const layout: JournalLayout = {
@@ -67,7 +68,7 @@ const html = renderToStaticMarkup(
 const editableHtml = renderToStaticMarkup(
   <JournalCanvas
     assets={[]}
-    editableTextKey="legacy-body-0"
+    editableTextKey={makeJournalTextKey({ type: "legacyBody", index: 0 })}
     editableTextValue="正在编辑正文。"
     images={[{ id: "img_1", src: "/images/img_1/display", alt: "咖啡照片" }]}
     layout={layout}
@@ -107,7 +108,7 @@ const sectionTitleLayout: JournalLayout = {
 const editableSectionTitleHtml = renderToStaticMarkup(
   <JournalCanvas
     assets={[]}
-    editableTextKey="section_1-title"
+    editableTextKey={makeJournalTextKey({ type: "sectionTitle", sectionId: "section_1" })}
     editableTextValue="正在编辑章节标题"
     images={[{ id: "img_1", src: "/images/img_1/display", alt: "咖啡照片" }]}
     layout={sectionTitleLayout}

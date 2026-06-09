@@ -4,6 +4,7 @@ import type {
   JournalLayout,
   JournalTextPlacement
 } from "../types/journal";
+import { makeJournalTextKey } from "../lib/journalTextKeys";
 
 export type JournalRenderText = {
   key: string;
@@ -34,7 +35,7 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
       if (!paragraph || !placement) {
         return [];
       }
-      return [{ key: `${section.sectionId}-title`, paragraph, placement }];
+      return [{ key: makeJournalTextKey({ type: "sectionTitle", sectionId: section.sectionId }), paragraph, placement }];
     });
     const bodyTexts = sortedSections.flatMap((section, sectionIndex) => {
       const contentSection = contentBySectionId.get(section.sectionId);
@@ -43,11 +44,11 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
       if (!placement) {
         return [];
       }
-      return [{ key: `${section.sectionId}-body`, paragraph, placement }];
+      return [{ key: makeJournalTextKey({ type: "sectionBody", sectionId: section.sectionId }), paragraph, placement }];
     });
     const captionTexts = sortedSections.flatMap((section) => {
       const sectionImageIds = section.images.map((image) => image.imageId);
-      return buildCaptionTexts(section.texts, layout.content.captions, sectionImageIds, section.sectionId);
+      return buildCaptionTexts(section.texts, layout.content.captions, sectionImageIds);
     });
 
     const sectionDecorations = sortedSections.flatMap((section) => section.decorations);
@@ -73,7 +74,7 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
     metaTexts: buildMetaTexts(layout),
     sectionTitleTexts: [],
     bodyTexts: layout.content.body.map((paragraph, index) => ({
-      key: `legacy-body-${index}`,
+      key: makeJournalTextKey({ type: "legacyBody", index }),
       paragraph,
       placement:
         bodyPlacements[index] ??
@@ -85,7 +86,7 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
           fontSize: 28
         } satisfies JournalTextPlacement)
     })),
-    captionTexts: buildCaptionTexts(layout.layout.texts, layout.content.captions, legacyImageIds, "legacy"),
+    captionTexts: buildCaptionTexts(layout.layout.texts, layout.content.captions, legacyImageIds),
     decorations: layout.layout.decorations
   };
 }
@@ -106,8 +107,7 @@ function buildMetaTexts(layout: JournalLayout): JournalRenderText[] {
 function buildCaptionTexts(
   texts: JournalTextPlacement[],
   captions: JournalLayout["content"]["captions"],
-  imageIds: string[],
-  keyPrefix: string
+  imageIds: string[]
 ): JournalRenderText[] {
   const captionPlacements = texts.filter((text) => text.role === "caption");
   return captionPlacements.flatMap((placement, index) => {
@@ -121,6 +121,6 @@ function buildCaptionTexts(
       return [];
     }
 
-    return [{ key: `${keyPrefix}-caption-${imageId}`, paragraph: caption, placement }];
+    return [{ key: makeJournalTextKey({ type: "caption", imageId }), paragraph: caption, placement }];
   });
 }
