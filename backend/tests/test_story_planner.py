@@ -97,6 +97,52 @@ def test_plan_sections_splits_groups_larger_than_three_images():
     assert [section["imageIds"] for section in sections] == [["img_1", "img_2", "img_3"], ["img_4", "img_5"]]
 
 
+def test_plan_sections_keeps_large_pocket_grid_section_with_template_variant():
+    layout = {
+        "content": {
+            "body": ["这一天的小片段都先放在同一页。"],
+            "sections": [
+                {
+                    "id": "pocket",
+                    "title": "一天几格",
+                    "imageIds": ["img_1", "img_2", "img_3", "img_4", "img_5", "img_6"],
+                    "body": "这一天的小片段都先放在同一页。",
+                    "mood": ["日常"],
+                }
+            ],
+        },
+        "theme": {"mood": []},
+    }
+
+    sections = plan_content_sections(
+        layout,
+        ["img_1", "img_2", "img_3", "img_4", "img_5", "img_6"],
+        suggested_variant="pocket_grid",
+    )
+
+    assert [section["imageIds"] for section in sections] == [["img_1", "img_2", "img_3", "img_4", "img_5", "img_6"]]
+    assert sections[0]["variant"] == "pocket_grid"
+
+
+def test_plan_sections_from_body_keeps_pocket_grid_as_one_story_section():
+    layout = {
+        "content": {
+            "body": ["这一天的小片段都先放在同一页。"],
+            "sections": [],
+        },
+        "theme": {"mood": ["日常"]},
+    }
+
+    sections = plan_content_sections(
+        layout,
+        ["img_1", "img_2", "img_3", "img_4", "img_5", "img_6"],
+        suggested_variant="pocket_grid",
+    )
+
+    assert [section["imageIds"] for section in sections] == [["img_1", "img_2", "img_3", "img_4", "img_5", "img_6"]]
+    assert sections[0]["variant"] == "pocket_grid"
+
+
 def test_plan_sections_uses_body_fallback_for_empty_model_body():
     layout = {
         "content": {
@@ -147,6 +193,30 @@ def test_plan_sections_adds_images_missing_from_model_sections():
     assert [image_id for section in sections for image_id in section["imageIds"]] == ["img_1", "img_2", "img_3"]
     assert sections[-1]["imageIds"] == ["img_2", "img_3"]
     assert sections[-1]["body"] == "后面两张也要补上。"
+
+
+def test_plan_sections_adds_missing_images_with_template_capacity():
+    layout = {
+        "content": {
+            "body": ["第一张已经写了。", "后面几张也要补上。"],
+            "sections": [
+                {"id": "a", "title": "A", "imageIds": ["img_1"], "body": "第一张已经写了。", "mood": []}
+            ],
+        },
+        "theme": {"mood": []},
+    }
+
+    sections = plan_content_sections(
+        layout,
+        ["img_1", "img_2", "img_3", "img_4", "img_5", "img_6"],
+        suggested_variant="pocket_grid",
+    )
+
+    assert [section["imageIds"] for section in sections] == [
+        ["img_1"],
+        ["img_2", "img_3", "img_4", "img_5", "img_6"],
+    ]
+    assert sections[-1]["variant"] == "pocket_grid"
 
 
 def test_split_adjacent_image_ids_sorts_by_original_order():

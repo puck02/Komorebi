@@ -115,6 +115,43 @@ def test_fallback_pocket_grid_keeps_many_photos_in_one_story_section():
     assert layout.layout.sections[0].variant == "pocket_grid"
 
 
+def test_generator_keeps_model_pocket_grid_story_section_larger_than_three_images():
+    image_ids = [f"img_{index}" for index in range(1, 7)]
+    payload = valid_model_json()
+    payload["content"]["body"] = ["把这一天的小片段都收在同一页，每格是一件小事。"]
+    payload["content"]["sections"] = [
+        {
+            "id": "pocket",
+            "title": "一天几格",
+            "imageIds": image_ids,
+            "body": "把这一天的小片段都收在同一页，每格是一件小事。",
+            "mood": ["日常"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "pocket",
+            "variant": "pocket_grid",
+            "y": 220,
+            "height": 980,
+            "images": [],
+            "texts": [],
+            "decorations": [],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(
+        generation_request(
+            images=[JournalImageInput(id=image_id, width=640, height=480) for image_id in image_ids],
+            template_id="pocket_grid",
+        )
+    )
+
+    assert [section.image_ids for section in layout.content.sections] == [image_ids]
+    assert [section.variant for section in layout.layout.sections] == ["pocket_grid"]
+
+
 def test_fallback_split_scene_creates_two_story_sections():
     request = generation_request(images=[JournalImageInput(id=f"img_{index}", width=640, height=480) for index in range(1, 5)], template_id="split_scene")
 
@@ -2094,6 +2131,8 @@ def test_generation_prompt_requests_section_structure():
     assert "imageUnderstanding" in prompt
     assert "先逐张理解图片" in prompt
     assert "只允许把相邻图片合并成章节" in prompt
+    assert "普通章节绑定 1 到 3 张图片" in prompt
+    assert "可以按模板容量保留更多相邻图片" in prompt
     assert "hero_note、staggered_collage、timeline_strip、photo_wall、magazine_whitespace、ticket_memo" in prompt
     assert "quiet_story、hero_memory、timeline_trip、pocket_grid、ticket_day、magazine_note、before_after、moodboard_stack、recipe_memo、letter_page、chapter_scroll、field_notes、split_scene、detail_index" in prompt
     assert "templateId" in prompt

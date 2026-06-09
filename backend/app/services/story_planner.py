@@ -7,7 +7,11 @@ from app.services.journal_templates import ALLOWED_SECTION_VARIANTS, SECTION_VAR
 DEFAULT_SECTION_IMAGE_LIMIT = 3
 
 
-def plan_content_sections(layout: dict[str, Any], image_ids: list[str]) -> list[dict[str, Any]]:
+def plan_content_sections(
+    layout: dict[str, Any],
+    image_ids: list[str],
+    suggested_variant: str | None = None,
+) -> list[dict[str, Any]]:
     image_id_set = set(image_ids)
     raw_sections = layout.get("content", {}).get("sections")
     sections: list[dict[str, Any]] = []
@@ -23,7 +27,7 @@ def plan_content_sections(layout: dict[str, Any], image_ids: list[str]) -> list[
             body = section_body(raw_section, layout, index, section_image_ids)
             title = str(raw_section.get("title") or section_title_from_body(body, index + 1)).strip()
             mood = normalize_string_list(raw_section.get("mood"))
-            variant = section_variant(raw_section)
+            variant = section_variant(raw_section) or suggested_variant
             raw_section_id = str(raw_section.get("id") or f"section_{len(sections) + 1}")
             adjacent_groups = split_adjacent_image_ids(
                 section_image_ids,
@@ -37,9 +41,9 @@ def plan_content_sections(layout: dict[str, Any], image_ids: list[str]) -> list[
                 used_image_ids.update(adjacent_group)
 
     if sections:
-        sections.extend(build_missing_image_sections(layout, image_ids, used_image_ids, len(sections)))
+        sections.extend(build_missing_image_sections(layout, image_ids, used_image_ids, len(sections), suggested_variant))
         return sort_sections_by_image_order(sections, image_ids)
-    return build_sections_from_body(layout, image_ids)
+    return build_sections_from_body(layout, image_ids, suggested_variant)
 
 
 def split_adjacent_image_ids(
@@ -87,9 +91,13 @@ def normalized_section_image_ids(
     return section_image_ids
 
 
-def build_sections_from_body(layout: dict[str, Any], image_ids: list[str]) -> list[dict[str, Any]]:
+def build_sections_from_body(
+    layout: dict[str, Any],
+    image_ids: list[str],
+    suggested_variant: str | None = None,
+) -> list[dict[str, Any]]:
     paragraphs = normalized_body(layout)
-    section_count = max(len(paragraphs), min(ceil(len(image_ids) / 3), 4), 1)
+    section_count = section_count_from_body(len(image_ids), len(paragraphs), suggested_variant)
     image_groups = split_evenly(image_ids, section_count)
     mood = normalize_string_list(layout.get("theme", {}).get("mood") if isinstance(layout.get("theme"), dict) else [])
     sections: list[dict[str, Any]] = []
@@ -106,9 +114,24 @@ def build_sections_from_body(layout: dict[str, Any], image_ids: list[str]) -> li
                 body,
                 mood,
                 len(sections) + 1,
+                suggested_variant,
             )
         )
     return sections
+
+
+def section_count_from_body(image_count: int, paragraph_count: int, suggested_variant: str | None) -> int:
+    if image_count <= 0:
+        return 1
+    if suggested_variant in {"pocket_grid", "detail_index", "moodboard_stack"}:
+        max_images = SECTION_VARIANT_IMAGE_LIMITS.get(suggested_variant, image_count)
+        if image_count <= max_images:
+            return max(paragraph_count, 1)
+    if suggested_variant == "split_scene":
+        return max(paragraph_count, min(2, image_count), 1)
+    if suggested_variant == "chapter_scroll":
+        return max(paragraph_count, ceil(image_count / 3), 1)
+    return max(paragraph_count, min(ceil(image_count / DEFAULT_SECTION_IMAGE_LIMIT), 4), 1)
 
 
 def build_missing_image_sections(
@@ -116,6 +139,7 @@ def build_missing_image_sections(
     image_ids: list[str],
     used_image_ids: set[str],
     existing_section_count: int,
+    suggested_variant: str | None = None,
 ) -> list[dict[str, Any]]:
     missing_image_ids = [image_id for image_id in image_ids if image_id not in used_image_ids]
     if not missing_image_ids:
@@ -124,7 +148,7 @@ def build_missing_image_sections(
     paragraphs = normalized_body(layout)
     mood = normalize_string_list(layout.get("theme", {}).get("mood") if isinstance(layout.get("theme"), dict) else [])
     sections: list[dict[str, Any]] = []
-    for group in split_adjacent_image_ids(missing_image_ids, image_ids):
+    for group in split_adjacent_image_ids(missing_image_ids, image_ids, max_group_size=section_image_limit(suggested_variant)):
         body_index = existing_section_count + len(sections)
         body = paragraphs[body_index] if body_index < len(paragraphs) else section_body_from_understanding(layout, group)
         sections.append(
@@ -135,6 +159,7 @@ def build_missing_image_sections(
                 body,
                 mood,
                 existing_section_count + len(sections) + 1,
+                suggested_variant,
             )
         )
     return sections

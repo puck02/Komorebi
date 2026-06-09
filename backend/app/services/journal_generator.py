@@ -506,7 +506,7 @@ def normalize_sections(
     asset_by_id: dict[str, AssetItem],
     template_id: str | None = None,
 ) -> None:
-    content_sections = normalize_content_sections(layout, request_images)
+    content_sections = normalize_content_sections(layout, request_images, template_id)
     layout["content"]["sections"] = content_sections
     layout["layout"]["sections"] = normalize_layout_sections(
         layout,
@@ -627,9 +627,13 @@ def normalize_string_list(value: Any) -> list[str]:
     return [str(item).strip() for item in value if str(item).strip()]
 
 
-def normalize_content_sections(layout: dict[str, Any], request_images: list[JournalImageInput]) -> list[dict[str, Any]]:
+def normalize_content_sections(
+    layout: dict[str, Any],
+    request_images: list[JournalImageInput],
+    template_id: str | None = None,
+) -> list[dict[str, Any]]:
     image_ids = [image.id for image in request_images]
-    sections = plan_content_sections(layout, image_ids)
+    sections = plan_content_sections(layout, image_ids, section_variant_for_template(template_id, len(request_images)))
     understanding_by_id = {item.get("imageId"): item for item in layout["content"].get("imageUnderstanding", [])}
     return [
         {

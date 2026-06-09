@@ -277,7 +277,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "必须先逐张理解图片，并在 content.imageUnderstanding 中为每张图片输出 imageId、summary、scene、subjects、mood。"
         "imageUnderstanding 必须覆盖全部图片，顺序必须和图片 order 一致，summary 只能描述对应 imageId 的真实可见内容。"
         "必须输出 content.sections 和 layout.sections。只允许把相邻图片合并成章节，禁止把不相邻的图片强行放进同一章节。"
-        "content.sections 每项字段为 id、title、imageIds、body、mood；每章绑定 1 到 3 张图片，body 为 30 到 80 字自然日记。"
+        "content.sections 每项字段为 id、title、imageIds、body、mood；普通章节绑定 1 到 3 张图片，pocket_grid、detail_index、chapter_scroll 等模板可以按模板容量保留更多相邻图片，body 为 30 到 80 字自然日记。"
         "layout.sections 每项字段为 sectionId、variant、y、height、images、texts、decorations；sectionId 必须对应 content.sections 的 id。"
         f"layout.sections[].variant 只能从 {allowed_variants} 中选择；"
         "没有指定模板时：单张主图适合 hero_note，错落多图适合 staggered_collage，过程顺序适合 timeline_strip，相似照片组适合 photo_wall，安静留白适合 magazine_whitespace，咖啡展览票据类适合 ticket_memo。"
