@@ -211,6 +211,8 @@ export default function CreateJournalPage() {
                   <strong>{template.name}</strong>
                   <small>{template.shortDescription}</small>
                   <em>{template.bestFor}</em>
+                  <span className="template-story">{template.storyArc}</span>
+                  <span className="template-reason">{template.recommendationReason}</span>
                 </button>
               ))}
             </div>

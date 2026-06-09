@@ -14,6 +14,13 @@ const pocketRecommendations = recommendJournalTemplates(makeImages(6), "一天�
 assertEqual(pocketRecommendations.length, 3);
 assertEqual(new Set(pocketRecommendations.map((template) => template.id)).size, 3);
 assertIncludes(pocketRecommendations.map((template) => template.id), "pocket_grid");
+assertHasRecommendationReason(pocketRecommendations);
+
+const chapterRecommendations = recommendJournalTemplates(makeImages(7), "从早到晚的一整天，想讲成完整故事", "");
+assertIncludes(chapterRecommendations.map((template) => template.id), "chapter_scroll");
+
+const detailRecommendations = recommendJournalTemplates(makeImages(5), "有很多细节和小东西，想做成一页索引", "");
+assertIncludes(detailRecommendations.map((template) => template.id), "detail_index");
 
 const ticketRecommendations = recommendJournalTemplates(makeImages(1), "咖啡店、展览和小票都想留下", "");
 assertIncludes(ticketRecommendations.map((template) => template.id), "ticket_day");
@@ -42,6 +49,12 @@ function assertEqual(actual: unknown, expected: unknown) {
 function assertAtLeast(actual: number, expected: number) {
   if (actual < expected) {
     throw new Error(`Expected at least ${expected}, received ${actual}`);
+  }
+}
+
+function assertHasRecommendationReason(values: ReturnType<typeof recommendJournalTemplates>) {
+  if (values.some((template) => !template.storyArc || !template.recommendationReason)) {
+    throw new Error("Expected every recommendation to explain story arc and reason");
   }
 }
 

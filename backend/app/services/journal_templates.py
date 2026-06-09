@@ -15,6 +15,10 @@ SECTION_VARIANT_SEQUENCE = (
     "moodboard_stack",
     "recipe_memo",
     "letter_page",
+    "chapter_scroll",
+    "field_notes",
+    "split_scene",
+    "detail_index",
 )
 
 ALLOWED_SECTION_VARIANTS = set(SECTION_VARIANT_SEQUENCE)
@@ -30,6 +34,10 @@ TEMPLATE_SECTION_VARIANTS = {
     "moodboard_stack": "moodboard_stack",
     "recipe_memo": "recipe_memo",
     "letter_page": "letter_page",
+    "chapter_scroll": "chapter_scroll",
+    "field_notes": "field_notes",
+    "split_scene": "split_scene",
+    "detail_index": "detail_index",
 }
 
 SECTION_VARIANT_IMAGE_LIMITS = {
@@ -45,6 +53,10 @@ SECTION_VARIANT_IMAGE_LIMITS = {
     "ticket_day": 4,
     "recipe_memo": 4,
     "moodboard_stack": 5,
+    "field_notes": 5,
+    "split_scene": 4,
+    "detail_index": 8,
+    "chapter_scroll": 9,
     "pocket_grid": 9,
 }
 

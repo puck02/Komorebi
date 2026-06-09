@@ -105,6 +105,8 @@ def build_section_layout(
         text_y = start_y + 68
     if variant == "recipe_memo" and image_placements:
         text_y = start_y + 44
+    if variant == "field_notes" and image_placements:
+        text_y = start_y + 64
     if variant in {"ticket_memo", "ticket_day"} and len(image_placements) >= 2:
         text_y = max(image_bottom + TEXT_PHOTO_GAP, caption_bottom + SECTION_CAPTION_TEXT_GAP)
     text = {
@@ -157,6 +159,14 @@ def build_image_placements(variant: str, images: list[Any], start_y: float, sect
         return build_recipe_memo_images(images, start_y, section_index)
     if variant == "letter_page":
         return build_letter_page_images(images, start_y, section_index)
+    if variant == "chapter_scroll":
+        return build_chapter_scroll_images(images, start_y, section_index)
+    if variant == "field_notes":
+        return build_field_notes_images(images, start_y, section_index)
+    if variant == "split_scene":
+        return build_split_scene_images(images, start_y, section_index)
+    if variant == "detail_index":
+        return build_detail_index_images(images, start_y, section_index)
     if variant == "hero_note":
         return build_hero_note_images(images, start_y, section_index)
     if variant == "magazine_whitespace":
@@ -357,6 +367,80 @@ def build_letter_page_images(images: list[Any], start_y: float, section_index: i
     return placements
 
 
+def build_chapter_scroll_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    placements = []
+    for index, image in enumerate(images[:9]):
+        x = [92, 462, 168][index % 3]
+        width = [500, 430, 470][index % 3]
+        placements.append(
+            placement(
+                image,
+                x,
+                start_y + index * 326,
+                width,
+                section_index + index,
+                rotation=[-1.8, 1.4, -0.8, 1.8][index % 4],
+            )
+        )
+    return placements
+
+
+def build_field_notes_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if not images:
+        return []
+    placements = [placement(images[0], SECTION_SIDE_PADDING, start_y + 18, 430, section_index, rotation=-1.2)]
+    for index, image in enumerate(images[1:5], start=1):
+        row = index - 1
+        placements.append(
+            placement(
+                image,
+                120 + (row % 2) * 216,
+                start_y + 516 + (row // 2) * 188,
+                180,
+                section_index + index,
+                rotation=[2, -1.6, 1.2, -2.2][row % 4],
+            )
+        )
+    return placements
+
+
+def build_split_scene_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    placements = []
+    for index, image in enumerate(images[:4]):
+        side_index = index // 2
+        row_index = index % 2
+        x = 92 if side_index == 0 else 568
+        placements.append(
+            placement(
+                image,
+                x,
+                start_y + row_index * 318 + side_index * 26,
+                390,
+                section_index + index,
+                rotation=[-1.4, 1.2, 1.6, -1.2][index],
+            )
+        )
+    return placements
+
+
+def build_detail_index_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if not images:
+        return []
+    placements = [placement(images[0], SECTION_SIDE_PADDING, start_y + 12, 520, section_index, rotation=-0.8)]
+    for index, image in enumerate(images[1:8], start=1):
+        placements.append(
+            placement(
+                image,
+                718,
+                start_y + 18 + (index - 1) * 148,
+                180,
+                section_index + index,
+                rotation=[1.2, -1.4, 1.6, -1][(index - 1) % 4],
+            )
+        )
+    return placements
+
+
 def build_hero_note_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     if not images:
         return []
@@ -546,7 +630,11 @@ def text_x_for_variant(variant: str, image_count: int = 0) -> float:
         return 642
     if variant == "recipe_memo":
         return 590
+    if variant == "field_notes":
+        return 610
     if variant == "letter_page":
+        return 112
+    if variant == "detail_index":
         return 112
     if variant == "before_after":
         return 150
@@ -562,8 +650,12 @@ def text_width_for_variant(variant: str, image_count: int = 0) -> float:
         return 350
     if variant == "recipe_memo":
         return 360
+    if variant == "field_notes":
+        return 330
     if variant == "letter_page":
         return 700
+    if variant == "detail_index":
+        return 560
     if variant == "before_after":
         return 720
     if variant in {"ticket_memo", "ticket_day"} and image_count >= 2:

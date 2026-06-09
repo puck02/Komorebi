@@ -82,6 +82,10 @@ def test_fallback_layout_uses_selected_template_variant():
         ("moodboard_stack", "moodboard_stack"),
         ("recipe_memo", "recipe_memo"),
         ("letter_page", "letter_page"),
+        ("chapter_scroll", "chapter_scroll"),
+        ("field_notes", "field_notes"),
+        ("split_scene", "split_scene"),
+        ("detail_index", "detail_index"),
     ],
 )
 def test_fallback_layout_keeps_selected_template_as_real_section_variant(template_id, expected_section_variant):
@@ -2023,7 +2027,7 @@ def test_generation_prompt_requests_section_structure():
     assert "先逐张理解图片" in prompt
     assert "只允许把相邻图片合并成章节" in prompt
     assert "hero_note、staggered_collage、timeline_strip、photo_wall、magazine_whitespace、ticket_memo" in prompt
-    assert "quiet_story、hero_memory、timeline_trip、pocket_grid、ticket_day、magazine_note、before_after、moodboard_stack、recipe_memo、letter_page" in prompt
+    assert "quiet_story、hero_memory、timeline_trip、pocket_grid、ticket_day、magazine_note、before_after、moodboard_stack、recipe_memo、letter_page、chapter_scroll、field_notes、split_scene、detail_index" in prompt
     assert "templateId" in prompt
 
 

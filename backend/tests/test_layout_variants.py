@@ -423,6 +423,96 @@ def test_timeline_trip_layout_wraps_many_photos_inside_canvas():
     assert len({item["y"] for item in layout["images"]}) >= 2
 
 
+def test_chapter_scroll_layout_reads_as_vertical_story():
+    images = [image(f"img_{index}", 640, 480) for index in range(1, 6)]
+    section_data = content_section("section_1", [item.id for item in images], body="从早到晚有好几段，适合像章节一样往下读。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="chapter_scroll",
+    )
+
+    assert layout["variant"] == "chapter_scroll"
+    assert [item["imageId"] for item in layout["images"]] == [item.id for item in images]
+    assert len({item["x"] for item in layout["images"]}) >= 2
+    assert layout["images"][0]["y"] < layout["images"][-1]["y"]
+    assert layout["height"] > 1300
+
+
+def test_field_notes_layout_places_observation_text_beside_specimen_photo():
+    images = [image("img_1", 900, 1200), image("img_2", 640, 480), image("img_3", 640, 480)]
+    section_data = content_section("section_1", [item.id for item in images], body="窗边的杯子、书页和一点光，都像今天的小观察。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="field_notes",
+    )
+
+    assert layout["variant"] == "field_notes"
+    assert layout["images"][0]["width"] >= 400
+    body_text = next(text for text in layout["texts"] if text["role"] == "body")
+    assert body_text["x"] >= 600
+    assert body_text["y"] < layout["images"][0]["y"] + layout["images"][0]["height"]
+
+
+def test_split_scene_layout_separates_two_scene_columns():
+    images = [image("img_1", 640, 480), image("img_2", 640, 480), image("img_3", 640, 480), image("img_4", 640, 480)]
+    section_data = content_section("section_1", [item.id for item in images], body="上午在室内，下午走到外面，刚好是两个场景。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="split_scene",
+    )
+
+    assert layout["variant"] == "split_scene"
+    left_column = [item for item in layout["images"] if item["x"] < 540]
+    right_column = [item for item in layout["images"] if item["x"] >= 540]
+    assert len(left_column) == 2
+    assert len(right_column) == 2
+    body_text = next(text for text in layout["texts"] if text["role"] == "body")
+    assert body_text["y"] > max(item["y"] + item["height"] for item in layout["images"])
+
+
+def test_detail_index_layout_uses_primary_photo_and_small_detail_strip():
+    images = [
+        image("img_1", 1200, 900),
+        image("img_2", 640, 480),
+        image("img_3", 640, 480),
+        image("img_4", 640, 480),
+    ]
+    section_data = content_section("section_1", [item.id for item in images], body="先看整张，再把几个容易忘的细节标出来。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="detail_index",
+    )
+
+    assert layout["variant"] == "detail_index"
+    areas = [item["width"] * item["height"] for item in layout["images"]]
+    assert areas[0] == max(areas)
+    assert all(item["x"] > layout["images"][0]["x"] + layout["images"][0]["width"] for item in layout["images"][1:])
+
+
 def test_generator_replaces_invalid_section_variant_with_rule_choice():
     payload = valid_model_json()
     payload["content"]["imageUnderstanding"] = [
