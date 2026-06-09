@@ -10,6 +10,7 @@ const sectionLayout = makeLayout({
       height: 560,
       images: [{ imageId: "img_1", x: 92, y: 220, width: 420, height: 320, rotation: 0 }],
       texts: [
+        { role: "title", x: 112, y: 548, width: 620, fontSize: 26 },
         { role: "caption", x: 112, y: 550, width: 360, fontSize: 24 },
         { role: "body", x: 112, y: 590, width: 820, fontSize: 32 }
       ],
@@ -30,6 +31,8 @@ const sectionLayout = makeLayout({
 const sectionLayers = getJournalRenderLayers(sectionLayout);
 assertEqual(sectionLayers.usesSections, true);
 assertDeepEqual(sectionLayers.images.map((image) => image.imageId), ["img_1", "img_2"]);
+assertDeepEqual(sectionLayers.sectionTitleTexts.map((text) => text.paragraph), ["第一段"]);
+assertDeepEqual(sectionLayers.sectionTitleTexts.map((text) => text.key), ["section_1-title"]);
 assertDeepEqual(sectionLayers.bodyTexts.map((text) => text.placement.y), [590, 1180]);
 assertDeepEqual(sectionLayers.captionTexts.map((text) => text.paragraph), ["窗边这杯咖啡"]);
 assertDeepEqual(sectionLayers.captionTexts.map((text) => text.placement.y), [550]);

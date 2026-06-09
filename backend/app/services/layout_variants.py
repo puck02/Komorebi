@@ -7,6 +7,7 @@ CANVAS_WIDTH = 1080
 SECTION_SIDE_PADDING = 92
 SECTION_TEXT_WIDTH = 820
 SECTION_TEXT_FONT_SIZE = 32
+SECTION_TITLE_FONT_SIZE = 26
 SECTION_CAPTION_FONT_SIZE = 22
 SECTION_CAPTION_SIDE_PADDING = 28
 SECTION_CAPTION_BOTTOM_OFFSET = 38
@@ -113,6 +114,13 @@ def build_section_layout(
         "width": text_width_for_variant(variant, len(image_placements)),
         "fontSize": SECTION_TEXT_FONT_SIZE,
     }
+    title = {
+        "role": "title",
+        "x": text["x"],
+        "y": max(start_y, text["y"] - 44),
+        "width": min(text["width"], 680),
+        "fontSize": SECTION_TITLE_FONT_SIZE,
+    }
     body = str(section.get("body") or "")
     text_bottom = text["y"] + estimate_paragraph_height(body, text["fontSize"], text["width"])
     section_bottom = max(image_bottom, caption_bottom, text_bottom) + SECTION_GAP
@@ -123,7 +131,7 @@ def build_section_layout(
         "y": start_y,
         "height": max(section_bottom - start_y, 1),
         "images": image_placements,
-        "texts": [text, *caption_texts],
+        "texts": [text, title, *caption_texts],
         "decorations": [],
     }
 

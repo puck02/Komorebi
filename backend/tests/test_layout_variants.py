@@ -149,6 +149,28 @@ def test_build_section_layout_places_images_and_text_inside_section():
     assert all(layout["y"] <= item["y"] <= layout["y"] + layout["height"] for item in [*layout["images"], *layout["texts"]])
 
 
+def test_build_section_layout_adds_story_section_title_above_body():
+    images = [image("img_1", 640, 480)]
+    section_data = content_section("section_1", ["img_1"], body="这一张照片想作为当天故事的开头。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="hero_note",
+    )
+
+    title_text = next(text for text in layout["texts"] if text["role"] == "title")
+    body_text = next(text for text in layout["texts"] if text["role"] == "body")
+    assert title_text["y"] < body_text["y"]
+    assert title_text["x"] == body_text["x"]
+    assert title_text["width"] <= body_text["width"]
+    assert 22 <= title_text["fontSize"] <= 30
+
+
 def test_build_section_layout_places_captions_below_photo_when_clear():
     images = [image("img_1", 640, 480), image("img_2", 900, 1200)]
     section_data = content_section("section_1", ["img_1", "img_2"], body="两张照片各有一个短短的旁注。")

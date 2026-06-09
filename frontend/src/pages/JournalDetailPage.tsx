@@ -377,6 +377,13 @@ function buildTextUpdatePayload(layout: JournalLayout, key: string, value: strin
     }
     return { body };
   }
+  if (key.includes("-title")) {
+    const sectionId = key.replace(/-title$/, "");
+    const sections = (layout.content.sections ?? []).map((section) =>
+      section.id === sectionId ? { ...section, title: value } : section
+    );
+    return { sections };
+  }
   if (key.includes("-body")) {
     const sectionId = key.replace(/-body$/, "");
     const sections = (layout.content.sections ?? []).map((section) =>

@@ -16,6 +16,7 @@ export type JournalRenderLayers = {
   titlePlacement?: JournalTextPlacement;
   images: JournalImagePlacement[];
   metaTexts: JournalRenderText[];
+  sectionTitleTexts: JournalRenderText[];
   bodyTexts: JournalRenderText[];
   captionTexts: JournalRenderText[];
   decorations: JournalDecoration[];
@@ -26,6 +27,15 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
   if (sections.length > 0) {
     const contentBySectionId = new Map((layout.content.sections ?? []).map((section) => [section.id, section]));
     const sortedSections = [...sections].sort((first, second) => first.y - second.y);
+    const sectionTitleTexts = sortedSections.flatMap((section) => {
+      const contentSection = contentBySectionId.get(section.sectionId);
+      const paragraph = contentSection?.title?.trim();
+      const placement = section.texts.find((text) => text.role === "title");
+      if (!paragraph || !placement) {
+        return [];
+      }
+      return [{ key: `${section.sectionId}-title`, paragraph, placement }];
+    });
     const bodyTexts = sortedSections.flatMap((section, sectionIndex) => {
       const contentSection = contentBySectionId.get(section.sectionId);
       const paragraph = contentSection?.body ?? layout.content.body[sectionIndex] ?? "";
@@ -47,6 +57,7 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
       titlePlacement: layout.layout.texts.find((text) => text.role === "title"),
       images: sortedSections.flatMap((section) => section.images),
       metaTexts: buildMetaTexts(layout),
+      sectionTitleTexts,
       bodyTexts,
       captionTexts,
       decorations: sectionDecorations.length > 0 ? sectionDecorations : layout.layout.decorations
@@ -60,6 +71,7 @@ export function getJournalRenderLayers(layout: JournalLayout): JournalRenderLaye
     titlePlacement: layout.layout.texts.find((text) => text.role === "title"),
     images: layout.layout.images,
     metaTexts: buildMetaTexts(layout),
+    sectionTitleTexts: [],
     bodyTexts: layout.content.body.map((paragraph, index) => ({
       key: `legacy-body-${index}`,
       paragraph,

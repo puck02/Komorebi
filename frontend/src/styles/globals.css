@@ -1833,6 +1833,17 @@ body {
   white-space: pre-wrap;
 }
 
+.journal-section-title {
+  z-index: 29;
+  color: var(--color-ink);
+  font-family: "Bailu Qiaoli", "LXGW WenKai", "Kaiti SC", "STKaiti", serif;
+  font-weight: 600;
+  line-height: 1.24;
+  letter-spacing: 0;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 58%);
+  white-space: pre-wrap;
+}
+
 .journal-body {
   z-index: 28;
   color: var(--color-paragraph);

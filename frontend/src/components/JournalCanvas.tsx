@@ -150,6 +150,23 @@ export default function JournalCanvas({
           />
         ))}
 
+        {renderLayers.sectionTitleTexts.map(({ key, paragraph, placement }) => (
+          <JournalTextBlock
+            className="journal-section-title"
+            editableTextKey={editableTextKey}
+            editableTextValue={editableTextValue}
+            key={key}
+            keyName={key}
+            onEditableTextCancel={onEditableTextCancel}
+            onEditableTextChange={onEditableTextChange}
+            onEditableTextSave={onEditableTextSave}
+            onTextDoubleClick={onTextDoubleClick}
+            paragraph={paragraph}
+            placement={placement}
+            tag="section"
+          />
+        ))}
+
         {renderLayers.bodyTexts.map(({ key, paragraph, placement }) => (
           <JournalTextBlock
             className="journal-body"

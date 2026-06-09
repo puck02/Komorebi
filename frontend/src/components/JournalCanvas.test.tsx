@@ -79,6 +79,46 @@ const editableHtml = renderToStaticMarkup(
   />
 );
 
+const sectionTitleLayout: JournalLayout = {
+  ...layout,
+  content: {
+    ...layout.content,
+    sections: [{ id: "section_1", title: "窗边的下午", imageIds: ["img_1"], body: "第一段正文。", mood: [] }]
+  },
+  layout: {
+    ...layout.layout,
+    sections: [
+      {
+        sectionId: "section_1",
+        variant: "hero_note",
+        y: 220,
+        height: 760,
+        images: [{ imageId: "img_1", x: 92, y: 220, width: 420, height: 320, rotation: 0 }],
+        texts: [
+          { role: "title", x: 112, y: 590, width: 620, fontSize: 26 },
+          { role: "body", x: 112, y: 634, width: 820, fontSize: 32 }
+        ],
+        decorations: []
+      }
+    ]
+  }
+};
+
+const editableSectionTitleHtml = renderToStaticMarkup(
+  <JournalCanvas
+    assets={[]}
+    editableTextKey="section_1-title"
+    editableTextValue="正在编辑章节标题"
+    images={[{ id: "img_1", src: "/images/img_1/display", alt: "咖啡照片" }]}
+    layout={sectionTitleLayout}
+    onEditableTextCancel={() => undefined}
+    onEditableTextChange={() => undefined}
+    onEditableTextSave={() => undefined}
+    onTextDoubleClick={() => undefined}
+    scale={1}
+  />
+);
+
 assertIncludes(html, "journal-caption");
 assertIncludes(html, "journal-meta");
 assertIncludes(html, "窗边这杯咖啡");
@@ -95,6 +135,8 @@ assertIncludes(editableHtml, "journal-editable-text");
 assertIncludes(editableHtml, "journal-text-edit-shell");
 assertIncludes(editableHtml, "正在编辑正文。");
 assertIncludes(editableHtml, "保存");
+assertIncludes(editableSectionTitleHtml, "journal-section-title");
+assertIncludes(editableSectionTitleHtml, "正在编辑章节标题");
 
 function assertIncludes(actual: string, expected: string) {
   if (!actual.includes(expected)) {
