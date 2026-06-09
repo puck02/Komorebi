@@ -252,6 +252,11 @@ def test_patch_journal_updates_title_body_and_layout_variant(context):
     assert response.layout["content"]["captions"] == [{"imageId": image_id, "text": "新的照片说明"}]
     assert response.layout["content"]["sections"][0]["body"] == "新的章节正文"
     assert response.layout["layout"]["variant"] == "collage_b"
+    context.db.expire_all()
+    saved_journal = context.db.scalar(select(Journal).where(Journal.id == journal_id))
+    assert saved_journal is not None
+    assert saved_journal.layout_json["content"]["captions"] == [{"imageId": image_id, "text": "新的照片说明"}]
+    assert saved_journal.layout_json["content"]["sections"][0]["body"] == "新的章节正文"
 
 
 def test_normalized_journal_layout_preserves_user_edited_long_text(context):
@@ -290,6 +295,45 @@ def test_normalized_journal_layout_preserves_user_edited_long_text(context):
     assert response.layout["content"]["captions"] == [{"imageId": image_id, "text": edited_caption}]
     assert response.layout["content"]["sections"][0]["title"] == edited_title
     assert response.layout["content"]["sections"][0]["body"] == edited_body
+
+
+def test_patch_journal_rejects_text_updates_for_images_outside_journal(context):
+    user = register_and_login(context, "owner@example.com")
+    image_id = create_image(context, user.id)
+    outside_image_id = create_image(context, user.id)
+    journal_id = generate_journal_for_user(context, user, image_id, "周末一起散步").id
+
+    with pytest.raises(HTTPException) as caption_error:
+        update_journal(
+            journal_id,
+            JournalUpdateRequest(captions=[{"imageId": outside_image_id, "text": "不属于这页的说明"}]),
+            user,
+            context.db,
+        )
+
+    with pytest.raises(HTTPException) as section_error:
+        update_journal(
+            journal_id,
+            JournalUpdateRequest(
+                sections=[
+                    {
+                        "id": "section_1",
+                        "title": "错误片段",
+                        "imageIds": [outside_image_id],
+                        "body": "这张图不属于当前手帐。",
+                        "mood": [],
+                    }
+                ]
+            ),
+            user,
+            context.db,
+        )
+
+    response = get_journal(journal_id, user, context.db)
+    assert caption_error.value.status_code == 400
+    assert section_error.value.status_code == 400
+    assert response.image_ids == [image_id]
+    assert response.layout["content"]["captions"] == [{"imageId": image_id, "text": "午后的咖啡"}]
 
 
 def test_delete_journal_removes_associated_image_files(context):

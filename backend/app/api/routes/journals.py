@@ -157,6 +157,7 @@ def update_journal(
     db: Session = Depends(get_db),
 ) -> JournalRead:
     journal = get_owned_journal(db, current_user.id, journal_id)
+    validate_update_image_references(journal, payload)
     layout_json = dict(journal.layout_json)
     content = dict(layout_json.get("content", {}))
     layout = dict(layout_json.get("layout", {}))
@@ -181,6 +182,23 @@ def update_journal(
     db.commit()
     db.refresh(journal)
     return journal_to_read(journal)
+
+
+def validate_update_image_references(journal: Journal, payload: JournalUpdateRequest) -> None:
+    image_ids = {image.id for image in journal.images}
+    if payload.captions is not None:
+        invalid_caption_ids = [caption.image_id for caption in payload.captions if caption.image_id not in image_ids]
+        if invalid_caption_ids:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Caption image not found in journal")
+    if payload.sections is not None:
+        invalid_section_image_ids = [
+            image_id
+            for section in payload.sections
+            for image_id in section.image_ids
+            if image_id not in image_ids
+        ]
+        if invalid_section_image_ids:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Section image not found in journal")
 
 
 @router.delete("/{journal_id}", status_code=status.HTTP_204_NO_CONTENT)
