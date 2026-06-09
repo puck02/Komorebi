@@ -10,7 +10,7 @@ def test_recipe_tags_for_section_detects_coffee_memory():
 
     tags = recipe_tags_for_section(section, understanding)
 
-    assert tags[:4] == ["ticket", "coffee", "warm", "memory"]
+    assert tags[:4] == ["coffee", "ticket", "warm", "memory"]
 
 
 def test_recipe_tags_for_section_detects_travel_route():

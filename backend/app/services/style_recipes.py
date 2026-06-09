@@ -70,7 +70,7 @@ def recipe_tags_for_section(
     if any(keyword in text for keyword in HOUSEPLANT_KEYWORDS):
         return ["plant", "home", "calm", "nature"]
     if any(keyword in text for keyword in COFFEE_KEYWORDS) and any(keyword in text for keyword in TICKET_KEYWORDS):
-        return ["ticket", "coffee", "warm", "memory"]
+        return ["coffee", "ticket", "warm", "memory"]
     if any(keyword in text for keyword in COFFEE_KEYWORDS):
         return ["coffee", "warm", "daily"]
     if any(keyword in text for keyword in BIRTHDAY_KEYWORDS):

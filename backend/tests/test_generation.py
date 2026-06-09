@@ -1810,6 +1810,25 @@ def test_fallback_layout_uses_theme_recipe_stickers_when_ai_is_unavailable(descr
     assert len(decoration_ids.intersection(expected_asset_ids)) >= 2
 
 
+def test_fallback_cafe_receipt_scene_does_not_use_exhibition_assets():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+
+    layout = generator.generate(
+        JournalGenerationRequest(
+            description="下午坐在咖啡店窗边，杯子旁边压着小票。外面下过雨，桌面那点反光很好看。",
+            images=[
+                JournalImageInput(id="img_1", width=3024, height=4032),
+                JournalImageInput(id="img_2", width=4032, height=3024),
+            ],
+            assets=load_assets(),
+        )
+    )
+
+    decoration_ids = {decoration.asset_id for decoration in layout.layout.sections[0].decorations}
+    assert {"paper_exhibition_ticket_19", "sticker_gallery_map_50"}.isdisjoint(decoration_ids)
+    assert {"paper_label_coffee_06", "tape_coffee_06", "sticker_coffee_06"}.issubset(decoration_ids)
+
+
 def test_sanitize_model_layout_preserves_theme_sticker_combo_on_second_pass():
     request = JournalGenerationRequest(
         description="今天把冲印照片、胶片和旧邮票夹在这一页，旁边还贴了便签。",
