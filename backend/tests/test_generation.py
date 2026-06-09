@@ -1829,6 +1829,30 @@ def test_fallback_cafe_receipt_scene_does_not_use_exhibition_assets():
     assert {"paper_label_coffee_06", "tape_coffee_06", "sticker_coffee_06"}.issubset(decoration_ids)
 
 
+def test_fallback_multisection_theme_decorations_avoid_repeating_asset_ids():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+    request = JournalGenerationRequest(
+        description="今天去看展览，装置作品旁边留着门票和导览图。出来的时候天有点暗，我把展签和票根都收进手账里。",
+        images=[
+            JournalImageInput(id=f"img_{index}", width=4032 if index % 2 else 3024, height=3024 if index % 2 else 4032)
+            for index in range(1, 5)
+        ],
+        assets=load_assets(),
+    )
+
+    layout = generator.generate(request)
+
+    decoration_ids = [
+        decoration.asset_id
+        for section in layout.layout.sections
+        for decoration in section.decorations
+    ]
+    repeated_decoration_ids = {asset_id for asset_id in decoration_ids if decoration_ids.count(asset_id) > 1}
+    issues = check_layout_rules(layout, request)
+    assert repeated_decoration_ids == set()
+    assert not any(issue["type"] == "decorationVariety" for issue in issues)
+
+
 def test_sanitize_model_layout_preserves_theme_sticker_combo_on_second_pass():
     request = JournalGenerationRequest(
         description="今天把冲印照片、胶片和旧邮票夹在这一页，旁边还贴了便签。",

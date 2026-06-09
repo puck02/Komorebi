@@ -669,6 +669,7 @@ def normalize_layout_sections(
     decorations = layout["layout"].get("decorations", [])
     layout_sections: list[dict[str, Any]] = []
     next_y = fallback_first_section_y(layout)
+    used_decoration_asset_ids: set[str] = set()
 
     for index, content_section in enumerate(content_sections):
         section_id = content_section["id"]
@@ -703,7 +704,9 @@ def normalize_layout_sections(
             section_texts,
             asset_by_id,
             index,
+            used_decoration_asset_ids,
         )
+        used_decoration_asset_ids.update(str(decoration.get("assetId")) for decoration in section_decorations)
         height = max(
             min_section_height(generated_section, content_section.get("body", "")),
             section_height(section_images, section_texts, section_decorations, y, content_section.get("body", "")),
@@ -754,6 +757,7 @@ def normalize_section_decorations(
     section_texts: list[dict[str, Any]],
     asset_by_id: dict[str, AssetItem],
     section_index: int,
+    used_decoration_asset_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     if isinstance(source_decorations, list):
         decorations = [decoration for decoration in source_decorations if isinstance(decoration, dict)]
@@ -789,6 +793,7 @@ def normalize_section_decorations(
             asset_by_id,
             section_index,
             preferred_tags=recipe_tags_for_section(content_section, image_understanding),
+            avoided_asset_ids=used_decoration_asset_ids,
         ),
         section_images,
         section_texts,
@@ -803,17 +808,18 @@ def build_template_section_decorations(
     section_index: int,
     preferred_tags: list[str] | None = None,
     preferred_asset_ids: list[str] | None = None,
+    avoided_asset_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     if not section_images and not section_texts:
         return []
 
     decorations: list[dict[str, Any]] = []
     recipe_tags = preferred_tags or ["daily", "warm", "collage"]
-    paper_id = first_body_paper_asset_id(asset_by_id, section_index, recipe_tags, preferred_asset_ids)
-    tape_id = first_asset_id(asset_by_id, "tape", section_index, recipe_tags, preferred_asset_ids)
-    sticker_id = first_asset_id(asset_by_id, "sticker", section_index, recipe_tags, preferred_asset_ids)
+    paper_id = first_body_paper_asset_id(asset_by_id, section_index, recipe_tags, preferred_asset_ids, avoided_asset_ids)
+    tape_id = first_asset_id(asset_by_id, "tape", section_index, recipe_tags, preferred_asset_ids, avoided_asset_ids)
+    sticker_id = first_asset_id(asset_by_id, "sticker", section_index, recipe_tags, preferred_asset_ids, avoided_asset_ids)
     secondary_sticker_id = complementary_sticker_asset_id(asset_by_id, sticker_id, recipe_tags, preferred_asset_ids)
-    texture_id = first_asset_id(asset_by_id, "texture", section_index, recipe_tags, preferred_asset_ids)
+    texture_id = first_asset_id(asset_by_id, "texture", section_index, recipe_tags, preferred_asset_ids, avoided_asset_ids)
     body_text = next((text for text in section_texts if text.get("role") == "body"), section_texts[0] if section_texts else None)
     first_image = section_images[0] if section_images else None
 
@@ -902,8 +908,16 @@ def first_asset_id(
     offset: int,
     preferred_tags: list[str] | None = None,
     preferred_asset_ids: list[str] | None = None,
+    avoided_asset_ids: set[str] | None = None,
 ) -> str | None:
-    return choose_asset_id(asset_by_id, category, offset, preferred_tags or ["daily"], preferred_asset_ids)
+    recipe_tags = preferred_tags or ["daily"]
+    return choose_asset_id(
+        avoid_repeated_asset_ids(asset_by_id, category, recipe_tags, avoided_asset_ids),
+        category,
+        offset,
+        recipe_tags,
+        preferred_asset_ids,
+    )
 
 
 def first_body_paper_asset_id(
@@ -911,15 +925,45 @@ def first_body_paper_asset_id(
     offset: int,
     preferred_tags: list[str] | None = None,
     preferred_asset_ids: list[str] | None = None,
+    avoided_asset_ids: set[str] | None = None,
 ) -> str | None:
+    recipe_tags = preferred_tags or ["daily"]
     writable_papers = {
         asset_id: asset
         for asset_id, asset in asset_by_id.items()
         if asset.category == "paper" and asset.quality_status == "approved" and is_writable_body_paper(asset)
     }
     if writable_papers:
-        return choose_asset_id(writable_papers, "paper", offset, preferred_tags or ["daily"], preferred_asset_ids)
-    return first_asset_id(asset_by_id, "paper", offset, preferred_tags, preferred_asset_ids)
+        return choose_asset_id(
+            avoid_repeated_asset_ids(writable_papers, "paper", recipe_tags, avoided_asset_ids),
+            "paper",
+            offset,
+            recipe_tags,
+            preferred_asset_ids,
+        )
+    return first_asset_id(asset_by_id, "paper", offset, recipe_tags, preferred_asset_ids, avoided_asset_ids)
+
+
+def avoid_repeated_asset_ids(
+    asset_by_id: dict[str, AssetItem],
+    category: str,
+    preferred_tags: list[str],
+    avoided_asset_ids: set[str] | None,
+) -> dict[str, AssetItem]:
+    if not avoided_asset_ids:
+        return asset_by_id
+    filtered = {
+        asset_id: asset
+        for asset_id, asset in asset_by_id.items()
+        if asset_id not in avoided_asset_ids
+    }
+    has_matching_replacement = any(
+        asset.category == category
+        and asset.quality_status == "approved"
+        and any(tag in preferred_tags for tag in asset.tags)
+        for asset in filtered.values()
+    )
+    return filtered if has_matching_replacement else asset_by_id
 
 
 def complementary_sticker_asset_id(
