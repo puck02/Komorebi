@@ -34,11 +34,18 @@ def test_capture_journal_screenshot_uses_stable_chrome_flags(monkeypatch):
     captured = {}
 
     class FakeLocator:
+        def __init__(self, selector):
+            self.selector = selector
+
         def wait_for(self, timeout):
             captured["wait_timeout"] = timeout
 
+        def bounding_box(self):
+            captured["bounding_box_selector"] = self.selector
+            return {"x": 0, "y": 0, "width": 1080, "height": 1600}
+
         def screenshot(self, type):
-            captured["screenshot_type"] = type
+            captured["locator_screenshot_type"] = type
             return png_bytes()
 
     class FakePage:
@@ -49,7 +56,15 @@ def test_capture_journal_screenshot_uses_stable_chrome_flags(monkeypatch):
 
         def locator(self, selector):
             captured.setdefault("selectors", []).append(selector)
-            return FakeLocator()
+            return FakeLocator(selector)
+
+        def set_viewport_size(self, viewport):
+            captured["resized_viewport"] = viewport
+
+        def screenshot(self, type, clip):
+            captured["screenshot_type"] = type
+            captured["screenshot_clip"] = clip
+            return png_bytes()
 
     class FakeBrowser:
         def new_page(self, viewport):
@@ -91,6 +106,11 @@ def test_capture_journal_screenshot_uses_stable_chrome_flags(monkeypatch):
     assert "--disable-crash-reporter" in captured["args"]
     assert "--disable-features=VizDisplayCompositor" in captured["args"]
     assert captured["chromium_sandbox"] is False
+    assert captured["bounding_box_selector"] == ".journal-canvas"
+    assert captured["resized_viewport"] == {"width": 1160, "height": 1600}
+    assert captured["screenshot_type"] == "png"
+    assert captured["screenshot_clip"] == {"x": 0, "y": 0, "width": 1080, "height": 1600}
+    assert "locator_screenshot_type" not in captured
     assert captured["closed"] is True
 
 
@@ -104,8 +124,8 @@ def test_capture_journal_screenshot_serializes_chrome_sessions(monkeypatch):
         def wait_for(self, timeout):
             pass
 
-        def screenshot(self, type):
-            return png_bytes()
+        def bounding_box(self):
+            return {"x": 0, "y": 0, "width": 1080, "height": 1600}
 
     class FakePage:
         def goto(self, url, wait_until, timeout):
@@ -113,6 +133,12 @@ def test_capture_journal_screenshot_serializes_chrome_sessions(monkeypatch):
 
         def locator(self, selector):
             return FakeLocator()
+
+        def set_viewport_size(self, viewport):
+            pass
+
+        def screenshot(self, type, clip):
+            return png_bytes()
 
     class FakeBrowser:
         def new_page(self, viewport):

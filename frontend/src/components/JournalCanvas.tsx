@@ -165,6 +165,37 @@ function JournalDecorationImage({ asset, decoration }: JournalDecorationImagePro
     return null;
   }
 
+  if (asset.category === "paper") {
+    const isNotePaper = isNotePaperAsset(asset);
+
+    return (
+      <div
+        aria-hidden="true"
+        className={`journal-decoration journal-decoration-paper journal-decoration-paper-surface${
+          isNotePaper ? " journal-decoration-paper-note-surface" : ""
+        }`}
+        style={{
+          ...(isNotePaper
+            ? {
+                backgroundColor: "#fff7ed",
+                border: "1px solid rgb(194 164 132 / 44%)",
+                borderRadius: 18
+              }
+            : {}),
+          backgroundImage: `url("${asset.file_url}")`,
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: paperBackgroundSize(asset),
+          height: decoration.height,
+          left: decoration.x,
+          top: decoration.y,
+          transform: `rotate(${decoration.rotation}deg)`,
+          width: decoration.width
+        }}
+      />
+    );
+  }
+
   return (
     <img
       alt=""
@@ -179,6 +210,14 @@ function JournalDecorationImage({ asset, decoration }: JournalDecorationImagePro
       }}
     />
   );
+}
+
+function paperBackgroundSize(asset: Asset) {
+  return isNotePaperAsset(asset) ? "126% 138%" : "100% 100%";
+}
+
+function isNotePaperAsset(asset: Asset) {
+  return asset.tags.includes("note") || asset.id.includes("_note_");
 }
 
 function isBackgroundDecoration(category?: string) {

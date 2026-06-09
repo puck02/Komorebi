@@ -55,7 +55,10 @@ def capture_journal_screenshot(url: str) -> bytes:
                 page = browser.new_page(viewport={"width": 1160, "height": 900})
                 page.goto(url, wait_until="domcontentloaded", timeout=30_000)
                 page.locator('[data-render-ready="true"]').wait_for(timeout=30_000)
-                return page.locator(".journal-canvas").screenshot(type="png")
+                canvas_box = page.locator(".journal-canvas").bounding_box()
+                page.set_viewport_size({"width": 1160, "height": round(canvas_box["height"])})
+                canvas_box = page.locator(".journal-canvas").bounding_box()
+                return page.screenshot(type="png", clip=canvas_box)
             finally:
                 browser.close()
 
