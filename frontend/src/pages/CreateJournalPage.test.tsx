@@ -1,5 +1,10 @@
 import { CREATE_JOURNAL_MOOD_OPTIONS } from "./createJournalOptions";
-import { JOURNAL_TEMPLATES, recommendJournalTemplates } from "./journalTemplates";
+import {
+  JOURNAL_TEMPLATES,
+  limitTemplateRecommendations,
+  recommendJournalTemplates,
+  TEMPLATE_RECOMMENDATION_COUNT
+} from "./journalTemplates";
 import type { UploadedImage } from "../api/images";
 
 assertDoesNotInclude(CREATE_JOURNAL_MOOD_OPTIONS, "治愈");
@@ -13,10 +18,15 @@ assertEveryTemplateHasPreviewItems(JOURNAL_TEMPLATES);
 assertEveryTemplateHasStoryMetadata(JOURNAL_TEMPLATES);
 
 const pocketRecommendations = recommendJournalTemplates(makeImages(6), "一天里的碎片很多，像一个小合集", "");
-assertEqual(pocketRecommendations.length, 3);
+assertEqual(pocketRecommendations.length, TEMPLATE_RECOMMENDATION_COUNT);
 assertEqual(new Set(pocketRecommendations.map((template) => template.id)).size, 3);
 assertIncludes(pocketRecommendations.map((template) => template.id), "pocket_grid");
 assertHasRecommendationReason(pocketRecommendations);
+
+const limitedRecommendations = limitTemplateRecommendations(
+  JOURNAL_TEMPLATES.map((template) => ({ ...template, recommendationReason: "测试推荐原因" }))
+);
+assertEqual(limitedRecommendations.length, TEMPLATE_RECOMMENDATION_COUNT);
 
 const chapterRecommendations = recommendJournalTemplates(makeImages(7), "从早到晚的一整天，想讲成完整故事", "");
 assertIncludes(chapterRecommendations.map((template) => template.id), "chapter_scroll");

@@ -30,6 +30,8 @@ DENSE_STORY_VARIANTS = {
     "magazine_note",
     "moodboard_stack",
     "quiet_story",
+    "scrapbook_story",
+    "split_scene",
     "ticket_day",
 }
 COLLAGE_OVERLAP_VARIANTS = {
@@ -41,6 +43,7 @@ COLLAGE_OVERLAP_VARIANTS = {
     "magazine_note",
     "moodboard_stack",
     "quiet_story",
+    "scrapbook_story",
     "split_scene",
     "ticket_day",
 }

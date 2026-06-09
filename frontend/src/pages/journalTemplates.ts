@@ -50,6 +50,8 @@ export type JournalTemplateRecommendation = JournalTemplate & {
   recommendationReason: string;
 };
 
+export const TEMPLATE_RECOMMENDATION_COUNT = 3;
+
 type JournalTemplateBase = Omit<JournalTemplate, "sourcePattern" | "storyBeats" | "structureLabel">;
 
 const JOURNAL_TEMPLATE_BASES: JournalTemplateBase[] = [
@@ -534,6 +536,12 @@ export function recommendLocalJournalTemplates(
   }));
 }
 
+export function limitTemplateRecommendations(
+  recommendations: JournalTemplateRecommendation[]
+): JournalTemplateRecommendation[] {
+  return recommendations.slice(0, TEMPLATE_RECOMMENDATION_COUNT);
+}
+
 function bonusScore(
   template: JournalTemplate,
   images: UploadedImage[],
@@ -627,11 +635,11 @@ function selectDiverseTemplates(scored: ScoredTemplate[]) {
     }
     selected.push(item);
     usedFamilies.add(item.template.family);
-    if (selected.length === 3) {
+    if (selected.length === TEMPLATE_RECOMMENDATION_COUNT) {
       return selected;
     }
   }
-  return selected.slice(0, 3);
+  return selected.slice(0, TEMPLATE_RECOMMENDATION_COUNT);
 }
 
 function hasUnusedFamilyCandidate(scored: ScoredTemplate[], selected: ScoredTemplate[], usedFamilies: Set<string>) {

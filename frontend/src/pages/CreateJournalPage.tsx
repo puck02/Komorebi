@@ -14,7 +14,13 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { CREATE_JOURNAL_MOOD_OPTIONS } from "./createJournalOptions";
 import { generationJobErrorMessage, generationJobRouteAfterCreate } from "./generationJobStatus";
-import { JOURNAL_TEMPLATES, recommendLocalJournalTemplates, type JournalTemplateRecommendation } from "./journalTemplates";
+import {
+  JOURNAL_TEMPLATES,
+  limitTemplateRecommendations,
+  recommendLocalJournalTemplates,
+  TEMPLATE_RECOMMENDATION_COUNT,
+  type JournalTemplateRecommendation
+} from "./journalTemplates";
 import {
   createTemplateRecommendationRequestKey,
   initialTemplateRecommendationState,
@@ -60,7 +66,9 @@ export default function CreateJournalPage() {
     () => recommendLocalJournalTemplates(images, descriptionValue, selectedMood),
     [descriptionValue, images, selectedMood]
   );
-  const recommendedTemplates = templateRecommendationState.serverRecommendedTemplates ?? localRecommendedTemplates;
+  const recommendedTemplates = limitTemplateRecommendations(
+    templateRecommendationState.serverRecommendedTemplates ?? localRecommendedTemplates
+  );
   const recommendTemplatesMutation = useMutation({
     mutationFn: ({
       requestKey,
@@ -246,15 +254,15 @@ export default function CreateJournalPage() {
           <div className="field-label template-field">
             <span>
               <LayoutTemplate size={15} />
-              推荐模板
+              选择故事模板
             </span>
             <div className="template-recommendation-status">
               {templateRecommendationState.isPending
                 ? "正在结合图片内容推荐..."
                 : templateRecommendationState.recommendationSource === "ai"
-                  ? "已根据图片内容推荐"
+                  ? `已根据图片内容推荐 ${TEMPLATE_RECOMMENDATION_COUNT} 个不同讲法`
                   : templateRecommendationState.recommendationMessage ||
-                    "先按照片数量和描述推荐，上传后会结合图片内容更新。"}
+                    `先按照片数量和描述推荐 ${TEMPLATE_RECOMMENDATION_COUNT} 个故事模板，上传后会结合图片内容更新。`}
             </div>
             <div className="template-picker" role="radiogroup" aria-label="选择手帐模板">
               {recommendedTemplates.map((template) => (
@@ -268,8 +276,11 @@ export default function CreateJournalPage() {
                 >
                   <TemplatePreview template={template} />
                   <span className="template-source">{template.sourcePattern}</span>
-                  <strong>{template.name}</strong>
-                  <small>{template.shortDescription}</small>
+                  <span className="template-card-copy">
+                    <strong>{template.name}</strong>
+                    <small>{template.shortDescription}</small>
+                    <span className="template-best-for">{template.bestFor}</span>
+                  </span>
                   <span className="template-structure">{template.structureLabel}</span>
                   <span className="template-beats">
                     {template.storyBeats.map((beat) => (

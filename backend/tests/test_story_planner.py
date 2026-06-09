@@ -155,6 +155,29 @@ def test_plan_sections_splits_large_story_template_section_with_group_limit():
     ]
 
 
+def test_plan_sections_from_body_uses_adjacent_chunks_with_group_limit():
+    layout = {
+        "content": {
+            "body": ["先记开头，再记转场，最后收住。"],
+            "sections": [],
+        },
+        "theme": {"mood": ["日常"]},
+    }
+
+    sections = plan_content_sections(
+        layout,
+        ["img_1", "img_2", "img_3", "img_4", "img_5", "img_6", "img_7", "img_8"],
+        suggested_variant="split_scene",
+        suggested_group_limit=3,
+    )
+
+    assert [section["imageIds"] for section in sections] == [
+        ["img_1", "img_2", "img_3"],
+        ["img_4", "img_5", "img_6"],
+        ["img_7", "img_8"],
+    ]
+
+
 def test_plan_sections_from_body_keeps_pocket_grid_as_one_story_section():
     layout = {
         "content": {

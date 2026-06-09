@@ -412,14 +412,14 @@ def build_recipe_memo_images(images: list[Any], start_y: float, section_index: i
 def build_letter_page_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     if not images:
         return []
-    placements = [placement(images[0], 812, start_y + 36, 230, section_index, rotation=2.5)]
+    placements = [placement(images[0], 820, start_y + 36, 222, section_index, rotation=2.5)]
     for index, image in enumerate(images[1:3], start=1):
         placements.append(
             placement(
                 image,
-                754 + (index - 1) * 42,
+                798 + (index - 1) * 44,
                 start_y + 300 + (index - 1) * 172,
-                190,
+                168,
                 section_index + index,
                 rotation=[-2.5, 1.8][(index - 1) % 2],
             )
@@ -469,6 +469,12 @@ def build_field_notes_images(images: list[Any], start_y: float, section_index: i
 
 
 def build_split_scene_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if len(images) == 3:
+        return [
+            placement(images[0], 92, start_y + 12, 420, section_index, rotation=-1.4),
+            placement(images[1], 596, start_y, 330, section_index + 1, rotation=1.2),
+            placement(images[2], 596, start_y + 406, 330, section_index + 2, rotation=-1.2),
+        ]
     placements = []
     for index, image in enumerate(images[:4]):
         if len(images) <= 2:
@@ -547,21 +553,62 @@ def build_map_journey_images(images: list[Any], start_y: float, section_index: i
 
 
 def build_weekly_spread_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
-    placements = []
+    if not images:
+        return []
     pattern = layout_pattern_index("weekly_spread", images, section_index)
-    width = [250, 236, 264][pattern]
-    x_positions = ([92, 390, 688], [108, 392, 676], [88, 392, 704])[pattern]
-    for index, image in enumerate(images[:9]):
-        column = index % 3
-        row = index // 3
+    primary_width = [322, 312, 336][pattern]
+    placements = [
+        placement(
+            images[0],
+            [92, 108, 88][pattern],
+            start_y + [42, 44, 38][pattern],
+            primary_width,
+            section_index,
+            rotation=[-1.2, 1, -0.8][pattern],
+        )
+    ]
+    side_specs_by_pattern = [
+        [
+            (486, 48, 218),
+            (752, 48, 190),
+            (96, 540, 210),
+            (384, 540, 218),
+            (678, 540, 206),
+            (116, 996, 220),
+            (430, 996, 200),
+            (704, 996, 210),
+        ],
+        [
+            (500, 44, 206),
+            (750, 44, 198),
+            (124, 512, 216),
+            (410, 512, 204),
+            (690, 512, 214),
+            (108, 970, 206),
+            (396, 970, 218),
+            (690, 970, 196),
+        ],
+        [
+            (510, 58, 220),
+            (766, 58, 188),
+            (92, 548, 214),
+            (388, 548, 222),
+            (704, 548, 198),
+            (140, 1008, 208),
+            (432, 1008, 214),
+            (708, 1008, 204),
+        ],
+    ]
+    for index, image in enumerate(images[1:9], start=1):
+        x, y_offset, width = side_specs_by_pattern[pattern][index - 1]
         placements.append(
             placement(
                 image,
-                x_positions[column],
-                start_y + 44 + row * [410, 386, 424][pattern] + column * [18, 8, 24][pattern],
+                x,
+                start_y + y_offset,
                 width,
                 section_index + index,
-                rotation=[-1.2, 1, -0.8, 1.4, -1, 0.8][index % 6],
+                rotation=[1, -0.8, 1.4, -1, 0.8, -1.2, 1.2, -0.6][(index - 1) % 8],
             )
         )
     return placements
@@ -579,8 +626,8 @@ def build_day_dashboard_images(images: list[Any], start_y: float, section_index:
         placements.append(
             placement(
                 image,
-                560 + column * (width + 32),
-                start_y + 42 + row * [298, 280, 314][pattern] + column * [0, 12, -8][pattern],
+                590 + column * (width + 32),
+                start_y + 42 + row * [322, 306, 336][pattern] + column * [0, 12, -8][pattern],
                 width,
                 section_index + index,
                 rotation=[1.5, -1.2, 1, -1.5, 0.8][(index - 1) % 5],

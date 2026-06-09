@@ -342,7 +342,7 @@ def fallback_image_groups(request: JournalGenerationRequest) -> list[list[Journa
     if not request.images:
         return []
     variant = section_variant_for_template(request.template_id, len(request.images))
-    if variant == "split_scene" and len(request.images) >= 2:
+    if variant == "split_scene" and 2 <= len(request.images) <= 4:
         return [group for group in split_evenly(request.images, 2) if group]
     if variant == "chapter_scroll":
         return [request.images[start : start + 3] for start in range(0, len(request.images), 3)]
@@ -1088,7 +1088,13 @@ def build_template_section_decorations(
     )
     tape_id = first_asset_id(asset_by_id, "tape", section_index, recipe_tags, preferred_asset_ids, avoided_asset_ids)
     sticker_id = first_asset_id(asset_by_id, "sticker", section_index, recipe_tags, preferred_asset_ids, avoided_asset_ids)
-    secondary_sticker_id = complementary_sticker_asset_id(asset_by_id, sticker_id, recipe_tags, preferred_asset_ids)
+    secondary_sticker_id = complementary_sticker_asset_id(
+        asset_by_id,
+        sticker_id,
+        recipe_tags,
+        preferred_asset_ids,
+        avoided_asset_ids,
+    )
     texture_id = first_asset_id(asset_by_id, "texture", section_index, recipe_tags, preferred_asset_ids, avoided_asset_ids)
     first_image = section_images[0] if section_images else None
 
@@ -1244,6 +1250,7 @@ def complementary_sticker_asset_id(
     primary_asset_id: str | None,
     preferred_tags: list[str],
     preferred_asset_ids: list[str] | None = None,
+    avoided_asset_ids: set[str] | None = None,
 ) -> str | None:
     preferred_sticker_ids = [
         asset_id
@@ -1264,7 +1271,7 @@ def complementary_sticker_asset_id(
     primary_tags = set(asset_by_id[primary_asset_id].tags) if primary_asset_id in asset_by_id else set()
     candidates = [
         asset
-        for asset in asset_by_id.values()
+        for asset in avoid_repeated_asset_ids(asset_by_id, "sticker", preferred_tags, avoided_asset_ids).values()
         if asset.category == "sticker"
         and asset.quality_status == "approved"
         and asset.id != primary_asset_id

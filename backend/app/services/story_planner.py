@@ -108,8 +108,7 @@ def build_sections_from_body(
     suggested_group_limit: int | None = None,
 ) -> list[dict[str, Any]]:
     paragraphs = normalized_body(layout)
-    section_count = section_count_from_body(len(image_ids), len(paragraphs), suggested_variant, suggested_group_limit)
-    image_groups = split_evenly(image_ids, section_count)
+    image_groups = image_groups_from_body(image_ids, len(paragraphs), suggested_variant, suggested_group_limit)
     mood = normalize_string_list(layout.get("theme", {}).get("mood") if isinstance(layout.get("theme"), dict) else [])
     sections: list[dict[str, Any]] = []
 
@@ -129,6 +128,21 @@ def build_sections_from_body(
             )
         )
     return sections
+
+
+def image_groups_from_body(
+    image_ids: list[str],
+    paragraph_count: int,
+    suggested_variant: str | None,
+    suggested_group_limit: int | None = None,
+) -> list[list[str]]:
+    if suggested_group_limit is not None and suggested_group_limit > 0:
+        return [
+            image_ids[start : start + suggested_group_limit]
+            for start in range(0, len(image_ids), suggested_group_limit)
+        ]
+    section_count = section_count_from_body(len(image_ids), paragraph_count, suggested_variant)
+    return split_evenly(image_ids, section_count)
 
 
 def section_count_from_body(

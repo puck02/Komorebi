@@ -309,6 +309,7 @@ export default function JournalDetailPage() {
 
       <div className="journal-detail-single">
         <div className="journal-preview-panel" ref={previewPanelRef}>
+          <p className="journal-edit-hint">双击标题、正文或照片说明即可编辑文字。</p>
           <div className="journal-canvas-fit-shell">
             <JournalCanvas
               assets={assetsQuery.data ?? []}

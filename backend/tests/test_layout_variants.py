@@ -519,6 +519,25 @@ def test_split_scene_layout_separates_two_scene_columns():
     assert body_text["y"] > max(item["y"] + item["height"] for item in layout["images"])
 
 
+def test_split_scene_three_photo_layout_keeps_side_column_spaced():
+    images = [image("img_1", 900, 1200), image("img_2", 640, 480), image("img_3", 900, 1200)]
+    section_data = content_section("section_1", [item.id for item in images], body="上午在室内，下午走到外面，刚好是两个场景。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="split_scene",
+    )
+
+    right_column = sorted([item for item in layout["images"] if item["x"] >= 540], key=lambda item: item["y"])
+    assert len(right_column) == 2
+    assert right_column[1]["y"] - (right_column[0]["y"] + right_column[0]["height"]) >= 34
+
+
 def test_detail_index_layout_uses_primary_photo_and_small_detail_strip():
     images = [
         image("img_1", 1200, 900),
@@ -542,6 +561,67 @@ def test_detail_index_layout_uses_primary_photo_and_small_detail_strip():
     areas = [item["width"] * item["height"] for item in layout["images"]]
     assert areas[0] == max(areas)
     assert all(item["x"] > layout["images"][0]["x"] + layout["images"][0]["width"] for item in layout["images"][1:])
+
+
+def test_day_dashboard_layout_keeps_side_photos_clear_of_primary():
+    images = [
+        image("img_1", 900, 1200),
+        image("img_2", 640, 480),
+        image("img_3", 900, 1200),
+        image("img_4", 640, 480),
+    ]
+    section_data = content_section("section_1", [item.id for item in images], body="今日照片旁边留一组清单和细节小图。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="day_dashboard",
+    )
+
+    primary = layout["images"][0]
+    side_photos = layout["images"][1:]
+    assert side_photos
+    assert min(item["x"] for item in side_photos) - (primary["x"] + primary["width"]) >= 32
+
+
+def test_weekly_spread_layout_has_a_clear_anchor_photo():
+    images = [image(f"img_{index}", 900 if index % 2 else 640, 1200 if index % 2 else 480) for index in range(1, 7)]
+    section_data = content_section("section_1", [item.id for item in images], body="这一周分成几个小片段复盘。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="weekly_spread",
+    )
+
+    areas = [item["width"] * item["height"] for item in layout["images"]]
+    assert max(areas) / min(areas) >= 1.25
+
+
+def test_letter_page_three_photo_layout_keeps_one_clear_memory_anchor():
+    images = [image("img_1", 640, 480), image("img_2", 900, 1200), image("img_3", 900, 1200)]
+    section_data = content_section("section_1", [item.id for item in images], body="像写信一样把今天慢慢说完。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="letter_page",
+    )
+
+    areas = [item["width"] * item["height"] for item in layout["images"]]
+    assert max(areas) / min(areas) >= 1.25
 
 
 def test_story_templates_use_stable_content_based_layout_variants():

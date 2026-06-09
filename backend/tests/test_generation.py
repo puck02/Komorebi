@@ -161,6 +161,29 @@ def test_fallback_split_scene_creates_two_story_sections_with_companion_variant(
     assert [section.variant for section in layout.layout.sections] == ["split_scene", "before_after"]
 
 
+def test_fallback_split_scene_long_story_avoids_crowded_caption_fragments():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+    request = JournalGenerationRequest(
+        description="上午在室内喝咖啡，下午换到路上散步，想分成两个场景来记。",
+        images=[
+            JournalImageInput(id=f"img_{index}", width=900 if index % 2 else 640, height=1200 if index % 2 else 480)
+            for index in range(1, 9)
+        ],
+        assets=load_assets(),
+        template_id="split_scene",
+    )
+
+    layout = generator.generate(request)
+    issues = check_layout_rules(layout, request)
+
+    assert [section.image_ids for section in layout.content.sections] == [
+        ["img_1", "img_2", "img_3"],
+        ["img_4", "img_5", "img_6"],
+        ["img_7", "img_8"],
+    ]
+    assert not any(issue["type"] in {"captionCoverage", "imageSpacing"} for issue in issues)
+
+
 def test_fallback_chapter_scroll_keeps_long_story_as_readable_chapters():
     request = generation_request(images=[JournalImageInput(id=f"img_{index}", width=640, height=480) for index in range(1, 8)], template_id="chapter_scroll")
 
@@ -186,6 +209,25 @@ def test_fallback_story_template_varies_section_variants_for_long_memory():
     assert variants[0] == "scrapbook_story"
     assert len(set(variants)) >= 2
     assert set(variants).issubset({"scrapbook_story", "moodboard_stack", "ticket_day", "letter_page"})
+
+
+def test_fallback_moodboard_long_story_splits_into_story_sections():
+    request = generation_request(
+        images=[
+            JournalImageInput(id=f"img_{index}", width=900 if index % 2 else 640, height=1200 if index % 2 else 480)
+            for index in range(1, 8)
+        ],
+        template_id="moodboard_stack",
+    )
+
+    layout = JournalLayout.model_validate(sanitize_model_layout(build_fallback_layout(request), request))
+
+    assert [section.image_ids for section in layout.content.sections] == [
+        ["img_1", "img_2", "img_3"],
+        ["img_4", "img_5", "img_6"],
+        ["img_7"],
+    ]
+    assert [section.variant for section in layout.layout.sections] == ["moodboard_stack", "letter_page", "quiet_story"]
 
 
 def test_fallback_chapter_scroll_with_mixed_orientation_avoids_caption_overlaps():
@@ -2185,6 +2227,31 @@ def test_fallback_multisection_theme_decorations_avoid_repeating_asset_ids():
     ]
     assert "paper_exhibition_ticket_19" not in first_section_paper_ids
     assert "paper_exhibition_ticket_19" in second_section_paper_ids
+
+
+def test_fallback_letter_story_decorations_avoid_repeating_letter_stickers():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+    request = JournalGenerationRequest(
+        description="这些照片像写给今天的一封信，想慢慢记住每个片段。",
+        images=[
+            JournalImageInput(id=f"img_{index}", width=900 if index % 2 else 640, height=1200 if index % 2 else 480)
+            for index in range(1, 8)
+        ],
+        assets=load_assets(),
+        template_id="letter_page",
+    )
+
+    layout = generator.generate(request)
+    decoration_ids = [
+        decoration.asset_id
+        for section in layout.layout.sections
+        for decoration in section.decorations
+    ]
+    repeated_decoration_ids = {asset_id for asset_id in decoration_ids if decoration_ids.count(asset_id) > 1}
+    issues = check_layout_rules(layout, request)
+
+    assert repeated_decoration_ids == set()
+    assert not any(issue["type"] == "decorationVariety" for issue in issues)
 
 
 def test_sanitize_model_layout_preserves_theme_sticker_combo_on_second_pass():

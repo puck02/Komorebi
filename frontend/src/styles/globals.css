@@ -654,18 +654,18 @@ body {
 
 .template-picker {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .template-picker button {
   display: grid;
-  grid-template-columns: 86px minmax(0, 1fr);
-  gap: 8px 12px;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 9px 12px;
   align-items: start;
-  min-height: 176px;
+  min-height: 206px;
   border: 1px solid rgb(220 199 182 / 82%);
   border-radius: 10px;
-  padding: 10px;
+  padding: 12px;
   color: var(--color-ink);
   background: rgb(255 253 248 / 78%);
   font: inherit;
@@ -697,10 +697,10 @@ body {
 
 .template-preview {
   position: relative;
-  grid-row: span 6;
+  grid-row: span 5;
   align-self: start;
-  width: 86px;
-  height: 82px;
+  width: 96px;
+  height: 96px;
   border: 1px solid rgb(220 199 182 / 78%);
   border-radius: 7px;
   overflow: hidden;
@@ -723,6 +723,7 @@ body {
 }
 
 .template-source {
+  grid-column: 2;
   min-width: 0;
   width: fit-content;
   border: 1px solid rgb(184 111 91 / 18%);
@@ -735,14 +736,22 @@ body {
   line-height: 1.2;
 }
 
+.template-card-copy {
+  grid-column: 2;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
 .template-picker strong {
   min-width: 0;
   color: var(--color-ink);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 900;
 }
 
 .template-picker small,
+.template-best-for,
 .template-structure,
 .template-beats,
 .template-reason {
@@ -751,6 +760,14 @@ body {
   font-size: 12px;
   font-style: normal;
   line-height: 1.42;
+}
+
+.template-best-for {
+  width: fit-content;
+  border-left: 3px solid rgb(185 200 169 / 86%);
+  padding-left: 7px;
+  color: rgb(112 82 61 / 86%);
+  font-weight: 850;
 }
 
 .template-structure {
@@ -778,7 +795,7 @@ body {
 .template-structure,
 .template-beats,
 .template-reason {
-  grid-column: 2;
+  grid-column: 1 / -1;
 }
 
 .template-reason {
@@ -2274,6 +2291,20 @@ body {
 
 .journal-detail-single {
   display: block;
+}
+
+.journal-edit-hint {
+  width: fit-content;
+  margin: 0 auto 12px;
+  border: 1px solid rgb(185 200 169 / 72%);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: rgb(92 65 48 / 84%);
+  background: rgb(255 253 248 / 82%);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+  box-shadow: 0 8px 18px rgb(67 46 31 / 8%);
 }
 
 .journal-preview-panel {

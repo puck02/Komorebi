@@ -293,6 +293,39 @@ def test_layout_rules_report_section_spacing_and_section_image_gap():
     assert has_issue(issues, "imageSpacing", "medium", "章节内图片间距不足")
 
 
+def test_layout_rules_allow_scrapbook_story_collage_overlap():
+    payload = layout_payload(image_ids=["img_1", "img_2", "img_3"])
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "剪贴故事",
+            "imageIds": ["img_1", "img_2", "img_3"],
+            "body": "几张照片像碎片一样贴在同一页，记住这段小回忆。",
+            "mood": [],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "scrapbook_story",
+            "y": 220,
+            "height": 980,
+            "images": [
+                {"imageId": "img_1", "x": 118, "y": 315, "width": 346, "height": 461, "rotation": -2.6},
+                {"imageId": "img_2", "x": 510, "y": 339, "width": 354, "height": 266, "rotation": 4},
+                {"imageId": "img_3", "x": 284, "y": 789, "width": 286, "height": 381, "rotation": 2.4},
+            ],
+            "texts": [{"role": "body", "x": 112, "y": 1220, "width": 820, "fontSize": 32}],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=three_images()))
+
+    assert not has_issue(issues, "imageSpacing", "medium", "章节内图片间距不足")
+
+
 def test_layout_rules_report_section_content_beyond_declared_height():
     payload = layout_payload()
     payload["content"]["sections"] = [
@@ -510,6 +543,47 @@ def test_layout_rules_allow_sparse_captions_for_dense_story_variants():
     layout = JournalLayout.model_validate(payload)
 
     issues = check_layout_rules(layout, generation_request(images=two_images()))
+
+    assert not has_issue(issues, "captionCoverage", "medium", "章节照片说明没有完整渲染")
+
+
+def test_layout_rules_allow_sparse_captions_for_split_scene_story():
+    payload = layout_payload(image_ids=["img_1", "img_2", "img_3"])
+    payload["content"]["captions"] = [
+        {"imageId": "img_1", "text": "上午的场景"},
+        {"imageId": "img_2", "text": "转到路上"},
+        {"imageId": "img_3", "text": "下午的场景"},
+    ]
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "两个场景",
+            "imageIds": ["img_1", "img_2", "img_3"],
+            "body": "上午在室内喝咖啡，下午换到路上散步。",
+            "mood": [],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "split_scene",
+            "y": 220,
+            "height": 760,
+            "images": [
+                {"imageId": "img_1", "x": 92, "y": 260, "width": 390, "height": 320, "rotation": 0},
+                {"imageId": "img_2", "x": 568, "y": 320, "width": 390, "height": 320, "rotation": 0},
+                {"imageId": "img_3", "x": 568, "y": 740, "width": 390, "height": 260, "rotation": 0},
+            ],
+            "texts": [
+                {"role": "body", "x": 112, "y": 1060, "width": 820, "fontSize": 32},
+                {"role": "caption", "imageId": "img_2", "x": 596, "y": 650, "width": 334, "fontSize": 22},
+            ],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=three_images()))
 
     assert not has_issue(issues, "captionCoverage", "medium", "章节照片说明没有完整渲染")
 

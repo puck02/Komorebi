@@ -56,7 +56,7 @@ TEMPLATE_SECTION_VARIANT_RECIPES = {
     "ticket_day": ("ticket_day", "recipe_memo", "letter_page"),
     "magazine_note": ("magazine_note", "quiet_story", "detail_index"),
     "before_after": ("before_after", "split_scene", "letter_page"),
-    "moodboard_stack": ("moodboard_stack", "scrapbook_story", "letter_page"),
+    "moodboard_stack": ("moodboard_stack", "letter_page", "quiet_story"),
     "recipe_memo": ("recipe_memo", "ticket_day", "letter_page"),
     "letter_page": ("letter_page", "quiet_story", "hero_memory"),
     "chapter_scroll": ("chapter_scroll", "timeline_trip", "letter_page"),
@@ -71,7 +71,9 @@ TEMPLATE_SECTION_VARIANT_RECIPES = {
 
 TEMPLATE_SECTION_GROUP_LIMITS = {
     "chapter_scroll": 3,
+    "moodboard_stack": 3,
     "scrapbook_story": 3,
+    "split_scene": 3,
 }
 
 SECTION_VARIANT_IMAGE_LIMITS = {
