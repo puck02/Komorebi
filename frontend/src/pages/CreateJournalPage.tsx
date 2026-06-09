@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { CalendarDays, LayoutTemplate, MapPin, Sparkles, Tags } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -14,7 +14,13 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { CREATE_JOURNAL_MOOD_OPTIONS } from "./createJournalOptions";
 import { generationJobErrorMessage, generationJobRouteAfterCreate } from "./generationJobStatus";
-import { JOURNAL_TEMPLATES, recommendLocalJournalTemplates, type JournalTemplateRecommendation } from "./journalTemplates";
+import { JOURNAL_TEMPLATES, recommendLocalJournalTemplates } from "./journalTemplates";
+import {
+  createTemplateRecommendationRequestKey,
+  initialTemplateRecommendationState,
+  mergeServerTemplateRecommendations,
+  templateRecommendationReducer
+} from "./templateRecommendationState";
 
 const createJournalSchema = z.object({
   description: z.string().trim().min(1, "请写一点今天的内容。"),
@@ -31,9 +37,10 @@ export default function CreateJournalPage() {
   const [isMoodPickerOpen, setIsMoodPickerOpen] = useState(false);
   const [selectedMood, setSelectedMood] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState(JOURNAL_TEMPLATES[0].id);
-  const [serverRecommendedTemplates, setServerRecommendedTemplates] = useState<JournalTemplateRecommendation[] | null>(null);
-  const [recommendationSource, setRecommendationSource] = useState<"ai" | "local" | null>(null);
-  const [recommendationMessage, setRecommendationMessage] = useState<string | null>(null);
+  const [templateRecommendationState, dispatchTemplateRecommendation] = useReducer(
+    templateRecommendationReducer,
+    initialTemplateRecommendationState
+  );
   const [submitError, setSubmitError] = useState("");
   const {
     formState: { errors, isSubmitting },
@@ -53,32 +60,13 @@ export default function CreateJournalPage() {
     () => recommendLocalJournalTemplates(images, descriptionValue, selectedMood),
     [descriptionValue, images, selectedMood]
   );
-  const recommendedTemplates = serverRecommendedTemplates ?? localRecommendedTemplates;
+  const recommendedTemplates = templateRecommendationState.serverRecommendedTemplates ?? localRecommendedTemplates;
   const recommendTemplatesMutation = useMutation({
-    mutationFn: recommendJournalTemplatesFromServer,
-    onSuccess: (result) => {
-      const mergedRecommendations = result.recommendations
-        .map((recommendation) => {
-          const template = JOURNAL_TEMPLATES.find((item) => item.id === recommendation.templateId);
-          if (!template) {
-            return null;
-          }
-          return {
-            ...template,
-            recommendationReason: recommendation.reason,
-            storyArc: recommendation.storyArc
-          };
-        })
-        .filter((template): template is JournalTemplateRecommendation => template !== null);
-      setServerRecommendedTemplates(mergedRecommendations.length ? mergedRecommendations : null);
-      setRecommendationSource(result.source);
-      setRecommendationMessage(result.message);
-    },
-    onError: () => {
-      setServerRecommendedTemplates(null);
-      setRecommendationSource("local");
-      setRecommendationMessage("模板推荐服务暂不可用，已按本地规则推荐。");
-    }
+    mutationFn: ({
+      requestKey,
+      ...payload
+    }: Parameters<typeof recommendJournalTemplatesFromServer>[0] & { requestKey: string }) =>
+      recommendJournalTemplatesFromServer(payload).then((result) => ({ requestKey, result }))
   });
   const { mutate: recommendTemplates } = recommendTemplatesMutation;
 
@@ -89,17 +77,35 @@ export default function CreateJournalPage() {
   }, [recommendedTemplates, selectedTemplateId]);
 
   useEffect(() => {
-    setServerRecommendedTemplates(null);
-    setRecommendationSource(null);
-    setRecommendationMessage(null);
+    const imageIds = images.map((image) => image.id);
+    const requestKey = createTemplateRecommendationRequestKey(imageIds, descriptionValue || "", selectedMood);
     if (images.length === 0) {
+      dispatchTemplateRecommendation({ requestKey, type: "localOnly" });
       return;
     }
+    dispatchTemplateRecommendation({ requestKey, type: "requestStarted" });
     const timeoutId = window.setTimeout(() => {
       recommendTemplates({
         description: descriptionValue || "",
-        imageIds: images.map((image) => image.id),
-        moodTags: selectedMood ? [selectedMood] : []
+        imageIds,
+        moodTags: selectedMood ? [selectedMood] : [],
+        requestKey
+      }, {
+        onError: (_error, variables) => {
+          dispatchTemplateRecommendation({
+            requestKey: variables.requestKey,
+            type: "requestFailed"
+          });
+        },
+        onSuccess: (mutationData) => {
+          dispatchTemplateRecommendation({
+            message: mutationData.result.message,
+            recommendations: mergeServerTemplateRecommendations(mutationData.result),
+            requestKey: mutationData.requestKey,
+            source: mutationData.result.source,
+            type: "requestSucceeded"
+          });
+        }
       });
     }, 420);
     return () => window.clearTimeout(timeoutId);
@@ -243,11 +249,12 @@ export default function CreateJournalPage() {
               推荐模板
             </span>
             <div className="template-recommendation-status">
-              {recommendTemplatesMutation.isPending
+              {templateRecommendationState.isPending
                 ? "正在结合图片内容推荐..."
-                : recommendationSource === "ai"
+                : templateRecommendationState.recommendationSource === "ai"
                   ? "已根据图片内容推荐"
-                  : recommendationMessage || "先按照片数量和描述推荐，上传后会结合图片内容更新。"}
+                  : templateRecommendationState.recommendationMessage ||
+                    "先按照片数量和描述推荐，上传后会结合图片内容更新。"}
             </div>
             <div className="template-picker" role="radiogroup" aria-label="选择手帐模板">
               {recommendedTemplates.map((template) => (
