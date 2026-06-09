@@ -1873,6 +1873,143 @@
     "qualityStatus": "approved"
   },
   {
+    "id": "paper_cafe_receipt_20",
+    "name": "Cafe Receipt 20",
+    "category": "paper",
+    "tags": [
+      "coffee",
+      "receipt",
+      "daily",
+      "ticket"
+    ],
+    "style": [
+      "soft-collage",
+      "paper"
+    ],
+    "colors": [
+      "#fff8e7",
+      "#9a7557"
+    ],
+    "file": "stickers/paper_cafe_receipt_20.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_string_tag_53",
+    "name": "String Tag 53",
+    "category": "sticker",
+    "tags": [
+      "tag",
+      "note",
+      "letter",
+      "collage"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#f4dfbb",
+      "#8f6f5b"
+    ],
+    "file": "stickers/sticker_string_tag_53.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_pressed_seal_54",
+    "name": "Pressed Seal 54",
+    "category": "sticker",
+    "tags": [
+      "seal",
+      "letter",
+      "memory"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#b85f5f",
+      "#f0b0a4"
+    ],
+    "file": "stickers/sticker_pressed_seal_54.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_photo_corner_pair_55",
+    "name": "Photo Corner Pair 55",
+    "category": "sticker",
+    "tags": [
+      "corner",
+      "photo",
+      "collage",
+      "memory"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#f3e2c9",
+      "#8b6c52"
+    ],
+    "file": "stickers/sticker_photo_corner_pair_55.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_ink_pen_56",
+    "name": "Ink Pen 56",
+    "category": "sticker",
+    "tags": [
+      "pen",
+      "hand",
+      "note",
+      "daily"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#4f6170",
+      "#e8d8bd"
+    ],
+    "file": "stickers/sticker_ink_pen_56.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
+    "id": "sticker_menu_card_57",
+    "name": "Menu Card 57",
+    "category": "sticker",
+    "tags": [
+      "food",
+      "table",
+      "warm",
+      "note"
+    ],
+    "style": [
+      "soft-collage",
+      "hand-drawn"
+    ],
+    "colors": [
+      "#fff2da",
+      "#b98465"
+    ],
+    "file": "stickers/sticker_menu_card_57.svg",
+    "license": "internal",
+    "source": "internal",
+    "qualityStatus": "approved"
+  },
+  {
     "id": "texture_dots_01",
     "name": "Warm Dots 01",
     "category": "texture",

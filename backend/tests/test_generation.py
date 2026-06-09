@@ -1957,7 +1957,16 @@ def test_fallback_layout_uses_location_and_mood_context():
     ("description", "expected_asset_ids"),
     [
         ("今天把冲印照片、胶片和旧邮票夹在这一页。", {"sticker_film_strip_30", "sticker_postage_stamp_29"}),
-        ("信封、封蜡和牛皮纸标签都贴在便签旁边。", {"sticker_tiny_envelope_33", "sticker_wax_seal_31", "sticker_kraft_tag_32"}),
+        (
+            "信封、封蜡和牛皮纸标签都贴在便签旁边。",
+            {
+                "sticker_tiny_envelope_33",
+                "sticker_wax_seal_31",
+                "sticker_kraft_tag_32",
+                "sticker_string_tag_53",
+                "sticker_pressed_seal_54",
+            },
+        ),
         ("今天去看展览，装置作品旁边留着门票和导览图。", {"sticker_gallery_map_50", "sticker_gallery_label_51"}),
     ],
 )
@@ -1992,7 +2001,34 @@ def test_fallback_cafe_receipt_scene_does_not_use_exhibition_assets():
 
     decoration_ids = {decoration.asset_id for decoration in layout.layout.sections[0].decorations}
     assert {"paper_exhibition_ticket_19", "sticker_gallery_map_50"}.isdisjoint(decoration_ids)
-    assert {"paper_label_coffee_06", "tape_coffee_06", "sticker_coffee_06"}.issubset(decoration_ids)
+    assert {"tape_coffee_06", "sticker_coffee_06"}.issubset(decoration_ids)
+    assert {"paper_label_coffee_06", "paper_cafe_receipt_20"}.intersection(decoration_ids)
+
+
+def test_fallback_letter_template_uses_letter_materials_when_copy_is_plain():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+
+    layout = generator.generate(
+        JournalGenerationRequest(
+            description="这一天想慢慢记住，把照片和几句话放在一起。",
+            images=[JournalImageInput(id="img_1", width=900, height=1200)],
+            assets=load_assets(),
+            template_id="letter_page",
+        )
+    )
+
+    decoration_ids = {decoration.asset_id for decoration in layout.layout.sections[0].decorations}
+    assert len(
+        decoration_ids.intersection(
+            {
+                "sticker_tiny_envelope_33",
+                "sticker_wax_seal_31",
+                "sticker_kraft_tag_32",
+                "sticker_string_tag_53",
+                "sticker_pressed_seal_54",
+            }
+        )
+    ) >= 2
 
 
 def test_fallback_multisection_theme_decorations_avoid_repeating_asset_ids():

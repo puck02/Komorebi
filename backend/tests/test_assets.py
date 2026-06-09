@@ -153,6 +153,17 @@ def test_internal_scrapbook_ephemera_stickers_cover_common_journal_materials():
     assert any({"date", "stamp"}.issubset(asset.tags) for asset in approved_internal_stickers)
 
 
+@pytest.mark.parametrize("tag", ["receipt", "seal", "tag", "corner", "pen", "food", "table"])
+def test_template_material_tags_have_multiple_internal_approved_assets(tag):
+    approved_internal_assets = [
+        asset for asset in load_assets() if asset.source == "internal" and asset.quality_status == "approved"
+    ]
+
+    matching_assets = [asset for asset in approved_internal_assets if tag in asset.tags]
+
+    assert len(matching_assets) >= 2
+
+
 def test_generic_external_icons_stay_draft_until_art_directed():
     generic_icon_ids = {
         "ext_streamline_game_controller",
