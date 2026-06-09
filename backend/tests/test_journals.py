@@ -254,6 +254,44 @@ def test_patch_journal_updates_title_body_and_layout_variant(context):
     assert response.layout["layout"]["variant"] == "collage_b"
 
 
+def test_normalized_journal_layout_preserves_user_edited_long_text(context):
+    user = register_and_login(context, "owner@example.com")
+    image_id = create_image(context, user.id)
+    journal_id = generate_journal_for_user(context, user, image_id, "周末一起散步").id
+    edited_title = "周末一起散步之后坐在窗边慢慢写下来的完整标题"
+    edited_caption = "这张照片里有咖啡、窗边的光和后来聊到很晚的那段时间"
+    edited_body = "这是用户自己补写的一整段记录，不应该在重新打开手帐时被模型清洗、分段或者截短。"
+
+    update_journal(
+        journal_id,
+        JournalUpdateRequest(
+            title=edited_title,
+            body=[edited_body],
+            captions=[{"imageId": image_id, "text": edited_caption}],
+            sections=[
+                {
+                    "id": "section_1",
+                    "title": edited_title,
+                    "imageIds": [image_id],
+                    "body": edited_body,
+                    "mood": ["安静"],
+                }
+            ],
+        ),
+        user,
+        context.db,
+    )
+
+    response = get_journal(journal_id, user, context.db)
+
+    assert response.title == edited_title
+    assert response.layout["content"]["title"] == edited_title
+    assert response.layout["content"]["body"] == [edited_body]
+    assert response.layout["content"]["captions"] == [{"imageId": image_id, "text": edited_caption}]
+    assert response.layout["content"]["sections"][0]["title"] == edited_title
+    assert response.layout["content"]["sections"][0]["body"] == edited_body
+
+
 def test_delete_journal_removes_associated_image_files(context):
     user = register_and_login(context, "owner@example.com")
     image_id = create_image(context, user.id)

@@ -442,7 +442,12 @@ def normalize_meta_content(value: Any, request: JournalGenerationRequest) -> str
     return text or build_meta_text(request)
 
 
-def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGenerationRequest) -> dict[str, Any]:
+def sanitize_model_layout(
+    raw_layout: dict[str, Any],
+    request: JournalGenerationRequest,
+    *,
+    preserve_saved_text: bool = False,
+) -> dict[str, Any]:
     layout = deepcopy(raw_layout)
     layout["canvas"]["width"] = CANVAS_WIDTH
     layout["canvas"]["background"] = normalize_background(layout["canvas"].get("background"))
@@ -452,9 +457,15 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
         content["body"] = content["notes"]
     if "body" not in content and isinstance(content.get("subtitle"), str):
         content["body"] = [content["subtitle"]]
-    content["title"] = normalize_title(content.get("title"))
+    if preserve_saved_text:
+        content["title"] = normalize_saved_text(content.get("title"), fallback="今日小记")
+    else:
+        content["title"] = normalize_title(content.get("title"))
     content["meta"] = normalize_meta_content(content.get("meta"), request)
-    content["body"] = normalize_body_content(content.get("body"), request.description)
+    if preserve_saved_text:
+        content["body"] = normalize_saved_body_content(content.get("body"), request.description)
+    else:
+        content["body"] = normalize_body_content(content.get("body"), request.description)
 
     image_ids = {image.id for image in request.images}
     approved_asset_ids = [asset.id for asset in request.assets if asset.quality_status == "approved"]
@@ -481,7 +492,11 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
         ]
     for caption in captions:
         normalize_id_alias(caption, "imageId")
-        caption["text"] = normalize_caption_text(caption.get("text"), fallback="今天的照片")
+        caption["text"] = (
+            normalize_saved_text(caption.get("text"), fallback="今天的照片")
+            if preserve_saved_text
+            else normalize_caption_text(caption.get("text"), fallback="今天的照片")
+        )
     layout["content"]["captions"] = [
         caption for caption in captions if caption.get("imageId") in image_ids and str(caption.get("text") or "").strip()
     ]
@@ -507,13 +522,28 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     else:
         layout["layout"]["decorations"] = []
 
-    normalize_sections(layout, request.images, asset_by_id, request.template_id)
+    normalize_sections(layout, request.images, asset_by_id, request.template_id, preserve_saved_text=preserve_saved_text)
     layout["canvas"]["height"] = normalize_canvas_height(layout)
     return layout
 
 
 def normalize_body_content(body: Any, fallback: str) -> list[str]:
     return normalize_diary_blocks(body, fallback=normalize_diary_text(fallback, fallback="今天的照片先放在这里。"), split_target=LONG_BODY_SPLIT_TARGET)
+
+
+def normalize_saved_text(value: Any, *, fallback: str) -> str:
+    text = str(value or "").strip()
+    return text or fallback
+
+
+def normalize_saved_body_content(body: Any, fallback: str) -> list[str]:
+    if isinstance(body, str):
+        blocks = [body.strip()] if body.strip() else []
+    elif isinstance(body, list):
+        blocks = [str(paragraph).strip() for paragraph in body if str(paragraph).strip()]
+    else:
+        blocks = []
+    return blocks or [normalize_saved_text(fallback, fallback="今天的照片先放在这里。")]
 
 
 def normalize_story_layout(layout: dict[str, Any], request_images: list[JournalImageInput]) -> None:
@@ -548,8 +578,10 @@ def normalize_sections(
     request_images: list[JournalImageInput],
     asset_by_id: dict[str, AssetItem],
     template_id: str | None = None,
+    *,
+    preserve_saved_text: bool = False,
 ) -> None:
-    content_sections = normalize_content_sections(layout, request_images, template_id)
+    content_sections = normalize_content_sections(layout, request_images, template_id, preserve_saved_text=preserve_saved_text)
     layout["content"]["sections"] = content_sections
     layout["layout"]["sections"] = normalize_layout_sections(
         layout,
@@ -674,6 +706,8 @@ def normalize_content_sections(
     layout: dict[str, Any],
     request_images: list[JournalImageInput],
     template_id: str | None = None,
+    *,
+    preserve_saved_text: bool = False,
 ) -> list[dict[str, Any]]:
     image_ids = [image.id for image in request_images]
     sections = plan_content_sections(layout, image_ids, section_variant_for_template(template_id, len(request_images)))
@@ -681,11 +715,32 @@ def normalize_content_sections(
     return [
         {
             **section,
-            "title": normalize_section_title(section, understanding_by_id, index + 1),
-            "body": normalize_section_body(section, understanding_by_id),
+            "title": normalize_section_title_for_mode(
+                section,
+                understanding_by_id,
+                index + 1,
+                preserve_saved_text=preserve_saved_text,
+            ),
+            "body": normalize_section_body_for_mode(
+                section,
+                understanding_by_id,
+                preserve_saved_text=preserve_saved_text,
+            ),
         }
         for index, section in enumerate(sections)
     ]
+
+
+def normalize_section_title_for_mode(
+    section: dict[str, Any],
+    understanding_by_id: dict[Any, dict[str, Any]],
+    index: int,
+    *,
+    preserve_saved_text: bool,
+) -> str:
+    if preserve_saved_text:
+        return normalize_saved_text(section.get("title"), fallback=f"片段 {index}")
+    return normalize_section_title(section, understanding_by_id, index)
 
 
 def normalize_section_title(section: dict[str, Any], understanding_by_id: dict[Any, dict[str, Any]], index: int) -> str:
@@ -735,6 +790,17 @@ def joined_section_title(subjects: list[str]) -> str:
 def is_generic_section_title(value: Any) -> bool:
     text = str(value or "").strip(" 。！？!?；;，,")
     return text.startswith("片段 ") or text in GENERIC_SECTION_TITLES
+
+
+def normalize_section_body_for_mode(
+    section: dict[str, Any],
+    understanding_by_id: dict[Any, dict[str, Any]],
+    *,
+    preserve_saved_text: bool,
+) -> str:
+    if preserve_saved_text:
+        return normalize_saved_text(section.get("body"), fallback="这一组照片也想好好留下。")
+    return normalize_section_body(section, understanding_by_id)
 
 
 def normalize_section_body(section: dict[str, Any], understanding_by_id: dict[Any, dict[str, Any]]) -> str:

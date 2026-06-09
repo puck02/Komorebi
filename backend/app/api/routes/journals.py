@@ -273,6 +273,7 @@ def normalized_journal_layout(journal: Journal) -> dict:
                 mood_tags=journal.mood_tags,
                 template_id=template_id,
             ),
+            preserve_saved_text=True,
         )
     except (KeyError, TypeError, ValueError):
         return journal.layout_json
