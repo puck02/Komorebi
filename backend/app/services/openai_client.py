@@ -27,6 +27,10 @@ TEMPLATE_STORY_GUIDES = {
     "field_notes": "field_notes 观察手记：像野外观察本或研究笔记，用日期章、笔、便签和小标注记录具体细节。",
     "split_scene": "split_scene 双场景切换：把两个地点、时间或状态分开叙述，中间保留转场感。",
     "detail_index": "detail_index 细节索引：一张主图定调，其他图片做编号细节或索引说明，文字解释为什么这些小东西值得留下。",
+    "map_journey": "map_journey 路线地图：用路线、停靠点、地点旁注讲一次移动中的经历，避免只排成时间线。",
+    "weekly_spread": "weekly_spread 周记分栏：像数字周记 spread，把几天或多个片段分栏记录，每栏是一段可回看的小事。",
+    "day_dashboard": "day_dashboard 日程看板：照片之外要有今日清单、完成感或小结，像手帐里的 dashboard。",
+    "scrapbook_story": "scrapbook_story 剪贴故事：像 scrapbook memory keeping，用主图、边角素材、短句和贴纸讲一段回忆，不要做成照片墙。",
 }
 
 

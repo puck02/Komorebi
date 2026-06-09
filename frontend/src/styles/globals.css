@@ -1070,6 +1070,30 @@ body {
   top: 54px;
 }
 
+.template-preview i.is-photo {
+  background: rgb(185 200 169 / 74%);
+}
+
+.template-preview i.is-note {
+  background: rgb(141 106 86 / 18%);
+}
+
+.template-preview i.is-line {
+  border-radius: 999px;
+  background: rgb(117 88 70 / 28%);
+}
+
+.template-preview i.is-pin {
+  border-radius: 999px;
+  background: rgb(184 111 91 / 64%);
+}
+
+.template-preview i.is-rail {
+  border-radius: 999px;
+  background: rgb(184 111 91 / 42%);
+  transform-origin: center;
+}
+
 .create-submit {
   width: 100%;
 }

@@ -14,7 +14,20 @@ export type JournalTemplateId =
   | "chapter_scroll"
   | "field_notes"
   | "split_scene"
-  | "detail_index";
+  | "detail_index"
+  | "map_journey"
+  | "weekly_spread"
+  | "day_dashboard"
+  | "scrapbook_story";
+
+export type JournalTemplatePreviewItem = {
+  kind: "photo" | "note" | "line" | "pin" | "rail";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotate?: number;
+};
 
 export type JournalTemplate = {
   id: JournalTemplateId;
@@ -23,6 +36,7 @@ export type JournalTemplate = {
   bestFor: string;
   storyArc: string;
   previewClassName: string;
+  previewItems: JournalTemplatePreviewItem[];
   minImages: number;
   maxImages: number;
   keywords: string[];
@@ -41,6 +55,12 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "1-2 张安静照片",
     storyArc: "先看见一个瞬间，再把当时的感受写完整。",
     previewClassName: "is-quiet-story",
+    previewItems: [
+      { kind: "photo", x: 46, y: 10, width: 38, height: 30, rotate: -1 },
+      { kind: "note", x: 9, y: 52, width: 66, height: 22 },
+      { kind: "line", x: 10, y: 15, width: 25, height: 4 },
+      { kind: "line", x: 10, y: 25, width: 20, height: 4 }
+    ],
     minImages: 1,
     maxImages: 2,
     family: "reflective",
@@ -53,6 +73,11 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "1 张核心照片",
     storyArc: "把最重要的一张照片当成开场，其他内容都围着它讲。",
     previewClassName: "is-hero-memory",
+    previewItems: [
+      { kind: "photo", x: 12, y: 9, width: 62, height: 38 },
+      { kind: "note", x: 16, y: 61, width: 54, height: 14 },
+      { kind: "line", x: 20, y: 55, width: 46, height: 4 }
+    ],
     minImages: 1,
     maxImages: 2,
     family: "focus",
@@ -65,6 +90,13 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "2-6 张过程照片",
     storyArc: "从开始到后来，照片顺序就是页面阅读顺序。",
     previewClassName: "is-timeline-trip",
+    previewItems: [
+      { kind: "rail", x: 10, y: 10, width: 3, height: 62 },
+      { kind: "photo", x: 17, y: 10, width: 24, height: 18 },
+      { kind: "photo", x: 17, y: 32, width: 24, height: 18 },
+      { kind: "photo", x: 17, y: 54, width: 24, height: 16 },
+      { kind: "note", x: 52, y: 16, width: 28, height: 52 }
+    ],
     minImages: 2,
     maxImages: 6,
     family: "sequence",
@@ -77,6 +109,12 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "4-9 张照片",
     storyArc: "把一天拆成几个小口袋，每格是一件被留下的小事。",
     previewClassName: "is-pocket-grid",
+    previewItems: [
+      { kind: "photo", x: 10, y: 10, width: 28, height: 24 },
+      { kind: "photo", x: 48, y: 10, width: 28, height: 24 },
+      { kind: "note", x: 10, y: 48, width: 28, height: 24 },
+      { kind: "photo", x: 48, y: 48, width: 28, height: 24 }
+    ],
     minImages: 4,
     maxImages: 9,
     family: "collection",
@@ -89,6 +127,12 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "咖啡、展览、电影",
     storyArc: "用票据和便签感记录去过哪里、停在哪里、看见什么。",
     previewClassName: "is-ticket-day",
+    previewItems: [
+      { kind: "photo", x: 10, y: 12, width: 38, height: 28, rotate: -2 },
+      { kind: "note", x: 54, y: 18, width: 28, height: 38, rotate: 2 },
+      { kind: "line", x: 12, y: 63, width: 58, height: 10 },
+      { kind: "pin", x: 70, y: 9, width: 8, height: 8 }
+    ],
     minImages: 1,
     maxImages: 4,
     family: "ephemera",
@@ -101,6 +145,11 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "1-3 张氛围照片",
     storyArc: "像杂志内页一样保留留白，让照片和文字都有呼吸。",
     previewClassName: "is-magazine-note",
+    previewItems: [
+      { kind: "photo", x: 12, y: 12, width: 36, height: 44, rotate: -1 },
+      { kind: "line", x: 54, y: 14, width: 30, height: 8 },
+      { kind: "note", x: 51, y: 30, width: 34, height: 24 }
+    ],
     minImages: 1,
     maxImages: 3,
     family: "editorial",
@@ -113,6 +162,11 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "2-3 张对照照片",
     storyArc: "对比两个时刻，让变化本身成为故事。",
     previewClassName: "is-before-after",
+    previewItems: [
+      { kind: "photo", x: 10, y: 13, width: 30, height: 40, rotate: -1 },
+      { kind: "photo", x: 48, y: 13, width: 30, height: 40, rotate: 1 },
+      { kind: "note", x: 17, y: 64, width: 52, height: 10 }
+    ],
     minImages: 2,
     maxImages: 3,
     family: "contrast",
@@ -125,6 +179,12 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "2-5 张生活碎片",
     storyArc: "不强调时间顺序，而是把同一种心情贴在一页上。",
     previewClassName: "is-moodboard-stack",
+    previewItems: [
+      { kind: "photo", x: 14, y: 12, width: 42, height: 28, rotate: -5 },
+      { kind: "photo", x: 52, y: 24, width: 30, height: 32, rotate: 6 },
+      { kind: "note", x: 16, y: 62, width: 44, height: 12 },
+      { kind: "pin", x: 9, y: 48, width: 10, height: 10 }
+    ],
     minImages: 2,
     maxImages: 5,
     family: "mood",
@@ -137,6 +197,12 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "食物、咖啡、餐厅",
     storyArc: "像写一张配方卡一样记录今天吃到的味道。",
     previewClassName: "is-recipe-memo",
+    previewItems: [
+      { kind: "photo", x: 10, y: 12, width: 38, height: 28 },
+      { kind: "note", x: 54, y: 18, width: 28, height: 38 },
+      { kind: "line", x: 12, y: 63, width: 58, height: 10 },
+      { kind: "pin", x: 58, y: 10, width: 8, height: 8 }
+    ],
     minImages: 1,
     maxImages: 4,
     family: "food",
@@ -149,6 +215,11 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "想重点写文字时",
     storyArc: "照片只做旁证，主角是一段写给今天的话。",
     previewClassName: "is-letter-page",
+    previewItems: [
+      { kind: "line", x: 13, y: 10, width: 58, height: 14 },
+      { kind: "note", x: 13, y: 34, width: 64, height: 34 },
+      { kind: "photo", x: 64, y: 12, width: 18, height: 18, rotate: 3 }
+    ],
     minImages: 1,
     maxImages: 3,
     family: "letter",
@@ -161,6 +232,12 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "3-9 张连续记录",
     storyArc: "开头、转场、结尾依次出现，适合完整一天或一次出门。",
     previewClassName: "is-chapter-scroll",
+    previewItems: [
+      { kind: "rail", x: 10, y: 8, width: 3, height: 66 },
+      { kind: "photo", x: 18, y: 9, width: 54, height: 16, rotate: -1 },
+      { kind: "photo", x: 28, y: 34, width: 54, height: 16, rotate: 1 },
+      { kind: "photo", x: 18, y: 59, width: 54, height: 16, rotate: -1 }
+    ],
     minImages: 3,
     maxImages: 9,
     family: "sequence",
@@ -173,6 +250,12 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "1-5 张细节照片",
     storyArc: "从一个细节开始，写成观察、补充、想到的事。",
     previewClassName: "is-field-notes",
+    previewItems: [
+      { kind: "photo", x: 10, y: 12, width: 36, height: 42, rotate: -1 },
+      { kind: "line", x: 52, y: 14, width: 34, height: 6 },
+      { kind: "line", x: 55, y: 30, width: 28, height: 6 },
+      { kind: "note", x: 50, y: 56, width: 34, height: 18 }
+    ],
     minImages: 1,
     maxImages: 5,
     family: "observation",
@@ -185,6 +268,12 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "2-4 张两段式照片",
     storyArc: "先讲一个场景，再切到另一个场景，中间留下转场感。",
     previewClassName: "is-split-scene",
+    previewItems: [
+      { kind: "photo", x: 10, y: 12, width: 28, height: 24 },
+      { kind: "photo", x: 10, y: 49, width: 28, height: 24 },
+      { kind: "photo", x: 50, y: 12, width: 28, height: 24 },
+      { kind: "photo", x: 50, y: 49, width: 28, height: 24 }
+    ],
     minImages: 2,
     maxImages: 4,
     family: "contrast",
@@ -197,10 +286,94 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     bestFor: "3-8 张主题相近照片",
     storyArc: "主图定调，细节图负责补充那些容易忘的小东西。",
     previewClassName: "is-detail-index",
+    previewItems: [
+      { kind: "photo", x: 9, y: 12, width: 46, height: 50, rotate: -1 },
+      { kind: "photo", x: 66, y: 12, width: 20, height: 14 },
+      { kind: "photo", x: 66, y: 33, width: 20, height: 14 },
+      { kind: "photo", x: 66, y: 54, width: 20, height: 14 }
+    ],
     minImages: 3,
     maxImages: 8,
     family: "observation",
     keywords: ["细节", "索引", "清单", "编号", "几样", "小东西", "主题"]
+  },
+  {
+    id: "map_journey",
+    name: "路线地图",
+    shortDescription: "用路线、停靠点和旁注记录一次移动中的小旅程。",
+    bestFor: "2-6 张出行照片",
+    storyArc: "用路线、停靠点和旁注讲一次移动中的小旅程。",
+    previewClassName: "is-map-journey",
+    previewItems: [
+      { kind: "rail", x: 18, y: 12, width: 50, height: 3, rotate: 18 },
+      { kind: "rail", x: 28, y: 34, width: 46, height: 3, rotate: -22 },
+      { kind: "photo", x: 8, y: 10, width: 28, height: 24, rotate: -2 },
+      { kind: "photo", x: 50, y: 28, width: 28, height: 24, rotate: 2 },
+      { kind: "photo", x: 18, y: 56, width: 30, height: 20, rotate: -1 },
+      { kind: "pin", x: 68, y: 57, width: 9, height: 9 }
+    ],
+    minImages: 2,
+    maxImages: 6,
+    family: "route",
+    keywords: ["地图", "路线", "坐标", "打卡", "景点", "目的地", "沿途"]
+  },
+  {
+    id: "weekly_spread",
+    name: "周记分栏",
+    shortDescription: "把连续几天分成几栏，像电子手帐里的 weekly spread。",
+    bestFor: "4-9 张一周记录",
+    storyArc: "像电子周记 spread，把连续几天的片段放进同一页。",
+    previewClassName: "is-weekly-spread",
+    previewItems: [
+      { kind: "note", x: 8, y: 9, width: 20, height: 64 },
+      { kind: "note", x: 32, y: 9, width: 20, height: 64 },
+      { kind: "note", x: 56, y: 9, width: 20, height: 64 },
+      { kind: "photo", x: 10, y: 13, width: 16, height: 14 },
+      { kind: "photo", x: 34, y: 34, width: 16, height: 14 },
+      { kind: "photo", x: 58, y: 55, width: 16, height: 12 }
+    ],
+    minImages: 4,
+    maxImages: 9,
+    family: "planner",
+    keywords: ["一周", "周记", "周末", "工作日", "复盘", "习惯", "连续几天"]
+  },
+  {
+    id: "day_dashboard",
+    name: "日程看板",
+    shortDescription: "照片旁边保留清单、待办和当天小结，像一页 dashboard。",
+    bestFor: "计划、清单、复盘",
+    storyArc: "把当天的照片、待办、清单和总结放成一页看板。",
+    previewClassName: "is-day-dashboard",
+    previewItems: [
+      { kind: "photo", x: 9, y: 12, width: 38, height: 38, rotate: -1 },
+      { kind: "note", x: 54, y: 10, width: 30, height: 24 },
+      { kind: "line", x: 57, y: 17, width: 20, height: 4 },
+      { kind: "line", x: 57, y: 27, width: 16, height: 4 },
+      { kind: "note", x: 12, y: 60, width: 72, height: 12 }
+    ],
+    minImages: 1,
+    maxImages: 6,
+    family: "planner",
+    keywords: ["日程", "待办", "清单", "计划", "安排", "今日", "事项"]
+  },
+  {
+    id: "scrapbook_story",
+    name: "剪贴故事",
+    shortDescription: "主图、边角碎片和短句错落出现，更像一次回忆的讲述。",
+    bestFor: "3-8 张回忆照片",
+    storyArc: "像手作剪贴本，用主图、碎片和短句讲一段回忆。",
+    previewClassName: "is-scrapbook-story",
+    previewItems: [
+      { kind: "photo", x: 9, y: 13, width: 38, height: 28, rotate: -5 },
+      { kind: "photo", x: 50, y: 20, width: 30, height: 34, rotate: 5 },
+      { kind: "note", x: 14, y: 58, width: 42, height: 13 },
+      { kind: "pin", x: 61, y: 61, width: 10, height: 10 },
+      { kind: "line", x: 20, y: 7, width: 28, height: 5, rotate: -8 }
+    ],
+    minImages: 3,
+    maxImages: 8,
+    family: "scrapbook",
+    keywords: ["拼贴", "剪贴", "手作", "回忆", "纪念", "相册", "贴纸"]
   }
 ];
 
@@ -213,6 +386,10 @@ const DETAIL_TERMS = ["细节", "观察", "发现", "植物", "书", "物件", "
 const REFLECTIVE_TERMS = ["想说", "心情", "写给", "独处", "平静", "安静", "慢", "纪念", "记下来"];
 const SOCIAL_TERMS = ["朋友", "一起", "家人", "聚会", "热闹", "约会", "同事", "陪"];
 const FRAGMENT_TERMS = ["很多", "合集", "碎片", "相册", "photo dump", "几张", "几样", "一天"];
+const MAP_TERMS = ["地图", "路线", "坐标", "打卡", "景点", "目的地", "沿途", "导航"];
+const WEEKLY_TERMS = ["一周", "周记", "周末", "工作日", "复盘", "习惯", "连续几天"];
+const DASHBOARD_TERMS = ["日程", "待办", "清单", "计划", "安排", "今日", "事项", "完成"];
+const SCRAPBOOK_TERMS = ["拼贴", "剪贴", "手作", "回忆", "纪念", "相册", "贴纸", "素材"];
 
 export function recommendJournalTemplates(
   images: UploadedImage[],
@@ -305,6 +482,22 @@ function bonusScore(
   if (template.id === "moodboard_stack") {
     score += storySignals.social ? 5 : 0;
     score += storySignals.fragments && images.length <= 5 ? 3 : 0;
+  }
+  if (template.id === "map_journey") {
+    score += storySignals.map ? 7 : 0;
+    score += storySignals.journey ? 4 : 0;
+  }
+  if (template.id === "weekly_spread") {
+    score += storySignals.weekly ? 7 : 0;
+    score += images.length >= 4 ? 4 : 0;
+  }
+  if (template.id === "day_dashboard") {
+    score += storySignals.dashboard ? 7 : 0;
+    score += storySignals.detail ? 2 : 0;
+  }
+  if (template.id === "scrapbook_story") {
+    score += storySignals.scrapbook ? 7 : 0;
+    score += storySignals.fragments && images.length >= 3 ? 3 : 0;
   }
   if (template.id === "hero_memory") {
     score += images.length === 1 ? 4 : 0;
@@ -407,6 +600,18 @@ function storySignalReason(
   if (template.id === "moodboard_stack" && storySignals.social) {
     return "有人物或相处线索，适合把同一种心情贴成一页。";
   }
+  if (template.id === "map_journey" && (storySignals.map || storySignals.journey)) {
+    return "有路线、地点或沿途线索，适合做成带停靠点的地图页。";
+  }
+  if (template.id === "weekly_spread" && storySignals.weekly) {
+    return "有一周或连续几天的线索，适合分栏做周记。";
+  }
+  if (template.id === "day_dashboard" && storySignals.dashboard) {
+    return "有计划、待办或清单线索，适合整理成一页看板。";
+  }
+  if (template.id === "scrapbook_story" && (storySignals.scrapbook || storySignals.fragments)) {
+    return "回忆和碎片感明显，适合用剪贴方式讲成一段故事。";
+  }
   return null;
 }
 
@@ -434,6 +639,10 @@ function detectStorySignals(
     reflective: containsAny(query, REFLECTIVE_TERMS),
     social: containsAny(query, SOCIAL_TERMS),
     fragments: containsAny(query, FRAGMENT_TERMS) || images.length >= 5,
+    map: containsAny(query, MAP_TERMS),
+    weekly: containsAny(query, WEEKLY_TERMS),
+    dashboard: containsAny(query, DASHBOARD_TERMS),
+    scrapbook: containsAny(query, SCRAPBOOK_TERMS),
     twoScene: containsAny(query, CONTRAST_TERMS),
     mixedOrientation: imageProfile.hasMixedOrientation
   };

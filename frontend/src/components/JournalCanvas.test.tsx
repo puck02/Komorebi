@@ -133,6 +133,7 @@ assertIncludes(html, "journal-decoration-sticker");
 assertIncludes(html, 'src="/assets/sticker-star.svg"');
 assertIncludes(editableHtml, "journal-editable-text");
 assertIncludes(editableHtml, "journal-text-edit-shell");
+assertIncludes(editableHtml, "双击编辑文字");
 assertIncludes(editableHtml, "正在编辑正文。");
 assertIncludes(editableHtml, "保存");
 assertIncludes(editableSectionTitleHtml, "journal-section-title");

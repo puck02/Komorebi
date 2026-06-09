@@ -37,6 +37,10 @@ TICKET_KEYWORDS = {
 TIMELINE_KEYWORDS = {"旅行", "旅程", "出门", "抵达", "路上", "地铁", "车站", "散步", "路线", "沿途"}
 STRONG_TIMELINE_KEYWORDS = {"旅行", "旅程", "出门", "抵达", "地铁", "车站", "站台", "路线", "沿途"}
 WHITESPACE_KEYWORDS = {"安静", "留白", "慢", "光", "窗边", "独处", "平静"}
+MAP_KEYWORDS = {"地图", "坐标", "打卡", "打卡点", "景点", "目的地", "导航"}
+WEEKLY_KEYWORDS = {"一周", "周记", "周末", "工作日", "复盘", "习惯", "连续几天"}
+DASHBOARD_KEYWORDS = {"日程", "待办", "清单", "计划", "安排", "今日", "事项"}
+SCRAPBOOK_KEYWORDS = {"拼贴", "剪贴", "手作", "回忆", "纪念", "相册", "贴纸"}
 
 
 def choose_section_variant(
@@ -52,7 +56,18 @@ def choose_section_variant(
     image_count = len(section_images)
 
     if image_count >= 2 and any(keyword in keyword_text for keyword in STRONG_TIMELINE_KEYWORDS):
+        if any(keyword in keyword_text for keyword in MAP_KEYWORDS):
+            return "map_journey"
         return "timeline_strip"
+
+    if image_count >= 4 and any(keyword in keyword_text for keyword in WEEKLY_KEYWORDS):
+        return "weekly_spread"
+
+    if image_count <= 6 and any(keyword in keyword_text for keyword in DASHBOARD_KEYWORDS):
+        return "day_dashboard"
+
+    if image_count >= 3 and any(keyword in keyword_text for keyword in SCRAPBOOK_KEYWORDS):
+        return "scrapbook_story"
 
     if image_count <= 2 and any(keyword in keyword_text for keyword in TICKET_KEYWORDS):
         return "ticket_memo"
@@ -173,6 +188,14 @@ def build_image_placements(variant: str, images: list[Any], start_y: float, sect
         return build_split_scene_images(images, start_y, section_index)
     if variant == "detail_index":
         return build_detail_index_images(images, start_y, section_index)
+    if variant == "map_journey":
+        return build_map_journey_images(images, start_y, section_index)
+    if variant == "weekly_spread":
+        return build_weekly_spread_images(images, start_y, section_index)
+    if variant == "day_dashboard":
+        return build_day_dashboard_images(images, start_y, section_index)
+    if variant == "scrapbook_story":
+        return build_scrapbook_story_images(images, start_y, section_index)
     if variant == "hero_note":
         return build_hero_note_images(images, start_y, section_index)
     if variant == "magazine_whitespace":
@@ -447,6 +470,80 @@ def build_detail_index_images(images: list[Any], start_y: float, section_index: 
     return placements
 
 
+def build_map_journey_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    placements = []
+    specs = [
+        (112, 40, 330, -2.2),
+        (586, 214, 300, 2),
+        (156, 502, 340, 1.2),
+        (610, 736, 286, -1.6),
+        (132, 1010, 310, -2.4),
+        (558, 1202, 318, 1.8),
+    ]
+    for index, image in enumerate(images[: len(specs)]):
+        x, y_offset, width, rotation = specs[index]
+        placements.append(placement(image, x, start_y + y_offset, width, section_index + index, rotation=rotation))
+    return placements
+
+
+def build_weekly_spread_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    placements = []
+    width = 250
+    x_positions = [92, 390, 688]
+    for index, image in enumerate(images[:9]):
+        column = index % 3
+        row = index // 3
+        placements.append(
+            placement(
+                image,
+                x_positions[column],
+                start_y + 44 + row * 410 + column * 18,
+                width,
+                section_index + index,
+                rotation=[-1.2, 1, -0.8, 1.4, -1, 0.8][index % 6],
+            )
+        )
+    return placements
+
+
+def build_day_dashboard_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if not images:
+        return []
+    placements = [placement(images[0], SECTION_SIDE_PADDING, start_y + 28, 420, section_index, rotation=-1)]
+    for index, image in enumerate(images[1:6], start=1):
+        column = (index - 1) % 2
+        row = (index - 1) // 2
+        placements.append(
+            placement(
+                image,
+                560 + column * 210,
+                start_y + 42 + row * 276,
+                178,
+                section_index + index,
+                rotation=[1.5, -1.2, 1, -1.5, 0.8][(index - 1) % 5],
+            )
+        )
+    return placements
+
+
+def build_scrapbook_story_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    placements = []
+    specs = [
+        (92, 24, 390, -3.2),
+        (560, 88, 310, 3.5),
+        (150, 612, 270, 2.2),
+        (520, 640, 342, -2.1),
+        (112, 1008, 320, 1.4),
+        (584, 1088, 260, -3),
+        (214, 1418, 340, 2),
+        (640, 1514, 230, -2.2),
+    ]
+    for index, image in enumerate(images[: len(specs)]):
+        x, y_offset, width, rotation = specs[index]
+        placements.append(placement(image, x, start_y + y_offset, width, section_index + index, rotation=rotation))
+    return placements
+
+
 def build_hero_note_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     if not images:
         return []
@@ -674,6 +771,14 @@ def text_x_for_variant(variant: str, image_count: int = 0) -> float:
         return 112
     if variant == "detail_index":
         return 112
+    if variant == "map_journey":
+        return 602
+    if variant == "weekly_spread":
+        return 112
+    if variant == "day_dashboard":
+        return 112
+    if variant == "scrapbook_story":
+        return 150
     if variant == "before_after":
         return 150
     if variant in {"ticket_memo", "ticket_day"} and image_count >= 2:
@@ -694,6 +799,14 @@ def text_width_for_variant(variant: str, image_count: int = 0) -> float:
         return 700
     if variant == "detail_index":
         return 560
+    if variant == "map_journey":
+        return 300
+    if variant == "weekly_spread":
+        return 820
+    if variant == "day_dashboard":
+        return 430
+    if variant == "scrapbook_story":
+        return 720
     if variant == "before_after":
         return 720
     if variant in {"ticket_memo", "ticket_day"} and image_count >= 2:

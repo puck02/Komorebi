@@ -14,7 +14,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { CREATE_JOURNAL_MOOD_OPTIONS } from "./createJournalOptions";
 import { generationJobErrorMessage, generationJobRouteAfterCreate } from "./generationJobStatus";
-import { JOURNAL_TEMPLATES, recommendLocalJournalTemplates } from "./journalTemplates";
+import { JOURNAL_TEMPLATES, recommendLocalJournalTemplates, type JournalTemplateRecommendation } from "./journalTemplates";
 import {
   createTemplateRecommendationRequestKey,
   initialTemplateRecommendationState,
@@ -266,12 +266,7 @@ export default function CreateJournalPage() {
                   role="radio"
                   type="button"
                 >
-                  <span className={`template-preview ${template.previewClassName}`} aria-hidden="true">
-                    <i />
-                    <i />
-                    <i />
-                    <i />
-                  </span>
+                  <TemplatePreview template={template} />
                   <strong>{template.name}</strong>
                   <small>{template.shortDescription}</small>
                   <em>{template.bestFor}</em>
@@ -290,5 +285,25 @@ export default function CreateJournalPage() {
         </div>
       </form>
     </section>
+  );
+}
+
+function TemplatePreview({ template }: { template: JournalTemplateRecommendation }) {
+  return (
+    <span className={`template-preview ${template.previewClassName}`} aria-hidden="true">
+      {template.previewItems.map((item, index) => (
+        <i
+          className={`is-${item.kind}`}
+          key={`${item.kind}-${index}`}
+          style={{
+            height: item.height,
+            left: item.x,
+            top: item.y,
+            transform: item.rotate ? `rotate(${item.rotate}deg)` : undefined,
+            width: item.width
+          }}
+        />
+      ))}
+    </span>
   );
 }

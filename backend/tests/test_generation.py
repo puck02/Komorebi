@@ -191,6 +191,10 @@ def test_fallback_chapter_scroll_keeps_long_story_as_readable_chapters():
         ("field_notes", "field_notes"),
         ("split_scene", "split_scene"),
         ("detail_index", "detail_index"),
+        ("map_journey", "map_journey"),
+        ("weekly_spread", "weekly_spread"),
+        ("day_dashboard", "day_dashboard"),
+        ("scrapbook_story", "scrapbook_story"),
     ],
 )
 def test_fallback_layout_keeps_selected_template_as_real_section_variant(template_id, expected_section_variant):
@@ -2037,6 +2041,10 @@ def test_fallback_letter_template_uses_letter_materials_when_copy_is_plain():
         ("moodboard_stack", 2),
         ("chapter_scroll", 3),
         ("detail_index", 3),
+        ("map_journey", 4),
+        ("weekly_spread", 6),
+        ("day_dashboard", 3),
+        ("scrapbook_story", 5),
     ],
 )
 def test_fallback_template_layouts_do_not_have_high_rule_issues(template_id, image_count):

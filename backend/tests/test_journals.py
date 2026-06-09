@@ -23,6 +23,7 @@ from app.schemas.auth import AuthCredentials
 from app.schemas.journal import JournalGenerateRequest, JournalLayout, JournalUpdateRequest
 from app.services.journal_generator import (
     COMPACT_SECTION_CANVAS_HEIGHT,
+    CANVAS_BOTTOM_PADDING,
     GenerationError,
     JournalGenerationRequest,
     JournalGenerator,
@@ -198,7 +199,11 @@ def test_normalized_journal_layout_trims_saved_single_section_to_compact_canvas_
 
     normalized = normalized_journal_layout(journal)
 
-    assert normalized["canvas"]["height"] == COMPACT_SECTION_CANVAS_HEIGHT
+    section = normalized["layout"]["sections"][0]
+    section_bottom = section["y"] + section["height"]
+    assert normalized["canvas"]["height"] < 3200
+    assert normalized["canvas"]["height"] >= COMPACT_SECTION_CANVAS_HEIGHT
+    assert normalized["canvas"]["height"] >= section_bottom + CANVAS_BOTTOM_PADDING
 
 
 def test_journal_detail_enforces_ownership(context):

@@ -246,6 +246,7 @@ function JournalTextBlock({
         top: placement.y,
         width: placement.width
       }}
+      title={canEdit ? "双击编辑文字" : undefined}
     >
       {isEditing ? (
         <span className="journal-text-edit-shell">

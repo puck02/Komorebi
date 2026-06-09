@@ -56,6 +56,10 @@ TEMPLATE_PROFILES: tuple[TemplateProfile, ...] = (
     TemplateProfile("field_notes", "观察手记", "从一个细节开始，写成观察、补充、想到的事。", 1, 5, ("细节", "观察", "发现", "植物", "书", "物件", "角落"), "observation"),
     TemplateProfile("split_scene", "双场景切换", "先讲一个场景，再切到另一个场景，中间留下转场感。", 2, 4, ("上午", "下午", "室内", "室外", "转场", "两个地方", "换了"), "contrast"),
     TemplateProfile("detail_index", "细节索引", "主图定调，细节图负责补充那些容易忘的小东西。", 3, 8, ("细节", "索引", "清单", "编号", "几样", "小东西", "主题"), "observation"),
+    TemplateProfile("map_journey", "路线地图", "用路线、停靠点和旁注讲一次移动中的小旅程。", 2, 6, ("地图", "路线", "坐标", "打卡", "景点", "目的地", "沿途"), "route"),
+    TemplateProfile("weekly_spread", "周记分栏", "像电子周记 spread，把连续几天的片段放进同一页。", 4, 9, ("一周", "周记", "周末", "工作日", "复盘", "连续几天"), "planner"),
+    TemplateProfile("day_dashboard", "日程看板", "把当天的照片、待办、清单和总结放成一页看板。", 1, 6, ("日程", "待办", "清单", "计划", "安排", "今日", "事项"), "planner"),
+    TemplateProfile("scrapbook_story", "剪贴故事", "像手作剪贴本，用主图、碎片和短句讲一段回忆。", 3, 8, ("拼贴", "剪贴", "手作", "回忆", "纪念", "相册", "贴纸"), "scrapbook"),
 )
 
 FOOD_TERMS = {"咖啡", "茶", "甜品", "餐厅", "餐桌", "饭", "面包", "蛋糕", "饮料", "食物"}
@@ -67,6 +71,10 @@ DETAIL_TERMS = {"细节", "观察", "发现", "植物", "书", "物件", "角落
 REFLECTIVE_TERMS = {"想说", "心情", "写给", "独处", "平静", "安静", "慢", "纪念", "记下来"}
 SOCIAL_TERMS = {"朋友", "一起", "家人", "聚会", "热闹", "约会", "同事", "陪"}
 FRAGMENT_TERMS = {"很多", "合集", "碎片", "相册", "photo dump", "几张", "几样", "一天"}
+MAP_TERMS = {"地图", "路线", "坐标", "打卡", "景点", "目的地", "沿途", "导航"}
+WEEKLY_TERMS = {"一周", "周记", "周末", "工作日", "复盘", "习惯", "连续几天"}
+DASHBOARD_TERMS = {"日程", "待办", "清单", "计划", "安排", "今日", "事项", "完成"}
+SCRAPBOOK_TERMS = {"拼贴", "剪贴", "手作", "回忆", "纪念", "相册", "贴纸", "素材"}
 
 
 class OpenAITemplateVisionClient:
@@ -200,6 +208,18 @@ def bonus_score(
     if profile.id == "moodboard_stack":
         score += 5 if story_signals["social"] else 0
         score += 3 if story_signals["fragments"] and len(request.images) <= 5 else 0
+    if profile.id == "map_journey":
+        score += 7 if story_signals["map"] else 0
+        score += 4 if story_signals["journey"] else 0
+    if profile.id == "weekly_spread":
+        score += 7 if story_signals["weekly"] else 0
+        score += 4 if len(request.images) >= 4 else 0
+    if profile.id == "day_dashboard":
+        score += 7 if story_signals["dashboard"] else 0
+        score += 2 if story_signals["detail"] else 0
+    if profile.id == "scrapbook_story":
+        score += 7 if story_signals["scrapbook"] else 0
+        score += 3 if story_signals["fragments"] and len(request.images) >= 3 else 0
     if profile.id == "hero_memory":
         score += 4 if len(request.images) == 1 else 0
     if profile.id == "magazine_note":
@@ -289,6 +309,14 @@ def story_signal_reason(profile: TemplateProfile, story_signals: dict[str, bool]
         return "描述更像一段想说的话，适合让文字成为主角。"
     if profile.id == "moodboard_stack" and story_signals["social"]:
         return "有人物或相处线索，适合把同一种心情贴成一页。"
+    if profile.id == "map_journey" and (story_signals["map"] or story_signals["journey"]):
+        return "有路线、地点或沿途线索，适合做成带停靠点的地图页。"
+    if profile.id == "weekly_spread" and story_signals["weekly"]:
+        return "有一周或连续几天的线索，适合分栏做周记。"
+    if profile.id == "day_dashboard" and story_signals["dashboard"]:
+        return "有计划、待办或清单线索，适合整理成一页看板。"
+    if profile.id == "scrapbook_story" and (story_signals["scrapbook"] or story_signals["fragments"]):
+        return "回忆和碎片感明显，适合用剪贴方式讲成一段故事。"
     return None
 
 
@@ -333,6 +361,10 @@ def detect_story_signals(
         "reflective": contains_any(text, REFLECTIVE_TERMS),
         "social": contains_any(text, SOCIAL_TERMS),
         "fragments": contains_any(text, FRAGMENT_TERMS) or len(request.images) >= 5,
+        "map": contains_any(text, MAP_TERMS),
+        "weekly": contains_any(text, WEEKLY_TERMS),
+        "dashboard": contains_any(text, DASHBOARD_TERMS),
+        "scrapbook": contains_any(text, SCRAPBOOK_TERMS),
         "two_scene": contains_any(text, CONTRAST_TERMS) or (2 <= len(request.images) <= 4 and len(scenes) >= 2),
         "mixed_orientation": image_profile["has_mixed_orientation"],
     }

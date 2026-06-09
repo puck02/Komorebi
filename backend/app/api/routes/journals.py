@@ -31,6 +31,7 @@ from app.services.journal_generator import (
 from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient
 from app.services.template_recommender import (
     OpenAITemplateVisionClient,
+    TEMPLATE_PROFILES,
     TemplateRecommendationImage,
     TemplateRecommendationRequest,
     recommend_templates,
@@ -38,6 +39,7 @@ from app.services.template_recommender import (
 from app.services.thumbnails import generate_display_image
 
 router = APIRouter(prefix="/api/journals", tags=["journals"])
+KNOWN_TEMPLATE_IDS = {profile.id for profile in TEMPLATE_PROFILES}
 
 
 def get_journal_generator(db: Session = Depends(get_db)) -> JournalGenerator:
@@ -259,6 +261,7 @@ def journal_to_read(journal: Journal) -> JournalRead:
 
 def normalized_journal_layout(journal: Journal) -> dict:
     try:
+        template_id = saved_template_id(journal.layout_json)
         return sanitize_model_layout(
             journal.layout_json,
             JournalGenerationRequest(
@@ -268,8 +271,13 @@ def normalized_journal_layout(journal: Journal) -> dict:
                 journal_date=journal.journal_date,
                 location=journal.location,
                 mood_tags=journal.mood_tags,
-                template_id=str(journal.layout_json.get("layout", {}).get("variant") or "") or None,
+                template_id=template_id,
             ),
         )
     except (KeyError, TypeError, ValueError):
         return journal.layout_json
+
+
+def saved_template_id(layout_json: dict) -> str | None:
+    value = str(layout_json.get("layout", {}).get("variant") or "").strip()
+    return value if value in KNOWN_TEMPLATE_IDS else None

@@ -19,6 +19,10 @@ SECTION_VARIANT_SEQUENCE = (
     "field_notes",
     "split_scene",
     "detail_index",
+    "map_journey",
+    "weekly_spread",
+    "day_dashboard",
+    "scrapbook_story",
 )
 
 ALLOWED_SECTION_VARIANTS = set(SECTION_VARIANT_SEQUENCE)
@@ -38,6 +42,10 @@ TEMPLATE_SECTION_VARIANTS = {
     "field_notes": "field_notes",
     "split_scene": "split_scene",
     "detail_index": "detail_index",
+    "map_journey": "map_journey",
+    "weekly_spread": "weekly_spread",
+    "day_dashboard": "day_dashboard",
+    "scrapbook_story": "scrapbook_story",
 }
 
 SECTION_VARIANT_IMAGE_LIMITS = {
@@ -56,6 +64,10 @@ SECTION_VARIANT_IMAGE_LIMITS = {
     "field_notes": 5,
     "split_scene": 4,
     "detail_index": 8,
+    "map_journey": 6,
+    "weekly_spread": 9,
+    "day_dashboard": 6,
+    "scrapbook_story": 8,
     "chapter_scroll": 9,
     "pocket_grid": 9,
 }

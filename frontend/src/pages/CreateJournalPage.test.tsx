@@ -9,6 +9,7 @@ assertIncludes(CREATE_JOURNAL_MOOD_OPTIONS, "满足");
 
 assertAtLeast(JOURNAL_TEMPLATES.length, 10);
 assertEqual(new Set(JOURNAL_TEMPLATES.map((template) => template.id)).size, JOURNAL_TEMPLATES.length);
+assertEveryTemplateHasPreviewItems(JOURNAL_TEMPLATES);
 
 const pocketRecommendations = recommendJournalTemplates(makeImages(6), "一天里的碎片很多，像一个小合集", "");
 assertEqual(pocketRecommendations.length, 3);
@@ -27,6 +28,18 @@ assertIncludes(ticketRecommendations.map((template) => template.id), "ticket_day
 
 const beforeAfterRecommendations = recommendJournalTemplates(makeImages(2), "之前和之后变化很明显", "");
 assertIncludes(beforeAfterRecommendations.map((template) => template.id), "before_after");
+
+const mapRecommendations = recommendJournalTemplates(makeImages(4), "这次小旅行按地图路线和几个打卡点来记", "");
+assertIncludes(mapRecommendations.map((template) => template.id), "map_journey");
+
+const weeklyRecommendations = recommendJournalTemplates(makeImages(6), "这一周的周记和工作日复盘，连续几天都想留下", "");
+assertIncludes(weeklyRecommendations.map((template) => template.id), "weekly_spread");
+
+const dashboardRecommendations = recommendJournalTemplates(makeImages(2), "今日计划、待办清单和完成的小事项", "");
+assertIncludes(dashboardRecommendations.map((template) => template.id), "day_dashboard");
+
+const scrapbookRecommendations = recommendJournalTemplates(makeImages(5), "想做拼贴剪贴风，把这些回忆和贴纸素材放在一起", "");
+assertIncludes(scrapbookRecommendations.map((template) => template.id), "scrapbook_story");
 
 function assertIncludes(values: string[], expected: string) {
   if (!values.includes(expected)) {
@@ -55,6 +68,12 @@ function assertAtLeast(actual: number, expected: number) {
 function assertHasRecommendationReason(values: ReturnType<typeof recommendJournalTemplates>) {
   if (values.some((template) => !template.storyArc || !template.recommendationReason)) {
     throw new Error("Expected every recommendation to explain story arc and reason");
+  }
+}
+
+function assertEveryTemplateHasPreviewItems(values: typeof JOURNAL_TEMPLATES) {
+  if (values.some((template) => template.previewItems.length < 3)) {
+    throw new Error("Expected every template to have at least three preview items");
   }
 }
 

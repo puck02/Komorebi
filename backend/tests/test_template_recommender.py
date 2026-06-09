@@ -91,6 +91,50 @@ def test_recommender_detects_two_scene_story_from_image_understanding():
     assert any("两个场景" in item["reason"] for item in result["recommendations"])
 
 
+def test_recommender_detects_map_journey_template():
+    request = TemplateRecommendationRequest(
+        description="这次小旅行想按地图路线和几个打卡点来记",
+        images=[image(f"img_{index}", 640, 480) for index in range(1, 5)],
+        mood_tags=[],
+    )
+
+    result = recommend_templates(request)
+
+    assert "map_journey" in [item["templateId"] for item in result["recommendations"]]
+    assert any("地图页" in item["reason"] for item in result["recommendations"])
+
+
+def test_recommender_detects_weekly_spread_template():
+    request = TemplateRecommendationRequest(
+        description="这一周的周记和工作日复盘，想把连续几天放在一页",
+        images=[image(f"img_{index}", 640, 480) for index in range(1, 7)],
+        mood_tags=[],
+    )
+
+    result = recommend_templates(request)
+
+    assert "weekly_spread" in [item["templateId"] for item in result["recommendations"]]
+
+
+def test_recommender_detects_dashboard_and_scrapbook_templates():
+    dashboard_request = TemplateRecommendationRequest(
+        description="今日计划、待办清单和完成的小事项",
+        images=[image("img_1", 640, 480), image("img_2", 640, 480)],
+        mood_tags=[],
+    )
+    scrapbook_request = TemplateRecommendationRequest(
+        description="想做拼贴剪贴风，把这些回忆和贴纸素材放在一起",
+        images=[image(f"img_{index}", 640, 480) for index in range(1, 6)],
+        mood_tags=[],
+    )
+
+    dashboard_result = recommend_templates(dashboard_request)
+    scrapbook_result = recommend_templates(scrapbook_request)
+
+    assert "day_dashboard" in [item["templateId"] for item in dashboard_result["recommendations"]]
+    assert "scrapbook_story" in [item["templateId"] for item in scrapbook_result["recommendations"]]
+
+
 def test_recommend_journal_templates_route_returns_local_fallback_without_testclient(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "")
     from app.core.config import get_settings
