@@ -125,13 +125,17 @@ class JournalGenerateRequest(BaseModel):
     journal_date: date | None = Field(default=None, alias="journalDate")
     location: str | None = None
     mood_tags: list[str] = Field(default_factory=list, alias="moodTags")
+    template_id: str | None = Field(default=None, alias="templateId")
 
 
 class JournalUpdateRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     title: str | None = Field(default=None, min_length=1)
+    meta: str | None = None
     body: list[str] | None = Field(default=None, min_length=1)
+    captions: list[JournalCaption] | None = None
+    sections: list[JournalContentSection] | None = None
     layout_variant: str | None = Field(default=None, alias="layoutVariant", min_length=1)
 
 

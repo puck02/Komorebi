@@ -67,6 +67,7 @@ def run_generation_job(
                 journal_date=payload.journal_date,
                 location=payload.location,
                 mood_tags=payload.mood_tags,
+                template_id=payload.template_id,
             )
             job.status = "running"
             job.stage = "understanding_photos"
@@ -162,6 +163,7 @@ def save_generated_journal(
             journal_date=payload.journal_date,
             location=payload.location,
             mood_tags=payload.mood_tags,
+            template_id=payload.template_id,
         ),
     )
     journal = Journal(

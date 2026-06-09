@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarDays, MapPin, Sparkles, Tags } from "lucide-react";
-import { useState } from "react";
+import { CalendarDays, LayoutTemplate, MapPin, Sparkles, Tags } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -12,6 +12,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { CREATE_JOURNAL_MOOD_OPTIONS } from "./createJournalOptions";
 import { generationJobErrorMessage, generationJobRouteAfterCreate } from "./generationJobStatus";
+import { JOURNAL_TEMPLATES, recommendJournalTemplates } from "./journalTemplates";
 
 const createJournalSchema = z.object({
   description: z.string().trim().min(1, "请写一点今天的内容。"),
@@ -27,11 +28,13 @@ export default function CreateJournalPage() {
   const [imageError, setImageError] = useState("");
   const [isMoodPickerOpen, setIsMoodPickerOpen] = useState(false);
   const [selectedMood, setSelectedMood] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState(JOURNAL_TEMPLATES[0].id);
   const [submitError, setSubmitError] = useState("");
   const {
     formState: { errors, isSubmitting },
     handleSubmit,
-    register
+    register,
+    watch
   } = useForm<CreateJournalValues>({
     defaultValues: {
       description: "",
@@ -40,6 +43,17 @@ export default function CreateJournalPage() {
     },
     resolver: zodResolver(createJournalSchema)
   });
+  const descriptionValue = watch("description");
+  const recommendedTemplates = useMemo(
+    () => recommendJournalTemplates(images, descriptionValue, selectedMood),
+    [descriptionValue, images, selectedMood]
+  );
+
+  useEffect(() => {
+    if (!recommendedTemplates.some((template) => template.id === selectedTemplateId)) {
+      setSelectedTemplateId(recommendedTemplates[0]?.id ?? JOURNAL_TEMPLATES[0].id);
+    }
+  }, [recommendedTemplates, selectedTemplateId]);
 
   async function onSubmit(values: CreateJournalValues) {
     setImageError("");
@@ -56,7 +70,8 @@ export default function CreateJournalPage() {
         imageIds: images.map((image) => image.id),
         journalDate: values.journalDate || null,
         location: values.location?.trim() || null,
-        moodTags: selectedMood ? [selectedMood] : []
+        moodTags: selectedMood ? [selectedMood] : [],
+        templateId: selectedTemplateId
       });
       const route = generationJobRouteAfterCreate(job);
       if (route) {
@@ -170,6 +185,35 @@ export default function CreateJournalPage() {
                 ))}
               </div>
             ) : null}
+          </div>
+
+          <div className="field-label template-field">
+            <span>
+              <LayoutTemplate size={15} />
+              推荐模板
+            </span>
+            <div className="template-picker" role="radiogroup" aria-label="选择手帐模板">
+              {recommendedTemplates.map((template) => (
+                <button
+                  aria-checked={selectedTemplateId === template.id}
+                  className={selectedTemplateId === template.id ? "is-selected" : ""}
+                  key={template.id}
+                  onClick={() => setSelectedTemplateId(template.id)}
+                  role="radio"
+                  type="button"
+                >
+                  <span className={`template-preview ${template.previewClassName}`} aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                  <strong>{template.name}</strong>
+                  <small>{template.shortDescription}</small>
+                  <em>{template.bestFor}</em>
+                </button>
+              ))}
+            </div>
           </div>
 
           {submitError ? <p className="form-error">{submitError}</p> : null}

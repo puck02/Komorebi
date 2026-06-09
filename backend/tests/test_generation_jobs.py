@@ -89,6 +89,22 @@ def test_create_and_read_generation_job(client):
     assert read_response.json()["id"] == job["id"]
 
 
+def test_create_generation_job_persists_selected_template_id(client):
+    token = register_and_login(client, "owner@example.com")
+    image_id = upload_image(client, token)
+
+    response = client.post(
+        "/api/journal-generation-jobs",
+        json={"imageIds": [image_id], "description": "周末一起散步", "templateId": "timeline_trip"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 202
+    with client.session_factory() as db:
+        job = db.get(GenerationJob, response.json()["id"])
+        assert job.payload_json["templateId"] == "timeline_trip"
+
+
 def test_create_generation_job_returns_failed_job_when_submitter_fails(client):
     token = register_and_login(client, "owner@example.com")
     image_id = upload_image(client, token)

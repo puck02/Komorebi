@@ -1,5 +1,5 @@
 import type { Asset } from "../types/asset";
-import type { JournalLayout } from "../types/journal";
+import type { JournalLayout, JournalTextPlacement } from "../types/journal";
 import type { Ref } from "react";
 
 import { getJournalRenderLayers } from "./journalRenderLayers";
@@ -15,11 +15,30 @@ type Props = {
   images: JournalCanvasImage[];
   assets: Asset[];
   canvasRef?: Ref<HTMLDivElement>;
+  editableTextKey?: string | null;
+  editableTextValue?: string;
+  onEditableTextCancel?: () => void;
+  onEditableTextChange?: (value: string) => void;
+  onEditableTextSave?: () => void;
   onImageClick?: (imageId: string) => void;
+  onTextDoubleClick?: (key: string, value: string) => void;
   scale?: number;
 };
 
-export default function JournalCanvas({ assets, canvasRef, images, layout, onImageClick, scale = 0.42 }: Props) {
+export default function JournalCanvas({
+  assets,
+  canvasRef,
+  editableTextKey,
+  editableTextValue = "",
+  images,
+  layout,
+  onEditableTextCancel,
+  onEditableTextChange,
+  onEditableTextSave,
+  onImageClick,
+  onTextDoubleClick,
+  scale = 0.42
+}: Props) {
   const imageMap = new Map(images.map((image) => [image.id, image]));
   const assetMap = new Map(assets.map((asset) => [asset.id, asset]));
   const renderLayers = getJournalRenderLayers(layout);
@@ -94,64 +113,145 @@ export default function JournalCanvas({ assets, canvasRef, images, layout, onIma
           />
         ))}
 
-        <section
+        <JournalTextBlock
           className="journal-title"
-          style={{
+          editableTextKey={editableTextKey}
+          editableTextValue={editableTextValue}
+          keyName="title"
+          onEditableTextCancel={onEditableTextCancel}
+          onEditableTextChange={onEditableTextChange}
+          onEditableTextSave={onEditableTextSave}
+          onTextDoubleClick={onTextDoubleClick}
+          paragraph={layout.content.title}
+          placement={{
+            role: "title",
             fontSize: titlePlacement?.fontSize ?? 56,
-            left: titlePlacement?.x ?? 80,
-            top: titlePlacement?.y ?? 72,
+            x: titlePlacement?.x ?? 80,
+            y: titlePlacement?.y ?? 72,
             width: titlePlacement?.width ?? 720
           }}
-        >
-          {layout.content.title}
-        </section>
+          tag="section"
+        />
 
         {renderLayers.metaTexts.map(({ key, paragraph, placement }) => (
-          <section
+          <JournalTextBlock
             className="journal-meta"
+            editableTextKey={editableTextKey}
+            editableTextValue={editableTextValue}
             key={key}
-            style={{
-              fontSize: placement.fontSize,
-              left: placement.x,
-              top: placement.y,
-              width: placement.width
-            }}
-          >
-            {paragraph}
-          </section>
+            keyName={key}
+            onEditableTextCancel={onEditableTextCancel}
+            onEditableTextChange={onEditableTextChange}
+            onEditableTextSave={onEditableTextSave}
+            onTextDoubleClick={onTextDoubleClick}
+            paragraph={paragraph}
+            placement={placement}
+            tag="section"
+          />
         ))}
 
         {renderLayers.bodyTexts.map(({ key, paragraph, placement }) => (
-          <section
+          <JournalTextBlock
             className="journal-body"
+            editableTextKey={editableTextKey}
+            editableTextValue={editableTextValue}
             key={key}
-            style={{
-              fontSize: placement.fontSize,
-              left: placement.x,
-              top: placement.y,
-              width: placement.width
-            }}
-          >
-            <p>{paragraph}</p>
-          </section>
+            keyName={key}
+            onEditableTextCancel={onEditableTextCancel}
+            onEditableTextChange={onEditableTextChange}
+            onEditableTextSave={onEditableTextSave}
+            onTextDoubleClick={onTextDoubleClick}
+            paragraph={paragraph}
+            placement={placement}
+            tag="section"
+          />
         ))}
 
         {renderLayers.captionTexts.map(({ key, paragraph, placement }) => (
-          <figcaption
+          <JournalTextBlock
             className="journal-caption"
+            editableTextKey={editableTextKey}
+            editableTextValue={editableTextValue}
             key={key}
-            style={{
-              fontSize: placement.fontSize,
-              left: placement.x,
-              top: placement.y,
-              width: placement.width
-            }}
-          >
-            {paragraph}
-          </figcaption>
+            keyName={key}
+            onEditableTextCancel={onEditableTextCancel}
+            onEditableTextChange={onEditableTextChange}
+            onEditableTextSave={onEditableTextSave}
+            onTextDoubleClick={onTextDoubleClick}
+            paragraph={paragraph}
+            placement={placement}
+            tag="figcaption"
+          />
         ))}
       </div>
     </div>
+  );
+}
+
+type JournalTextBlockProps = {
+  className: string;
+  editableTextKey?: string | null;
+  editableTextValue: string;
+  keyName: string;
+  onEditableTextCancel?: () => void;
+  onEditableTextChange?: (value: string) => void;
+  onEditableTextSave?: () => void;
+  onTextDoubleClick?: (key: string, value: string) => void;
+  paragraph: string;
+  placement: JournalTextPlacement;
+  tag: "section" | "figcaption";
+};
+
+function JournalTextBlock({
+  className,
+  editableTextKey,
+  editableTextValue,
+  keyName,
+  onEditableTextCancel,
+  onEditableTextChange,
+  onEditableTextSave,
+  onTextDoubleClick,
+  paragraph,
+  placement,
+  tag
+}: JournalTextBlockProps) {
+  const Component = tag;
+  const isEditing = editableTextKey === keyName;
+  const canEdit = Boolean(onTextDoubleClick);
+
+  return (
+    <Component
+      className={`${className}${canEdit ? " journal-editable-text" : ""}${isEditing ? " is-editing" : ""}`}
+      onDoubleClick={canEdit ? () => onTextDoubleClick?.(keyName, paragraph) : undefined}
+      style={{
+        fontSize: placement.fontSize,
+        left: placement.x,
+        top: placement.y,
+        width: placement.width
+      }}
+    >
+      {isEditing ? (
+        <span className="journal-text-edit-shell">
+          <textarea
+            aria-label="编辑手帐文字"
+            onChange={(event) => onEditableTextChange?.(event.target.value)}
+            value={editableTextValue}
+          />
+          <span className="journal-text-edit-actions">
+            <button onClick={onEditableTextCancel} type="button">
+              取消
+            </button>
+            <button onClick={onEditableTextSave} type="button">
+              保存
+            </button>
+          </span>
+        </span>
+      ) : className === "journal-body" ? (
+        <p>{paragraph}</p>
+      ) : (
+        paragraph
+      )}
+    </Component>
   );
 }
 

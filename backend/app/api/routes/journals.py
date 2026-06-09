@@ -57,6 +57,7 @@ def generate_journal(
         journal_date=payload.journal_date,
         location=payload.location,
         mood_tags=payload.mood_tags,
+        template_id=payload.template_id,
     )
     try:
         layout = generator.generate(generation_request)
@@ -124,8 +125,14 @@ def update_journal(
     if payload.title is not None:
         journal.title = payload.title
         content["title"] = payload.title
+    if payload.meta is not None:
+        content["meta"] = payload.meta
     if payload.body is not None:
         content["body"] = payload.body
+    if payload.captions is not None:
+        content["captions"] = [caption.model_dump(by_alias=True) for caption in payload.captions]
+    if payload.sections is not None:
+        content["sections"] = [section.model_dump(by_alias=True) for section in payload.sections]
     if payload.layout_variant is not None:
         layout["variant"] = payload.layout_variant
 
@@ -212,6 +219,7 @@ def normalized_journal_layout(journal: Journal) -> dict:
                 journal_date=journal.journal_date,
                 location=journal.location,
                 mood_tags=journal.mood_tags,
+                template_id=str(journal.layout_json.get("layout", {}).get("variant") or "") or None,
             ),
         )
     except (KeyError, TypeError, ValueError):

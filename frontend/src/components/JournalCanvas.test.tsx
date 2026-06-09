@@ -64,6 +64,21 @@ const html = renderToStaticMarkup(
   />
 );
 
+const editableHtml = renderToStaticMarkup(
+  <JournalCanvas
+    assets={[]}
+    editableTextKey="legacy-body-0"
+    editableTextValue="正在编辑正文。"
+    images={[{ id: "img_1", src: "/images/img_1/display", alt: "咖啡照片" }]}
+    layout={layout}
+    onEditableTextCancel={() => undefined}
+    onEditableTextChange={() => undefined}
+    onEditableTextSave={() => undefined}
+    onTextDoubleClick={() => undefined}
+    scale={1}
+  />
+);
+
 assertIncludes(html, "journal-caption");
 assertIncludes(html, "journal-meta");
 assertIncludes(html, "窗边这杯咖啡");
@@ -76,6 +91,10 @@ assertIncludes(html, "border-radius:18px");
 assertIncludes(html, "background-size:126% 138%");
 assertIncludes(html, "journal-decoration-sticker");
 assertIncludes(html, 'src="/assets/sticker-star.svg"');
+assertIncludes(editableHtml, "journal-editable-text");
+assertIncludes(editableHtml, "journal-text-edit-shell");
+assertIncludes(editableHtml, "正在编辑正文。");
+assertIncludes(editableHtml, "保存");
 
 function assertIncludes(actual: string, expected: string) {
   if (!actual.includes(expected)) {

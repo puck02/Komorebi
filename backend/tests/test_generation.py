@@ -59,6 +59,40 @@ def test_generator_adds_meta_text_from_user_context():
     assert 18 <= meta_text.font_size <= 28
 
 
+def test_fallback_layout_uses_selected_template_variant():
+    request = generation_request(images=three_images(), template_id="timeline_trip")
+
+    layout = JournalLayout.model_validate(sanitize_model_layout(build_fallback_layout(request), request))
+
+    assert layout.layout.variant == "timeline_trip"
+    assert layout.layout.sections
+    assert layout.layout.sections[0].variant == "timeline_trip"
+
+
+@pytest.mark.parametrize(
+    ("template_id", "expected_section_variant"),
+    [
+        ("quiet_story", "quiet_story"),
+        ("hero_memory", "hero_memory"),
+        ("timeline_trip", "timeline_trip"),
+        ("pocket_grid", "pocket_grid"),
+        ("ticket_day", "ticket_day"),
+        ("magazine_note", "magazine_note"),
+        ("before_after", "before_after"),
+        ("moodboard_stack", "moodboard_stack"),
+        ("recipe_memo", "recipe_memo"),
+        ("letter_page", "letter_page"),
+    ],
+)
+def test_fallback_layout_keeps_selected_template_as_real_section_variant(template_id, expected_section_variant):
+    request = generation_request(images=three_images(), template_id=template_id)
+
+    layout = JournalLayout.model_validate(sanitize_model_layout(build_fallback_layout(request), request))
+
+    assert layout.layout.sections
+    assert layout.layout.sections[0].variant == expected_section_variant
+
+
 def test_generator_expands_canvas_to_fit_long_section_placements():
     payload = valid_model_json()
     payload["canvas"]["height"] = 1500
@@ -1966,6 +2000,8 @@ def test_generation_prompt_requests_section_structure():
     assert "先逐张理解图片" in prompt
     assert "只允许把相邻图片合并成章节" in prompt
     assert "hero_note、staggered_collage、timeline_strip、photo_wall、magazine_whitespace、ticket_memo" in prompt
+    assert "quiet_story、hero_memory、timeline_trip、pocket_grid、ticket_day、magazine_note、before_after、moodboard_stack、recipe_memo、letter_page" in prompt
+    assert "templateId" in prompt
 
 
 def test_openai_client_sends_visual_review_request_with_screenshot_and_images(monkeypatch):
@@ -2325,11 +2361,12 @@ class FailingClient:
         raise self.error
 
 
-def generation_request(assets=None, images=None):
+def generation_request(assets=None, images=None, template_id=None):
     return JournalGenerationRequest(
         description="周末一起散步，天气很好，喝了咖啡。",
         images=images or [JournalImageInput(id="img_1", width=640, height=480)],
         assets=assets or get_approved_assets(tags=["warm", "daily"]),
+        template_id=template_id,
     )
 
 

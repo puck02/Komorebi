@@ -238,6 +238,169 @@ def test_ticket_memo_two_photo_layout_places_text_below_photos():
     assert layout["images"][1]["x"] - (layout["images"][0]["x"] + layout["images"][0]["width"]) >= 32
 
 
+def test_before_after_layout_places_two_photos_side_by_side_with_narrow_note():
+    images = [image("img_1", 640, 480), image("img_2", 640, 480)]
+    section_data = content_section("section_1", ["img_1", "img_2"], body="开始的时候桌面还有点乱，后来一点点收拾出来。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="before_after",
+    )
+
+    assert layout["variant"] == "before_after"
+    assert [item["imageId"] for item in layout["images"]] == ["img_1", "img_2"]
+    assert layout["images"][0]["x"] < layout["images"][1]["x"]
+    assert abs(layout["images"][0]["y"] - layout["images"][1]["y"]) <= 24
+    body_text = next(text for text in layout["texts"] if text["role"] == "body")
+    assert body_text["y"] > max(item["y"] + item["height"] for item in layout["images"])
+    assert body_text["width"] <= 760
+
+
+def test_moodboard_stack_layout_overlaps_story_fragments_without_becoming_grid():
+    images = [image("img_1", 640, 480), image("img_2", 900, 1200), image("img_3", 1200, 900)]
+    section_data = content_section("section_1", ["img_1", "img_2", "img_3"], body="这几张没有严格顺序，就是今天几个开心的小碎片。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="moodboard_stack",
+    )
+
+    assert layout["variant"] == "moodboard_stack"
+    assert len(layout["images"]) == 3
+    assert len({item["x"] for item in layout["images"]}) == 3
+    assert any(abs(item["rotation"]) >= 3 for item in layout["images"])
+    y_positions = [item["y"] for item in layout["images"]]
+    assert max(y_positions) - min(y_positions) < 260
+
+
+def test_recipe_memo_layout_uses_compact_photo_and_text_column():
+    images = [image("img_1", 900, 1200), image("img_2", 640, 480)]
+    section_data = content_section("section_1", ["img_1", "img_2"], body="咖啡、面包和一点甜味，今天的餐桌刚好可以写成小配方。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="recipe_memo",
+    )
+
+    assert layout["variant"] == "recipe_memo"
+    assert all(item["width"] <= 430 for item in layout["images"])
+    body_text = next(text for text in layout["texts"] if text["role"] == "body")
+    assert body_text["x"] >= 560
+    assert body_text["width"] <= 380
+    assert body_text["y"] < max(item["y"] + item["height"] for item in layout["images"])
+
+
+def test_recipe_memo_layout_keeps_four_photos_in_left_column_without_overlap():
+    images = [
+        image("img_1", 900, 1200),
+        image("img_2", 640, 480),
+        image("img_3", 640, 480),
+        image("img_4", 640, 480),
+    ]
+    section_data = content_section("section_1", [item.id for item in images], body="今天的餐桌从咖啡、面包到甜点都想留下。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="recipe_memo",
+    )
+
+    assert len(layout["images"]) == 4
+    assert all(item["x"] + item["width"] <= 520 for item in layout["images"])
+    image_rects = [(item["x"], item["y"], item["width"], item["height"]) for item in layout["images"]]
+    for index, rect in enumerate(image_rects):
+        assert all(not overlaps(rect, other) for other in image_rects[index + 1 :])
+
+
+def test_letter_page_layout_prioritizes_wide_writing_area():
+    images = [image("img_1", 900, 1200)]
+    section_data = content_section("section_1", ["img_1"], body="写给今天：有些细节不一定要很热闹，但我还是想把它们完整留下来。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="letter_page",
+    )
+
+    assert layout["variant"] == "letter_page"
+    assert layout["images"][0]["width"] <= 360
+    body_text = next(text for text in layout["texts"] if text["role"] == "body")
+    assert body_text["x"] <= 120
+    assert body_text["width"] >= 700
+    assert body_text["y"] < layout["images"][0]["y"] + layout["images"][0]["height"]
+
+
+def test_pocket_grid_layout_uses_even_slots_for_many_images():
+    images = [
+        image("img_1", 640, 480),
+        image("img_2", 640, 480),
+        image("img_3", 640, 480),
+        image("img_4", 640, 480),
+        image("img_5", 640, 480),
+        image("img_6", 640, 480),
+    ]
+    section_data = content_section("section_1", [item.id for item in images], body="一天里的碎片很多，适合像口袋一样一格一格收起来。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="pocket_grid",
+    )
+
+    assert layout["variant"] == "pocket_grid"
+    assert len(layout["images"]) == 6
+    assert len({item["x"] for item in layout["images"]}) == 3
+    assert len({item["y"] for item in layout["images"]}) == 2
+    assert max(item["width"] for item in layout["images"]) - min(item["width"] for item in layout["images"]) <= 1
+
+
+def test_timeline_trip_layout_wraps_many_photos_inside_canvas():
+    images = [image(f"img_{index}", 640, 480) for index in range(1, 6)]
+    section_data = content_section("section_1", [item.id for item in images], body="出发、路上、停留、回程，刚好是一段完整小旅行。")
+
+    layout = build_section_layout(
+        section_data,
+        request_images=images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="timeline_trip",
+    )
+
+    assert layout["variant"] == "timeline_trip"
+    assert len(layout["images"]) == 5
+    assert all(0 <= item["x"] <= 1080 and item["x"] + item["width"] <= 1080 for item in layout["images"])
+    assert len({item["y"] for item in layout["images"]}) >= 2
+
+
 def test_generator_replaces_invalid_section_variant_with_rule_choice():
     payload = valid_model_json()
     payload["content"]["imageUnderstanding"] = [
@@ -327,6 +490,17 @@ def estimated_paragraph_height(paragraph: str, font_size: float, width: float) -
     characters_per_line = max(int(width / max(font_size, 1)), 1)
     line_count = max((len(paragraph) + characters_per_line - 1) // characters_per_line, 1)
     return line_count * font_size * 1.8
+
+
+def overlaps(first: tuple[float, float, float, float], second: tuple[float, float, float, float]) -> bool:
+    first_x, first_y, first_width, first_height = first
+    second_x, second_y, second_width, second_height = second
+    return (
+        first_x < second_x + second_width
+        and first_x + first_width > second_x
+        and first_y < second_y + second_height
+        and first_y + first_height > second_y
+    )
 
 
 def generation_request():

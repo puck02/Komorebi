@@ -17,6 +17,7 @@ from app.services.diary_copy import (
     split_sentences,
 )
 from app.services.layout_variants import ALLOWED_SECTION_VARIANTS, build_section_layout
+from app.services.journal_templates import TEMPLATE_SECTION_VARIANTS
 from app.services.style_recipes import choose_asset_id, recipe_tags_for_section
 from app.services.story_planner import plan_content_sections, split_evenly
 
@@ -77,6 +78,7 @@ class JournalGenerationRequest:
     journal_date: date | str | None = None
     location: str | None = None
     mood_tags: list[str] | None = None
+    template_id: str | None = None
 
 
 class JournalModelClient(Protocol):
@@ -97,6 +99,7 @@ class JournalGenerator:
             journal_date=request.journal_date,
             location=request.location,
             mood_tags=request.mood_tags,
+            template_id=request.template_id,
         )
 
         try:
@@ -134,7 +137,7 @@ def build_fallback_layout(request: JournalGenerationRequest) -> dict[str, Any]:
             "sections": sections,
         },
         "layout": {
-            "variant": "long_collage",
+            "variant": normalized_template_id(request) or "long_collage",
             "images": [
                 {
                     "imageId": image.id,
@@ -297,9 +300,22 @@ def fallback_sections(request: JournalGenerationRequest, body: str) -> list[dict
                 "imageIds": [image.id for image in group],
                 "body": section_bodies[section_index],
                 "mood": mood_tags,
+                "variant": section_variant_for_template(request.template_id, len(group)),
             }
         )
     return sections
+
+
+def normalized_template_id(request: JournalGenerationRequest) -> str | None:
+    template_id = str(request.template_id or "").strip()
+    return template_id or None
+
+
+def section_variant_for_template(template_id: str | None, image_count: int) -> str | None:
+    variant = TEMPLATE_SECTION_VARIANTS.get(str(template_id or "").strip())
+    if variant is None:
+        return None
+    return variant
 
 
 def fallback_section_bodies(body: str, section_count: int) -> list[str]:
@@ -320,8 +336,7 @@ def fallback_section_note(units: list[str], fallback: str, index: int = 0) -> st
         prefix = FALLBACK_SINGLE_SECTION_NOTE_PREFIXES[index % len(FALLBACK_SINGLE_SECTION_NOTE_PREFIXES)]
         return normalize_diary_text(f"{prefix}{cleaned_units[0]}。", fallback=text)
     if len(cleaned_units) == 2:
-        prefix = FALLBACK_PAIR_SECTION_NOTE_PREFIXES[index % len(FALLBACK_PAIR_SECTION_NOTE_PREFIXES)]
-        return normalize_diary_text(f"{prefix}{cleaned_units[0]}，也记一下{cleaned_units[1]}。", fallback=text)
+        return normalize_diary_text(f"{cleaned_units[0]}，{cleaned_units[1]}。", fallback=text)
     if len(cleaned_units) >= 3:
         prefix = FALLBACK_SECTION_NOTE_PREFIXES[index % len(FALLBACK_SECTION_NOTE_PREFIXES)]
         return normalize_diary_text(f"{prefix}{'、'.join(cleaned_units)}。", fallback=text)
@@ -332,11 +347,6 @@ FALLBACK_SINGLE_SECTION_NOTE_PREFIXES = (
     "这一张先放这里，",
     "后面这张也留着，",
     "这一页继续记，",
-)
-FALLBACK_PAIR_SECTION_NOTE_PREFIXES = (
-    "这一段先记",
-    "后面几张接着放",
-    "这部分先留下",
 )
 FALLBACK_SECTION_NOTE_PREFIXES = (
     "这一组放在一起看，",
@@ -363,6 +373,11 @@ def build_meta_text(request: JournalGenerationRequest) -> str | None:
     return " / ".join(parts) if parts else None
 
 
+def normalize_meta_content(value: Any, request: JournalGenerationRequest) -> str | None:
+    text = str(value or "").strip()
+    return text or build_meta_text(request)
+
+
 def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGenerationRequest) -> dict[str, Any]:
     layout = deepcopy(raw_layout)
     layout["canvas"]["width"] = CANVAS_WIDTH
@@ -374,7 +389,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     if "body" not in content and isinstance(content.get("subtitle"), str):
         content["body"] = [content["subtitle"]]
     content["title"] = normalize_title(content.get("title"))
-    content["meta"] = build_meta_text(request)
+    content["meta"] = normalize_meta_content(content.get("meta"), request)
     content["body"] = normalize_body_content(content.get("body"), request.description)
 
     image_ids = {image.id for image in request.images}
@@ -674,7 +689,10 @@ def normalize_layout_sections(
     for index, content_section in enumerate(content_sections):
         section_id = content_section["id"]
         source = raw_by_id.get(section_id, {})
-        suggested_variant = suggested_section_variant(source.get("variant"), content_section)
+        suggested_variant = suggested_section_variant(
+            content_section.get("variant"),
+            content_section,
+        ) or suggested_section_variant(source.get("variant"), content_section)
         source_y = positive_number(source.get("y"), next_y)
         y = max(source_y, next_y)
         generated_section = build_section_layout(

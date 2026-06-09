@@ -7,6 +7,7 @@ from app.core.config import get_settings
 from app.services.agent_observability import log_agent_event
 from app.services.assets import AssetItem
 from app.services.journal_generator import GenerationError, JournalGenerationRequest
+from app.services.journal_templates import allowed_section_variant_text
 
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
 OPENAI_TIMEOUT_SECONDS = 300
@@ -164,6 +165,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         for asset in order_assets_for_ai(request.assets)
     ]
     user_context = build_user_context(request)
+    allowed_variants = allowed_section_variant_text()
     schema_example = {
         "canvas": {"width": 1080, "height": 2400, "background": "#f8f1e8"},
         "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["安静"]},
@@ -260,8 +262,9 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "必须输出 content.sections 和 layout.sections。只允许把相邻图片合并成章节，禁止把不相邻的图片强行放进同一章节。"
         "content.sections 每项字段为 id、title、imageIds、body、mood；每章绑定 1 到 3 张图片，body 为 30 到 80 字自然日记。"
         "layout.sections 每项字段为 sectionId、variant、y、height、images、texts、decorations；sectionId 必须对应 content.sections 的 id。"
-        "layout.sections[].variant 只能从 hero_note、staggered_collage、timeline_strip、photo_wall、magazine_whitespace、ticket_memo 中选择；"
-        "单张主图适合 hero_note，错落多图适合 staggered_collage，过程顺序适合 timeline_strip，相似照片组适合 photo_wall，安静留白适合 magazine_whitespace，咖啡展览票据类适合 ticket_memo。"
+        f"layout.sections[].variant 只能从 {allowed_variants} 中选择；"
+        "没有指定模板时：单张主图适合 hero_note，错落多图适合 staggered_collage，过程顺序适合 timeline_strip，相似照片组适合 photo_wall，安静留白适合 magazine_whitespace，咖啡展览票据类适合 ticket_memo。"
+        "如果用户补充信息包含 templateId，请优先使用对应模板 variant：quiet_story 留白独白，hero_memory 主照片日记，timeline_trip 时间线小旅行，pocket_grid 口袋页，ticket_day 票根备忘，magazine_note 杂志留白，before_after 前后对照，moodboard_stack 情绪堆叠，recipe_memo 餐桌配方，letter_page 写给今天。"
         "content.body 必须是字符串数组，不能只写一大段；请按照片主题、场景或时间分成 2 到 4 段短文字，每段 1 到 2 句。"
         "如果照片天然能分成几类，就让 content.body 的段落数量尽量对应这些类别。content.captions 必须使用 imageId 和 text。"
         "content.captions 的顺序应尽量跟图片 order 一致，caption 只能描述对应 imageId 的照片内容。"
@@ -291,6 +294,7 @@ def build_user_context(request: JournalGenerationRequest) -> dict[str, Any]:
         "journalDate": str(request.journal_date) if request.journal_date else None,
         "location": str(request.location).strip() if request.location else None,
         "moodTags": [str(tag).strip() for tag in request.mood_tags or [] if str(tag).strip()],
+        "templateId": str(request.template_id).strip() if request.template_id else None,
     }
 
 

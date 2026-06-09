@@ -244,18 +244,37 @@ def test_journal_detail_enforces_ownership(client):
 
 def test_patch_journal_updates_title_body_and_layout_variant(client):
     token = register_and_login(client, "owner@example.com")
-    journal_id = generate_journal(client, token, upload_image(client, token), "周末一起散步").json()["id"]
+    image_id = upload_image(client, token)
+    journal_id = generate_journal(client, token, image_id, "周末一起散步").json()["id"]
 
     response = client.patch(
         f"/api/journals/{journal_id}",
-        json={"title": "新的标题", "body": ["新的正文"], "layoutVariant": "collage_b"},
+        json={
+            "title": "新的标题",
+            "meta": "2026-06-09 / 上海 / 安静",
+            "body": ["新的正文"],
+            "captions": [{"imageId": image_id, "text": "新的照片说明"}],
+            "sections": [
+                {
+                    "id": "section_1",
+                    "title": "新的片段",
+                    "imageIds": [image_id],
+                    "body": "新的章节正文",
+                    "mood": ["安静"],
+                }
+            ],
+            "layoutVariant": "collage_b",
+        },
         headers={"Authorization": f"Bearer {token}"},
     )
 
     assert response.status_code == 200
     body = response.json()
     assert body["title"] == "新的标题"
+    assert body["layout"]["content"]["meta"] == "2026-06-09 / 上海 / 安静"
     assert body["layout"]["content"]["body"] == ["新的正文"]
+    assert body["layout"]["content"]["captions"] == [{"imageId": image_id, "text": "新的照片说明"}]
+    assert body["layout"]["content"]["sections"][0]["body"] == "新的章节正文"
     assert body["layout"]["layout"]["variant"] == "collage_b"
 
 

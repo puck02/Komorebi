@@ -1,6 +1,8 @@
 from math import ceil
 from typing import Any
 
+from app.services.journal_templates import ALLOWED_SECTION_VARIANTS
+
 CANVAS_WIDTH = 1080
 SECTION_SIDE_PADDING = 92
 SECTION_TEXT_WIDTH = 820
@@ -13,14 +15,6 @@ SECTION_CAPTION_TEXT_GAP = 18
 SECTION_GAP = 104
 TEXT_PHOTO_GAP = 56
 IMAGE_GAP = 38
-ALLOWED_SECTION_VARIANTS = {
-    "hero_note",
-    "staggered_collage",
-    "timeline_strip",
-    "photo_wall",
-    "magazine_whitespace",
-    "ticket_memo",
-}
 
 TICKET_KEYWORDS = {
     "咖啡",
@@ -104,9 +98,13 @@ def build_section_layout(
     text_y = image_bottom + TEXT_PHOTO_GAP
     if caption_texts:
         text_y = max(text_y, caption_bottom + SECTION_CAPTION_TEXT_GAP)
-    if variant in {"magazine_whitespace", "ticket_memo"} and image_placements:
+    if variant in {"magazine_whitespace", "magazine_note", "quiet_story"} and image_placements:
         text_y = max(min(text_y, start_y + 420), caption_bottom + SECTION_CAPTION_TEXT_GAP)
-    if variant == "ticket_memo" and len(image_placements) >= 2:
+    if variant == "letter_page" and image_placements:
+        text_y = start_y + 68
+    if variant == "recipe_memo" and image_placements:
+        text_y = start_y + 44
+    if variant in {"ticket_memo", "ticket_day"} and len(image_placements) >= 2:
         text_y = max(image_bottom + TEXT_PHOTO_GAP, caption_bottom + SECTION_CAPTION_TEXT_GAP)
     text = {
         "role": "body",
@@ -131,6 +129,26 @@ def build_section_layout(
 
 
 def build_image_placements(variant: str, images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if variant == "quiet_story":
+        return build_quiet_story_images(images, start_y, section_index)
+    if variant == "hero_memory":
+        return build_hero_memory_images(images, start_y, section_index)
+    if variant == "timeline_trip":
+        return build_timeline_trip_images(images, start_y, section_index)
+    if variant == "pocket_grid":
+        return build_pocket_grid_images(images, start_y, section_index)
+    if variant == "ticket_day":
+        return build_ticket_day_images(images, start_y, section_index)
+    if variant == "magazine_note":
+        return build_magazine_note_images(images, start_y, section_index)
+    if variant == "before_after":
+        return build_before_after_images(images, start_y, section_index)
+    if variant == "moodboard_stack":
+        return build_moodboard_stack_images(images, start_y, section_index)
+    if variant == "recipe_memo":
+        return build_recipe_memo_images(images, start_y, section_index)
+    if variant == "letter_page":
+        return build_letter_page_images(images, start_y, section_index)
     if variant == "hero_note":
         return build_hero_note_images(images, start_y, section_index)
     if variant == "magazine_whitespace":
@@ -142,6 +160,193 @@ def build_image_placements(variant: str, images: list[Any], start_y: float, sect
     if variant == "ticket_memo":
         return build_ticket_memo_images(images, start_y, section_index)
     return build_staggered_collage_images(images, start_y, section_index)
+
+
+def build_quiet_story_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if not images:
+        return []
+    placements = [placement(images[0], SECTION_SIDE_PADDING, start_y + 28, 420, section_index, rotation=-1.2)]
+    for index, image in enumerate(images[1:3], start=1):
+        placements.append(
+            placement(
+                image,
+                320 + (index - 1) * 86,
+                start_y + 300 + (index - 1) * 92,
+                230,
+                section_index + index,
+                rotation=[2.5, -2][(index - 1) % 2],
+            )
+        )
+    return placements
+
+
+def build_hero_memory_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if not images:
+        return []
+    primary_width = 760 if aspect_ratio(images[0]) >= 1 else 620
+    placements = [placement(images[0], (CANVAS_WIDTH - primary_width) / 2, start_y, primary_width, section_index, rotation=0)]
+    primary = placements[0]
+    for index, image in enumerate(images[1:3], start=1):
+        width = 250
+        placements.append(
+            placement(
+                image,
+                SECTION_SIDE_PADDING + (index - 1) * 630,
+                primary["y"] + primary["height"] - 130 + (index - 1) * 52,
+                width,
+                section_index + index,
+                rotation=[-4, 3.5][(index - 1) % 2],
+            )
+        )
+    return placements
+
+
+def build_timeline_trip_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if len(images) <= 3:
+        return build_timeline_strip_images(images, start_y, section_index)
+
+    placements = []
+    width = 260
+    columns = 3
+    for index, image in enumerate(images):
+        column = index % columns
+        row = index // columns
+        placements.append(
+            placement(
+                image,
+                SECTION_SIDE_PADDING + column * (width + IMAGE_GAP),
+                start_y + row * 314 + column * 26,
+                width,
+                section_index + index,
+                rotation=[-1.5, 1.2, -0.8, 1.4, -1.1, 0.8][index % 6],
+            )
+        )
+    return placements
+
+
+def build_pocket_grid_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if not images:
+        return []
+    columns = min(3, max(len(images), 1))
+    width = (CANVAS_WIDTH - SECTION_SIDE_PADDING * 2 - IMAGE_GAP * (columns - 1)) / columns
+    placements = []
+    for index, image in enumerate(images):
+        column = index % columns
+        row = index // columns
+        placements.append(
+            placement(
+                image,
+                SECTION_SIDE_PADDING + column * (width + IMAGE_GAP),
+                start_y + row * 420,
+                width,
+                section_index + index,
+                rotation=0,
+            )
+        )
+    return placements
+
+
+def build_ticket_day_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    placements = build_ticket_memo_images(images[:2], start_y, section_index)
+    for index, image in enumerate(images[2:4], start=2):
+        placements.append(
+            placement(
+                image,
+                628,
+                start_y + 330 + (index - 2) * 190,
+                240,
+                section_index + index,
+                rotation=[2.5, -2][(index - 2) % 2],
+            )
+        )
+    return placements
+
+
+def build_magazine_note_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if not images:
+        return []
+    placements = build_magazine_whitespace_images(images[:1], start_y, section_index)
+    for index, image in enumerate(images[1:3], start=1):
+        placements.append(
+            placement(
+                image,
+                180 + (index - 1) * 280,
+                start_y + 430,
+                250,
+                section_index + index,
+                rotation=[2.2, -1.8][(index - 1) % 2],
+            )
+        )
+    return placements
+
+
+def build_before_after_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if not images:
+        return []
+    placements = []
+    for index, image in enumerate(images[:2]):
+        placements.append(
+            placement(
+                image,
+                SECTION_SIDE_PADDING + index * 476,
+                start_y + (0 if index == 0 else 18),
+                420,
+                section_index + index,
+                rotation=[-1.5, 1.5][index],
+            )
+        )
+    if len(images) >= 3:
+        placements.append(placement(images[2], 386, start_y + 286, 260, section_index + 2, rotation=0.8))
+    return placements
+
+
+def build_moodboard_stack_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    placements = []
+    specs = [
+        (92, 86, 420, -4.5),
+        (424, 0, 360, 3.8),
+        (694, 124, 300, -3.2),
+        (168, 268, 270, 2.6),
+        (574, 298, 250, -2.4),
+    ]
+    for index, image in enumerate(images[: len(specs)]):
+        x, y_offset, width, rotation = specs[index]
+        placements.append(placement(image, x, start_y + y_offset, width, section_index + index, rotation=rotation))
+    return placements
+
+
+def build_recipe_memo_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    placements = []
+    column_y = start_y
+    for index, image in enumerate(images[:4]):
+        width = 360 if index == 0 else 170
+        x = SECTION_SIDE_PADDING if index < 2 else 342
+        if index == 2:
+            column_y = placements[0]["y"] + placements[0]["height"] + 34
+        elif index == 3:
+            column_y = placements[2]["y"] + placements[2]["height"] + 28
+        placements.append(placement(image, x, column_y, width, section_index + index, rotation=[-2, 1.6, -1.2, 2][index]))
+        if index == 0:
+            column_y += placements[-1]["height"] + 34
+    return placements
+
+
+def build_letter_page_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
+    if not images:
+        return []
+    placements = [placement(images[0], 812, start_y + 36, 230, section_index, rotation=2.5)]
+    for index, image in enumerate(images[1:3], start=1):
+        placements.append(
+            placement(
+                image,
+                754 + (index - 1) * 42,
+                start_y + 300 + (index - 1) * 172,
+                190,
+                section_index + index,
+                rotation=[-2.5, 1.8][(index - 1) % 2],
+            )
+        )
+    return placements
 
 
 def build_hero_note_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
@@ -329,21 +534,33 @@ def photo_height_for_width(image: Any, width: float) -> float:
 
 
 def text_x_for_variant(variant: str, image_count: int = 0) -> float:
-    if variant == "magazine_whitespace":
+    if variant in {"magazine_whitespace", "magazine_note", "quiet_story"}:
         return 642
-    if variant == "ticket_memo" and image_count >= 2:
+    if variant == "recipe_memo":
+        return 590
+    if variant == "letter_page":
         return 112
-    if variant == "ticket_memo":
+    if variant == "before_after":
+        return 150
+    if variant in {"ticket_memo", "ticket_day"} and image_count >= 2:
+        return 112
+    if variant in {"ticket_memo", "ticket_day"}:
         return 612
     return 112
 
 
 def text_width_for_variant(variant: str, image_count: int = 0) -> float:
-    if variant == "magazine_whitespace":
+    if variant in {"magazine_whitespace", "magazine_note", "quiet_story"}:
         return 350
-    if variant == "ticket_memo" and image_count >= 2:
+    if variant == "recipe_memo":
+        return 360
+    if variant == "letter_page":
+        return 700
+    if variant == "before_after":
+        return 720
+    if variant in {"ticket_memo", "ticket_day"} and image_count >= 2:
         return SECTION_TEXT_WIDTH
-    if variant == "ticket_memo":
+    if variant in {"ticket_memo", "ticket_day"}:
         return 360
     return SECTION_TEXT_WIDTH
 

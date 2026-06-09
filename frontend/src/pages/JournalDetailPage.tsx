@@ -6,9 +6,10 @@ import { Link, useParams } from "react-router-dom";
 
 import { getAssets } from "../api/assets";
 import { getImageDisplayBlob, getImageFileBlob } from "../api/images";
-import { getJournal } from "../api/journals";
+import { getJournal, updateJournal } from "../api/journals";
 import JournalCanvas from "../components/JournalCanvas";
 import { Button } from "../components/ui/button";
+import type { JournalLayout } from "../types/journal";
 
 type CanvasImage = {
   id: string;
@@ -31,6 +32,9 @@ export default function JournalDetailPage() {
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
   const [isOriginalImageLoading, setIsOriginalImageLoading] = useState(false);
   const [previewWidth, setPreviewWidth] = useState(getInitialPreviewWidth);
+  const [editingTextKey, setEditingTextKey] = useState<string | null>(null);
+  const [editingTextValue, setEditingTextValue] = useState("");
+  const [textEditError, setTextEditError] = useState<string | null>(null);
   const journalQuery = useQuery({
     enabled: Boolean(journalId),
     queryFn: () => getJournal(journalId as string),
@@ -217,6 +221,40 @@ export default function JournalDetailPage() {
     }
   }, [journal]);
 
+  const handleTextDoubleClick = useCallback((key: string, value: string) => {
+    setTextEditError(null);
+    setEditingTextKey(key);
+    setEditingTextValue(value);
+  }, []);
+
+  const handleTextEditCancel = useCallback(() => {
+    setEditingTextKey(null);
+    setEditingTextValue("");
+    setTextEditError(null);
+  }, []);
+
+  const handleTextEditSave = useCallback(async () => {
+    if (!journal || !editingTextKey) {
+      return;
+    }
+
+    const nextValue = editingTextValue.trim();
+    if (!nextValue) {
+      setTextEditError("文字不能为空");
+      return;
+    }
+
+    try {
+      setTextEditError(null);
+      await updateJournal(journal.id, buildTextUpdatePayload(journal.layout, editingTextKey, nextValue));
+      setEditingTextKey(null);
+      setEditingTextValue("");
+      await journalQuery.refetch();
+    } catch (error) {
+      setTextEditError(error instanceof Error ? error.message : "保存失败，请稍后重试");
+    }
+  }, [editingTextKey, editingTextValue, journal, journalQuery]);
+
   if (isLoading) {
     return (
       <section className="journal-detail-page">
@@ -274,9 +312,15 @@ export default function JournalDetailPage() {
             <JournalCanvas
               assets={assetsQuery.data ?? []}
               canvasRef={canvasRef}
+              editableTextKey={editingTextKey}
+              editableTextValue={editingTextValue}
               images={displayImages}
               layout={journal.layout}
+              onEditableTextCancel={handleTextEditCancel}
+              onEditableTextChange={setEditingTextValue}
+              onEditableTextSave={handleTextEditSave}
               onImageClick={setSelectedImageId}
+              onTextDoubleClick={handleTextDoubleClick}
               scale={canvasScale}
             />
           </div>
@@ -285,6 +329,7 @@ export default function JournalDetailPage() {
 
       {isDisplayImagesLoading ? <p className="journal-image-loading">图片正在逐张加载...</p> : null}
       {exportError ? <p className="form-error journal-export-error">{exportError}</p> : null}
+      {textEditError ? <p className="form-error journal-export-error">{textEditError}</p> : null}
 
       {selectedImageId ? (
         <button className="image-lightbox" type="button" onClick={() => setSelectedImageId(null)}>
@@ -315,6 +360,42 @@ function getElementContentWidth(element: HTMLElement) {
   const paddingLeft = Number.parseFloat(style.paddingLeft) || 0;
   const paddingRight = Number.parseFloat(style.paddingRight) || 0;
   return Math.max(element.clientWidth - paddingLeft - paddingRight, 0);
+}
+
+function buildTextUpdatePayload(layout: JournalLayout, key: string, value: string) {
+  if (key === "title") {
+    return { title: value };
+  }
+  if (key === "meta") {
+    return { meta: value };
+  }
+  if (key.startsWith("legacy-body-")) {
+    const index = Number(key.replace("legacy-body-", ""));
+    const body = [...layout.content.body];
+    if (Number.isInteger(index) && index >= 0 && index < body.length) {
+      body[index] = value;
+    }
+    return { body };
+  }
+  if (key.includes("-body")) {
+    const sectionId = key.replace(/-body$/, "");
+    const sections = (layout.content.sections ?? []).map((section) =>
+      section.id === sectionId ? { ...section, body: value } : section
+    );
+    const body = layout.content.body.map((paragraph, index) => {
+      const section = sections[index];
+      return section?.id === sectionId ? value : paragraph;
+    });
+    return { body, sections };
+  }
+  if (key.includes("-caption-")) {
+    const imageId = key.split("-caption-")[1];
+    const captions = layout.content.captions.map((caption) =>
+      caption.imageId === imageId ? { ...caption, text: value } : caption
+    );
+    return { captions };
+  }
+  return { body: layout.content.body };
 }
 
 function blobToDataUrl(blob: Blob) {

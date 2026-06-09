@@ -2,6 +2,9 @@ from math import ceil
 from typing import Any
 
 from app.services.diary_copy import compose_observation_note
+from app.services.journal_templates import ALLOWED_SECTION_VARIANTS, SECTION_VARIANT_IMAGE_LIMITS
+
+DEFAULT_SECTION_IMAGE_LIMIT = 3
 
 
 def plan_content_sections(layout: dict[str, Any], image_ids: list[str]) -> list[dict[str, Any]]:
@@ -20,12 +23,17 @@ def plan_content_sections(layout: dict[str, Any], image_ids: list[str]) -> list[
             body = section_body(raw_section, layout, index, section_image_ids)
             title = str(raw_section.get("title") or section_title_from_body(body, index + 1)).strip()
             mood = normalize_string_list(raw_section.get("mood"))
+            variant = section_variant(raw_section)
             raw_section_id = str(raw_section.get("id") or f"section_{len(sections) + 1}")
-            adjacent_groups = split_adjacent_image_ids(section_image_ids, image_ids)
+            adjacent_groups = split_adjacent_image_ids(
+                section_image_ids,
+                image_ids,
+                max_group_size=section_image_limit(variant),
+            )
             for group_index, adjacent_group in enumerate(adjacent_groups):
                 section_id = raw_section_id if len(adjacent_groups) == 1 else f"{raw_section_id}_{group_index + 1}"
                 section_id = unique_section_id(section_id, sections)
-                sections.append(build_section(section_id, title, adjacent_group, body, mood, len(sections) + 1))
+                sections.append(build_section(section_id, title, adjacent_group, body, mood, len(sections) + 1, variant))
                 used_image_ids.update(adjacent_group)
 
     if sections:
@@ -34,7 +42,11 @@ def plan_content_sections(layout: dict[str, Any], image_ids: list[str]) -> list[
     return build_sections_from_body(layout, image_ids)
 
 
-def split_adjacent_image_ids(section_image_ids: list[str], ordered_image_ids: list[str]) -> list[list[str]]:
+def split_adjacent_image_ids(
+    section_image_ids: list[str],
+    ordered_image_ids: list[str],
+    max_group_size: int = DEFAULT_SECTION_IMAGE_LIMIT,
+) -> list[list[str]]:
     order_by_id = {image_id: index for index, image_id in enumerate(ordered_image_ids)}
     ordered_ids = sorted(
         [image_id for image_id in section_image_ids if image_id in order_by_id],
@@ -45,7 +57,9 @@ def split_adjacent_image_ids(section_image_ids: list[str], ordered_image_ids: li
     previous_order: int | None = None
     for image_id in ordered_ids:
         current_order = order_by_id[image_id]
-        if previous_order is None or (current_order == previous_order + 1 and len(current_group) < 3):
+        if previous_order is None or (
+            current_order == previous_order + 1 and len(current_group) < max(max_group_size, 1)
+        ):
             current_group.append(image_id)
         else:
             groups.append(current_group)
@@ -124,6 +138,19 @@ def build_missing_image_sections(
             )
         )
     return sections
+
+
+def section_variant(raw_section: dict[str, Any]) -> str | None:
+    variant = raw_section.get("variant")
+    if variant in ALLOWED_SECTION_VARIANTS:
+        return str(variant)
+    return None
+
+
+def section_image_limit(variant: str | None) -> int:
+    if variant is None:
+        return DEFAULT_SECTION_IMAGE_LIMIT
+    return SECTION_VARIANT_IMAGE_LIMITS.get(variant, DEFAULT_SECTION_IMAGE_LIMIT)
 
 
 def sort_sections_by_image_order(sections: list[dict[str, Any]], image_ids: list[str]) -> list[dict[str, Any]]:
@@ -206,15 +233,19 @@ def build_section(
     body: str,
     mood: list[str],
     index: int,
+    variant: str | None = None,
 ) -> dict[str, Any]:
     body = str(body or "").strip() or "这一组照片也想好好留下。"
-    return {
+    section = {
         "id": section_id,
         "title": title or section_title_from_body(body, index),
         "imageIds": image_ids,
         "body": body,
         "mood": mood,
     }
+    if variant is not None:
+        section["variant"] = variant
+    return section
 
 
 def section_title_from_body(body: str, index: int) -> str:

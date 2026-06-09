@@ -20,11 +20,15 @@ export type GenerateJournalPayload = {
   journalDate?: string | null;
   location?: string | null;
   moodTags?: string[];
+  templateId?: string | null;
 };
 
 export type UpdateJournalPayload = {
   title?: string;
+  meta?: string | null;
   body?: string[];
+  captions?: JournalLayout["content"]["captions"];
+  sections?: NonNullable<JournalLayout["content"]["sections"]>;
   layoutVariant?: string;
 };
 
