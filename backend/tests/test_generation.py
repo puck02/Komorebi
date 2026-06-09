@@ -69,6 +69,43 @@ def test_fallback_layout_uses_selected_template_variant():
     assert layout.layout.sections[0].variant == "timeline_trip"
 
 
+def test_generator_enforces_selected_template_when_model_ignores_it():
+    payload = valid_model_json()
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "咖啡和小票",
+            "imageIds": ["img_1", "img_2"],
+            "body": "咖啡还热着，小票也压在杯子旁边。",
+            "mood": ["日常"],
+        }
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "staggered_collage",
+            "y": 220,
+            "height": 820,
+            "images": [],
+            "texts": [],
+            "decorations": [],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(
+        generation_request(
+            images=[
+                JournalImageInput(id="img_1", width=640, height=480),
+                JournalImageInput(id="img_2", width=900, height=1200),
+            ],
+            template_id="ticket_day",
+        )
+    )
+
+    assert [section.variant for section in layout.layout.sections] == ["ticket_day"]
+
+
 def test_fallback_pocket_grid_keeps_many_photos_in_one_story_section():
     request = generation_request(images=[JournalImageInput(id=f"img_{index}", width=640, height=480) for index in range(1, 7)], template_id="pocket_grid")
 

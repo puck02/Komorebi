@@ -464,7 +464,7 @@ def sanitize_model_layout(raw_layout: dict[str, Any], request: JournalGeneration
     else:
         layout["layout"]["decorations"] = []
 
-    normalize_sections(layout, request.images, asset_by_id)
+    normalize_sections(layout, request.images, asset_by_id, request.template_id)
     layout["canvas"]["height"] = normalize_canvas_height(layout)
     return layout
 
@@ -504,10 +504,17 @@ def normalize_sections(
     layout: dict[str, Any],
     request_images: list[JournalImageInput],
     asset_by_id: dict[str, AssetItem],
+    template_id: str | None = None,
 ) -> None:
     content_sections = normalize_content_sections(layout, request_images)
     layout["content"]["sections"] = content_sections
-    layout["layout"]["sections"] = normalize_layout_sections(layout, content_sections, request_images, asset_by_id)
+    layout["layout"]["sections"] = normalize_layout_sections(
+        layout,
+        content_sections,
+        request_images,
+        asset_by_id,
+        template_id,
+    )
 
 
 def normalize_image_understanding(
@@ -726,6 +733,7 @@ def normalize_layout_sections(
     content_sections: list[dict[str, Any]],
     request_images: list[JournalImageInput],
     asset_by_id: dict[str, AssetItem],
+    template_id: str | None = None,
 ) -> list[dict[str, Any]]:
     raw_sections = layout["layout"].get("sections")
     raw_by_id = {
@@ -741,7 +749,11 @@ def normalize_layout_sections(
     for index, content_section in enumerate(content_sections):
         section_id = content_section["id"]
         source = raw_by_id.get(section_id, {})
+        template_variant = section_variant_for_template(template_id, len(content_section.get("imageIds") or []))
         suggested_variant = suggested_section_variant(
+            template_variant,
+            content_section,
+        ) or suggested_section_variant(
             content_section.get("variant"),
             content_section,
         ) or suggested_section_variant(source.get("variant"), content_section)
