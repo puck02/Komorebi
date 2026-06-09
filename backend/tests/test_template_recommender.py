@@ -1,3 +1,16 @@
+from pathlib import Path
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from app.api.routes.journals import recommend_journal_templates
+from app.db.base import Base
+from app.models import ai_settings, asset, generation_job, image as image_model, journal, user as user_model  # noqa: F401
+from app.models.ai_settings import AiSettings
+from app.models.image import Image
+from app.models.user import User
+from app.schemas.journal import JournalTemplateRecommendRequest
 from app.services.template_recommender import (
     TemplateRecommendationImage,
     TemplateRecommendationRequest,
@@ -33,6 +46,63 @@ def test_recommender_falls_back_to_local_rules_when_ai_fails():
     assert result["message"]
     assert len(result["recommendations"]) == 3
     assert "chapter_scroll" in [item["templateId"] for item in result["recommendations"]]
+
+
+def test_recommend_journal_templates_route_returns_local_fallback_without_testclient(tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
+    engine = create_engine(
+        "sqlite+pysqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    testing_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base.metadata.create_all(bind=engine)
+    try:
+        with testing_session() as db:
+            current_user = User(id="user_1", email="owner@example.com", password_hash="hash")
+            image_dir = tmp_path / "image"
+            image_dir.mkdir()
+            original_path = image_dir / "original.png"
+            display_path = image_dir / "display.webp"
+            thumbnail_path = image_dir / "thumb.webp"
+            original_path.write_bytes(b"original")
+            display_path.write_bytes(b"display")
+            thumbnail_path.write_bytes(b"thumb")
+            db.add(current_user)
+            db.add(
+                Image(
+                    id="img_1",
+                    user_id=current_user.id,
+                    original_path=str(original_path),
+                    thumbnail_path=str(thumbnail_path),
+                    content_type="image/png",
+                    width=640,
+                    height=480,
+                )
+            )
+            db.add(AiSettings(id="default", base_url="https://provider.example/v1", api_key="", model="gpt-5.5", review_model="gpt-5.4-mini"))
+            db.commit()
+
+            result = recommend_journal_templates(
+                JournalTemplateRecommendRequest(
+                    imageIds=["img_1"],
+                    description="咖啡店、展览和小票都想留下",
+                    moodTags=[],
+                ),
+                current_user=current_user,
+                db=db,
+            )
+
+        assert result.source == "local"
+        assert len(result.recommendations) == 3
+        assert "ticket_day" in [item.template_id for item in result.recommendations]
+        assert result.message
+    finally:
+        Base.metadata.drop_all(bind=engine)
+        get_settings.cache_clear()
 
 
 class FakeVisionClient:
