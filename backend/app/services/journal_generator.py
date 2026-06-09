@@ -179,10 +179,32 @@ def normalize_fallback_body(value: str) -> str:
 def fallback_caption_texts(body: str, count: int, request: JournalGenerationRequest | None = None) -> list[str]:
     sentences = split_sentences(body)
     source_texts = sentences[:count] if len(sentences) >= count else fallback_text_units(body)
-    captions = [normalize_caption_text(text, fallback="今日小记") for text in source_texts[:count]]
+    captions = [
+        fallback_caption_from_source_text(text, index, count, request)
+        for index, text in enumerate(source_texts[:count])
+    ]
     while len(captions) < count:
         captions.append(fallback_caption_label(request, len(captions) + 1, captions))
     return captions[:count]
+
+
+def fallback_caption_from_source_text(
+    text: str,
+    index: int,
+    count: int,
+    request: JournalGenerationRequest | None = None,
+) -> str:
+    caption = normalize_caption_text(text, fallback="今日小记")
+    if count <= 1 or not should_label_story_caption(request):
+        return caption
+    prefix = FALLBACK_STORY_CAPTION_PREFIXES[index % len(FALLBACK_STORY_CAPTION_PREFIXES)]
+    return f"{prefix}：{caption}"[:CAPTION_MAX_CHARS]
+
+
+def should_label_story_caption(request: JournalGenerationRequest | None) -> bool:
+    if request is None:
+        return False
+    return str(request.template_id or "").strip() in STORY_CAPTION_TEMPLATE_IDS
 
 
 def fallback_caption_label(
@@ -374,6 +396,16 @@ FALLBACK_SECTION_NOTE_PREFIXES = (
     "后面几张接着记，",
     "这几样先放一组，",
 )
+FALLBACK_STORY_CAPTION_PREFIXES = ("开头", "转场", "细节", "后来", "收尾")
+STORY_CAPTION_TEMPLATE_IDS = {
+    "chapter_scroll",
+    "weekly_spread",
+    "scrapbook_story",
+    "pocket_grid",
+    "moodboard_stack",
+    "map_journey",
+    "detail_index",
+}
 
 
 def fallback_title_from_body(body: str) -> str:

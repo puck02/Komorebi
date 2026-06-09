@@ -398,19 +398,20 @@ def build_letter_page_images(images: list[Any], start_y: float, section_index: i
 
 def build_chapter_scroll_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     placements = []
+    y = start_y
     for index, image in enumerate(images[:9]):
         x = [92, 462, 168][index % 3]
         width = [500, 430, 470][index % 3]
-        placements.append(
-            placement(
-                image,
-                x,
-                start_y + index * 326,
-                width,
-                section_index + index,
-                rotation=[-1.8, 1.4, -0.8, 1.8][index % 4],
-            )
+        image_placement = placement(
+            image,
+            x,
+            y,
+            width,
+            section_index + index,
+            rotation=[-1.8, 1.4, -0.8, 1.8][index % 4],
         )
+        placements.append(image_placement)
+        y += image_placement["height"] + 136
     return placements
 
 
@@ -475,10 +476,10 @@ def build_map_journey_images(images: list[Any], start_y: float, section_index: i
     specs = [
         (112, 40, 330, -2.2),
         (586, 214, 300, 2),
-        (156, 502, 340, 1.2),
-        (610, 736, 286, -1.6),
-        (132, 1010, 310, -2.4),
-        (558, 1202, 318, 1.8),
+        (156, 568, 340, 1.2),
+        (610, 868, 286, -1.6),
+        (132, 1184, 310, -2.4),
+        (558, 1448, 318, 1.8),
     ]
     for index, image in enumerate(images[: len(specs)]):
         x, y_offset, width, rotation = specs[index]

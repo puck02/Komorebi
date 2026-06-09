@@ -174,6 +174,57 @@ def test_fallback_chapter_scroll_keeps_long_story_as_readable_chapters():
     assert [section.variant for section in layout.layout.sections] == ["chapter_scroll", "chapter_scroll", "chapter_scroll"]
 
 
+def test_fallback_chapter_scroll_with_mixed_orientation_avoids_caption_overlaps():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+    request = JournalGenerationRequest(
+        description="周末一起出门，路上喝了咖啡，也把看到的小细节记下来。",
+        images=[
+            JournalImageInput(id=f"img_{index}", width=900 if index % 2 else 640, height=1200 if index % 2 else 480)
+            for index in range(1, 8)
+        ],
+        assets=load_assets(),
+        template_id="chapter_scroll",
+    )
+
+    layout = generator.generate(request)
+    high_issues = [issue for issue in check_layout_rules(layout, request) if issue["severity"] == "high"]
+
+    assert high_issues == []
+
+
+def test_fallback_story_template_captions_do_not_repeat_section_body():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+    request = JournalGenerationRequest(
+        description="想做拼贴剪贴风，把这些回忆和贴纸素材放在一起。",
+        images=[JournalImageInput(id=f"img_{index}", width=640, height=480) for index in range(1, 6)],
+        assets=load_assets(),
+        template_id="scrapbook_story",
+    )
+
+    layout = generator.generate(request)
+    issues = check_layout_rules(layout, request)
+
+    assert not any(issue["type"] == "copyQuality" for issue in issues)
+
+
+def test_fallback_map_journey_keeps_route_photos_spaced():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+    request = JournalGenerationRequest(
+        description="这次小旅行想按地图路线和几个打卡点来记。",
+        images=[
+            JournalImageInput(id=f"img_{index}", width=900 if index % 2 else 640, height=1200 if index % 2 else 480)
+            for index in range(1, 6)
+        ],
+        assets=load_assets(),
+        template_id="map_journey",
+    )
+
+    layout = generator.generate(request)
+    issues = check_layout_rules(layout, request)
+
+    assert not any(issue["type"] == "imageSpacing" for issue in issues)
+
+
 @pytest.mark.parametrize(
     ("template_id", "expected_section_variant"),
     [
