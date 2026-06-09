@@ -1722,6 +1722,29 @@ def test_generator_fallback_sections_use_natural_diary_sentences_after_grouping(
     assert section_bodies[1] == "路口灯亮起来，回程路上的云压得很低。"
 
 
+def test_generator_replaces_generic_multi_photo_section_title_with_story_title():
+    payload = valid_model_json()
+    payload["content"]["imageUnderstanding"] = [
+        {"imageId": "img_1", "summary": "咖啡还热着", "scene": "咖啡店", "subjects": ["咖啡"], "mood": []},
+        {"imageId": "img_2", "summary": "窗边坐了一会儿", "scene": "咖啡店", "subjects": ["窗边"], "mood": []},
+        {"imageId": "img_3", "summary": "路口灯亮起来", "scene": "街口", "subjects": ["路灯"], "mood": []},
+    ]
+    payload["content"]["sections"] = [
+        {
+            "id": "section_1",
+            "title": "第一段",
+            "imageIds": ["img_1", "img_2", "img_3"],
+            "body": "咖啡还热着，窗边坐了一会儿，后来路口灯亮起来。",
+            "mood": ["日常"],
+        }
+    ]
+    generator = JournalGenerator(FakeClient(payload))
+
+    layout = generator.generate(generation_request(images=three_images()))
+
+    assert layout.content.sections[0].title == "咖啡、窗边和路灯"
+
+
 def test_generator_normalizes_ai_style_copy():
     payload = valid_model_json()
     payload["content"]["title"] = "把这些珍贵回忆收藏在治愈的周末手帐里"

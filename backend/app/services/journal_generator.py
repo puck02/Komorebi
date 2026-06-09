@@ -617,13 +617,44 @@ def normalize_section_title(section: dict[str, Any], understanding_by_id: dict[A
     title = normalize_title(section.get("title"), fallback=f"片段 {index}")
     if not is_generic_section_title(title):
         return title
-    for image_id in section.get("imageIds", []):
+    section_image_ids = section.get("imageIds", [])
+    if len(section_image_ids) >= 2:
+        subject_title = section_title_from_subjects(section, understanding_by_id)
+        if subject_title is not None:
+            return subject_title
+    for image_id in section_image_ids:
         if image_id not in understanding_by_id:
             continue
         caption = caption_from_understanding(understanding_by_id[image_id])
         if not is_generic_caption(caption):
             return normalize_title(caption, fallback=title)
     return title
+
+
+def section_title_from_subjects(section: dict[str, Any], understanding_by_id: dict[Any, dict[str, Any]]) -> str | None:
+    subjects: list[str] = []
+    for image_id in section.get("imageIds", []):
+        understanding = understanding_by_id.get(image_id)
+        if understanding is None:
+            continue
+        for subject in understanding.get("subjects") or []:
+            subject_text = trim_caption_particles(str(subject or "").strip(" 。！？!?；;，,、"))
+            if not subject_text or is_generic_understanding_text(subject_text) or subject_text in subjects:
+                continue
+            subjects.append(subject_text[:6])
+            if len(subjects) == 3:
+                return joined_section_title(subjects)
+    if len(subjects) >= 2:
+        return joined_section_title(subjects)
+    return None
+
+
+def joined_section_title(subjects: list[str]) -> str:
+    if len(subjects) == 2:
+        title = f"{subjects[0]}和{subjects[1]}"
+    else:
+        title = f"{subjects[0]}、{subjects[1]}和{subjects[2]}"
+    return trim_caption_particles(normalize_diary_text(title, fallback="").strip(" 。！？!?；;，,、"))[:12] or "继续记"
 
 
 def is_generic_section_title(value: Any) -> bool:
