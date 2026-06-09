@@ -2099,6 +2099,24 @@ def test_generation_prompt_requests_section_structure():
     assert "templateId" in prompt
 
 
+@pytest.mark.parametrize(
+    ("template_id", "expected_phrases"),
+    [
+        ("pocket_grid", ("Project Life", "每格是一张照片、标题卡或记录卡", "不要做成普通九宫格相册")),
+        ("ticket_day", ("票根备忘", "票据、小票、门票和便签", "停在哪里")),
+        ("letter_page", ("写给今天", "像信纸或便笺", "照片是旁证")),
+        ("field_notes", ("观察手记", "日期章、笔、便签", "记录具体细节")),
+    ],
+)
+def test_generation_prompt_includes_selected_template_story_guide(template_id, expected_phrases):
+    prompt = build_generation_prompt(generation_request(images=three_images(), template_id=template_id))
+
+    assert f'"templateId": "{template_id}"' in prompt
+    assert "当前用户选择的模板说明" in prompt
+    for phrase in expected_phrases:
+        assert phrase in prompt
+
+
 def test_openai_client_sends_visual_review_request_with_screenshot_and_images(monkeypatch):
     captured = {}
 

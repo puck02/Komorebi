@@ -12,6 +12,22 @@ from app.services.journal_templates import allowed_section_variant_text
 DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
 OPENAI_TIMEOUT_SECONDS = 300
 OPENAI_MAX_ATTEMPTS = 2
+TEMPLATE_STORY_GUIDES = {
+    "quiet_story": "quiet_story 留白独白：只围绕一个瞬间写，照片不堆满，纸张和留白承载一段完整心情。",
+    "hero_memory": "hero_memory 主照片日记：一张主图定调，其他元素围绕主图补充时间、地点或一句旁注。",
+    "timeline_trip": "timeline_trip 时间线小旅行：按上传顺序写出出发、途中、停留或回程，章节从上到下推进。",
+    "pocket_grid": "pocket_grid 口袋页：像 Project Life 口袋手帐，每格是一张照片、标题卡或记录卡，不要做成普通九宫格相册。",
+    "ticket_day": "ticket_day 票根备忘：像票据、小票、门票和便签夹在一起，文字记录去过哪里、停在哪里、看到什么。",
+    "magazine_note": "magazine_note 杂志留白：照片和文字保持编辑感留白，标题短，正文像一段清爽内页注记。",
+    "before_after": "before_after 前后对照：用开始、变化、后来讲清楚对照关系，避免只把两张照片并排。",
+    "moodboard_stack": "moodboard_stack 情绪堆叠：围绕一种心情组织照片、短句和贴纸，允许错落重叠但要有主次。",
+    "recipe_memo": "recipe_memo 餐桌配方：像配方卡或餐桌小票，写味道、器皿、菜单和当时的小动作。",
+    "letter_page": "letter_page 写给今天：像信纸或便笺，照片是旁证，正文要像写给这一天的一段话。",
+    "chapter_scroll": "chapter_scroll 长卷章节：拆成开头、转场、结尾等连续章节，适合完整一天或一次出门。",
+    "field_notes": "field_notes 观察手记：像野外观察本或研究笔记，用日期章、笔、便签和小标注记录具体细节。",
+    "split_scene": "split_scene 双场景切换：把两个地点、时间或状态分开叙述，中间保留转场感。",
+    "detail_index": "detail_index 细节索引：一张主图定调，其他图片做编号细节或索引说明，文字解释为什么这些小东西值得留下。",
+}
 
 
 class OpenAIConfigurationError(RuntimeError):
@@ -166,6 +182,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
     ]
     user_context = build_user_context(request)
     allowed_variants = allowed_section_variant_text()
+    template_guide = build_template_story_guide(request)
     schema_example = {
         "canvas": {"width": 1080, "height": 2400, "background": "#f8f1e8"},
         "theme": {"style": "soft-collage", "palette": ["#f8f1e8", "#d9a98f"], "mood": ["安静"]},
@@ -266,6 +283,7 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         "没有指定模板时：单张主图适合 hero_note，错落多图适合 staggered_collage，过程顺序适合 timeline_strip，相似照片组适合 photo_wall，安静留白适合 magazine_whitespace，咖啡展览票据类适合 ticket_memo。"
         "如果用户补充信息包含 templateId，请优先使用对应模板 variant：quiet_story 留白独白，hero_memory 主照片日记，timeline_trip 时间线小旅行，pocket_grid 口袋页，ticket_day 票根备忘，magazine_note 杂志留白，before_after 前后对照，moodboard_stack 情绪堆叠，recipe_memo 餐桌配方，letter_page 写给今天，chapter_scroll 长卷章节，field_notes 观察手记，split_scene 双场景切换，detail_index 细节索引。"
         "模板不是单纯照片摆法，而是叙事结构：chapter_scroll 要按开头、转场、结尾写；field_notes 要写观察到的细节；split_scene 要区分两个场景或状态；detail_index 要用一张主图带出几个小细节。"
+        f"{template_guide}"
         "content.body 必须是字符串数组，不能只写一大段；请按照片主题、场景或时间分成 2 到 4 段短文字，每段 1 到 2 句。"
         "如果照片天然能分成几类，就让 content.body 的段落数量尽量对应这些类别。content.captions 必须使用 imageId 和 text。"
         "content.captions 的顺序应尽量跟图片 order 一致，caption 只能描述对应 imageId 的照片内容。"
@@ -288,6 +306,14 @@ def build_generation_prompt(request: JournalGenerationRequest) -> str:
         f"\n图片：{json.dumps(images, ensure_ascii=False)}"
         f"\n可用素材：{json.dumps(assets, ensure_ascii=False)}"
     )
+
+
+def build_template_story_guide(request: JournalGenerationRequest) -> str:
+    template_id = str(request.template_id or "").strip()
+    guide = TEMPLATE_STORY_GUIDES.get(template_id)
+    if not guide:
+        return ""
+    return f"当前用户选择的模板说明：{guide}"
 
 
 def build_user_context(request: JournalGenerationRequest) -> dict[str, Any]:
