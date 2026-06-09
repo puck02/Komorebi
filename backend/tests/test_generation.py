@@ -2031,6 +2031,32 @@ def test_fallback_letter_template_uses_letter_materials_when_copy_is_plain():
     ) >= 2
 
 
+@pytest.mark.parametrize(
+    ("template_id", "image_count"),
+    [
+        ("moodboard_stack", 2),
+        ("chapter_scroll", 3),
+        ("detail_index", 3),
+    ],
+)
+def test_fallback_template_layouts_do_not_have_high_rule_issues(template_id, image_count):
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+    request = JournalGenerationRequest(
+        description="周末一起出门，路上喝了咖啡，也把看到的小细节记下来。",
+        images=[
+            JournalImageInput(id=f"img_{index}", width=900 if index % 2 else 640, height=1200 if index % 2 else 480)
+            for index in range(1, image_count + 1)
+        ],
+        assets=load_assets(),
+        template_id=template_id,
+    )
+
+    layout = generator.generate(request)
+    high_issues = [issue for issue in check_layout_rules(layout, request) if issue["severity"] == "high"]
+
+    assert high_issues == []
+
+
 def test_fallback_multisection_theme_decorations_avoid_repeating_asset_ids():
     generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
     request = JournalGenerationRequest(

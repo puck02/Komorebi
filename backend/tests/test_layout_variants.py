@@ -3,10 +3,12 @@ from app.services.journal_generator import (
     JournalGenerator,
     JournalImageInput,
 )
+from app.services.layout_rules import text_overlaps_image
 from app.services.layout_variants import (
     ALLOWED_SECTION_VARIANTS,
     build_section_layout,
     choose_section_variant,
+    estimated_caption_height,
 )
 
 
@@ -211,7 +213,17 @@ def test_build_section_layout_keeps_caption_on_photo_border_when_below_would_hit
 
     caption_texts = [text for text in layout["texts"] if text["role"] == "caption"]
     assert len(caption_texts) == 3
-    assert caption_texts[0]["y"] == layout["images"][0]["y"] + layout["images"][0]["height"] - 38
+    first_caption_rect = (
+        caption_texts[0]["x"],
+        caption_texts[0]["y"],
+        caption_texts[0]["width"],
+        estimated_caption_height(caption_texts[0]),
+    )
+    assert caption_texts[0]["y"] < layout["images"][0]["y"] + layout["images"][0]["height"]
+    assert not any(
+        text_overlaps_image("caption", first_caption_rect, (image["x"], image["y"], image["width"], image["height"]))
+        for image in layout["images"][1:]
+    )
     assert caption_texts[1]["y"] == layout["images"][1]["y"] + layout["images"][1]["height"] + 10
     assert caption_texts[2]["y"] == layout["images"][2]["y"] + layout["images"][2]["height"] + 10
 

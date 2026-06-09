@@ -59,10 +59,11 @@ def check_image_order(layout: JournalLayout, request: Any) -> list[dict[str, Any
 
 def rendered_image_ids(layout: JournalLayout) -> list[str]:
     if layout.layout.sections:
+        content_image_ids_by_section_id = {section.id: section.image_ids for section in layout.content.sections}
         return [
-            image.image_id
+            image_id
             for section in sorted(layout.layout.sections, key=lambda item: item.y)
-            for image in sorted(section.images, key=lambda item: (item.y, item.x))
+            for image_id in ordered_section_image_ids(section, content_image_ids_by_section_id.get(section.section_id))
         ]
     return [image.image_id for image in layout.layout.images]
 
@@ -183,7 +184,7 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
     for index, section in enumerate(sections):
         if section.section_id not in content_section_ids:
             issues.append(rule_issue("sectionReference", "high", [section.section_id], "版式章节没有对应的内容章节"))
-        elif rendered_section_image_ids(section) != image_ids_by_section_id[section.section_id]:
+        elif ordered_section_image_ids(section, image_ids_by_section_id[section.section_id]) != image_ids_by_section_id[section.section_id]:
             issues.append(rule_issue("sectionImageMatch", "high", [section.section_id], "版式章节图片与内容章节不一致"))
         elif section_mentions_other_image(
             content_sections_by_id[section.section_id],
@@ -216,8 +217,14 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
     return issues
 
 
-def rendered_section_image_ids(section: Any) -> list[str]:
-    return [image.image_id for image in sorted(section.images, key=lambda item: (item.y, item.x))]
+def ordered_section_image_ids(section: Any, content_image_ids: list[str] | None) -> list[str]:
+    rendered_image_ids = [image.image_id for image in section.images]
+    if content_image_ids is None:
+        return rendered_image_ids
+    rendered_image_id_set = set(rendered_image_ids)
+    ordered_ids = [image_id for image_id in content_image_ids if image_id in rendered_image_id_set]
+    extra_ids = [image_id for image_id in rendered_image_ids if image_id not in set(content_image_ids)]
+    return [*ordered_ids, *extra_ids]
 
 
 def section_mentions_other_image(section: Any, understanding_by_image_id: dict[str, Any]) -> bool:

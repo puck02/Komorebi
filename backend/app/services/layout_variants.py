@@ -13,6 +13,7 @@ SECTION_CAPTION_SIDE_PADDING = 28
 SECTION_CAPTION_BOTTOM_OFFSET = 38
 SECTION_CAPTION_BELOW_OFFSET = 10
 SECTION_CAPTION_TEXT_GAP = 18
+SECTION_CAPTION_BORDER_OFFSET = 64
 SECTION_GAP = 104
 TEXT_PHOTO_GAP = 56
 IMAGE_GAP = 38
@@ -109,6 +110,8 @@ def build_section_layout(
         text_y = start_y + 64
     if variant in {"ticket_memo", "ticket_day"} and len(image_placements) >= 2:
         text_y = max(image_bottom + TEXT_PHOTO_GAP, caption_bottom + SECTION_CAPTION_TEXT_GAP)
+    if variant in {"moodboard_stack", "chapter_scroll", "detail_index"} and caption_texts:
+        text_y = max(text_y, caption_bottom + SECTION_CAPTION_TEXT_GAP + SECTION_TITLE_FONT_SIZE * 2.4)
     text = {
         "role": "body",
         "x": text_x_for_variant(variant, len(image_placements)),
@@ -123,6 +126,9 @@ def build_section_layout(
         "width": min(text["width"], 680),
         "fontSize": SECTION_TITLE_FONT_SIZE,
     }
+    if caption_texts and any(rects_overlap(text_rect(title), text_rect(caption)) for caption in caption_texts):
+        title["y"] = caption_bottom + SECTION_CAPTION_TEXT_GAP
+        text["y"] = title["y"] + SECTION_TITLE_FONT_SIZE * 2.4 + 12
     body = str(section.get("body") or "")
     text_bottom = text["y"] + estimate_paragraph_height(body, text["fontSize"], text["width"])
     section_bottom = max(image_bottom, caption_bottom, text_bottom) + SECTION_GAP
@@ -542,24 +548,56 @@ def build_caption_placements(image_placements: list[dict[str, Any]]) -> list[dic
 
 def caption_y_for_image(image: dict[str, Any], image_placements: list[dict[str, Any]]) -> float:
     below_y = image["y"] + image["height"] + SECTION_CAPTION_BELOW_OFFSET
+    caption_height = SECTION_CAPTION_FONT_SIZE * 2.4
     caption_rect = (
         image["x"] + SECTION_CAPTION_SIDE_PADDING,
         below_y,
         max(image["width"] - SECTION_CAPTION_SIDE_PADDING * 2, 120),
-        SECTION_CAPTION_FONT_SIZE * 2.4,
+        caption_height,
     )
     other_image_rects = [
         (candidate["x"], candidate["y"], candidate["width"], candidate["height"])
         for candidate in image_placements
         if candidate is not image
     ]
-    if any(rects_overlap(caption_rect, rect) for rect in other_image_rects):
-        return image["y"] + image["height"] - SECTION_CAPTION_BOTTOM_OFFSET
+    if not any(caption_conflicts_with_image(caption_rect, rect) for rect in other_image_rects):
+        return below_y
+    inside_y = image["y"] + image["height"] - caption_height - SECTION_CAPTION_BELOW_OFFSET
+    inside_rect = (caption_rect[0], inside_y, caption_rect[2], caption_height)
+    if not any(caption_conflicts_with_image(inside_rect, rect) for rect in other_image_rects):
+        return inside_y
+    above_y = max(image["y"] - caption_height - SECTION_CAPTION_BELOW_OFFSET, 0)
+    above_rect = (caption_rect[0], above_y, caption_rect[2], caption_height)
+    if not any(caption_conflicts_with_image(above_rect, rect) for rect in other_image_rects):
+        return above_y
     return below_y
+
+
+def caption_conflicts_with_image(
+    caption_rect: tuple[float, float, float, float],
+    image_rect: tuple[float, float, float, float],
+) -> bool:
+    if not rects_overlap(caption_rect, image_rect):
+        return False
+    _, caption_y, _, caption_height = caption_rect
+    _, image_y, _, image_height = image_rect
+    image_bottom = image_y + image_height
+    overlap_top = max(caption_y, image_y)
+    overlap_bottom = min(caption_y + caption_height, image_bottom)
+    return overlap_top < image_bottom - SECTION_CAPTION_BORDER_OFFSET or overlap_bottom > image_bottom + 1
 
 
 def estimated_caption_height(caption: dict[str, Any]) -> float:
     return float(caption.get("fontSize") or SECTION_CAPTION_FONT_SIZE) * 2.4
+
+
+def text_rect(text: dict[str, Any]) -> tuple[float, float, float, float]:
+    return (
+        float(text.get("x") or 0),
+        float(text.get("y") or 0),
+        float(text.get("width") or 0),
+        float(text.get("fontSize") or SECTION_TEXT_FONT_SIZE) * 2.4,
+    )
 
 
 def rects_overlap(first: tuple[float, float, float, float], second: tuple[float, float, float, float]) -> bool:
