@@ -51,6 +51,7 @@ export type JournalImagePlacement = {
 
 export type JournalTextPlacement = {
   role: "title" | "meta" | "body" | "caption";
+  imageId?: string | null;
   x: number;
   y: number;
   width: number;

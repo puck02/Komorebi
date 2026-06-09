@@ -111,7 +111,7 @@ function buildCaptionTexts(
 ): JournalRenderText[] {
   const captionPlacements = texts.filter((text) => text.role === "caption");
   return captionPlacements.flatMap((placement, index) => {
-    const imageId = imageIds[index];
+    const imageId = placement.imageId ?? imageIds[index];
     if (!imageId) {
       return [];
     }

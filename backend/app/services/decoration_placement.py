@@ -150,8 +150,13 @@ def place_paper_backing(
     next_decoration["rotation"] = clamp_number(positive_number(decoration.get("rotation"), -1.5), -4, 4)
 
     if overlaps_photo_safe_area(next_decoration, image_placements):
-        image_bottom = max((rect_from_item(image)[1] + rect_from_item(image)[3] for image in image_placements), default=0)
-        next_decoration["y"] = max(next_decoration["y"], image_bottom + 40)
+        safe_rects = [photo_safe_rect(image) for image in image_placements]
+        right_limit = min((safe_x for safe_x, _, _, _ in safe_rects if safe_x > x), default=None)
+        if right_limit is not None and right_limit - next_decoration["x"] >= text_width:
+            next_decoration["width"] = min(next_decoration["width"], right_limit - next_decoration["x"] - 4)
+        if overlaps_photo_safe_area(next_decoration, image_placements):
+            image_bottom = max((rect_from_item(image)[1] + rect_from_item(image)[3] for image in image_placements), default=0)
+            next_decoration["y"] = max(next_decoration["y"], image_bottom + 40)
     return clamp_decoration_to_canvas(next_decoration)
 
 

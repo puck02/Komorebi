@@ -362,7 +362,12 @@ def fallback_section_bodies(body: str, section_count: int) -> list[str]:
             for index, group in enumerate(split_evenly(units, section_count))
             if group
         ]
-    return [body for _ in range(section_count)]
+    if section_count <= 1:
+        return [body]
+    return [
+        fallback_section_note([body], fallback=body, index=index, needs_contextual_note=True)
+        for index in range(section_count)
+    ]
 
 
 def fallback_section_note(
@@ -398,13 +403,19 @@ FALLBACK_SECTION_NOTE_PREFIXES = (
 )
 FALLBACK_STORY_CAPTION_PREFIXES = ("开头", "转场", "细节", "后来", "收尾")
 STORY_CAPTION_TEMPLATE_IDS = {
+    "before_after",
     "chapter_scroll",
+    "day_dashboard",
+    "hero_memory",
+    "letter_page",
+    "magazine_note",
     "weekly_spread",
     "scrapbook_story",
     "pocket_grid",
     "moodboard_stack",
     "map_journey",
     "detail_index",
+    "timeline_trip",
 }
 
 
@@ -967,13 +978,14 @@ def build_template_section_decorations(
             )
 
     if paper_id is not None and body_text is not None:
+        body_height = positive_number(body_text.get("height"), 0)
         decorations.append(
             {
                 "assetId": paper_id,
                 "x": positive_number(body_text.get("x"), BODY_X) - 36,
                 "y": positive_number(body_text.get("y"), 0) - 30,
                 "width": positive_number(body_text.get("width"), BODY_WIDTH) + 72,
-                "height": 160,
+                "height": max(body_height + 78, 160),
                 "rotation": [-1.2, 1, -0.8][section_index % 3],
             }
         )

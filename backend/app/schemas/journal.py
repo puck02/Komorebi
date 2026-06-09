@@ -73,6 +73,7 @@ class JournalTextPlacement(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     role: Literal["title", "meta", "body", "caption"]
+    image_id: str | None = Field(default=None, alias="imageId")
     x: float
     y: float
     width: float = Field(gt=0)

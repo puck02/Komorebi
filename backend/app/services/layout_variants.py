@@ -107,7 +107,7 @@ def build_section_layout(
     section_images = [image for image in request_images if image_id(image) in section_image_ids]
     image_placements = build_image_placements(variant, section_images, start_y, section_index)
     image_bottom = max((item["y"] + item["height"] for item in image_placements), default=start_y)
-    caption_texts = build_caption_placements(image_placements)
+    caption_texts = build_caption_placements(variant, image_placements)
     caption_bottom = max(
         (caption["y"] + estimated_caption_height(caption) for caption in caption_texts),
         default=image_bottom,
@@ -116,7 +116,8 @@ def build_section_layout(
     if caption_texts:
         text_y = max(text_y, caption_bottom + SECTION_CAPTION_TEXT_GAP)
     if variant in {"magazine_whitespace", "magazine_note", "quiet_story"} and image_placements:
-        text_y = max(min(text_y, start_y + 420), caption_bottom + SECTION_CAPTION_TEXT_GAP)
+        caption_floor = caption_bottom + SECTION_CAPTION_TEXT_GAP if caption_texts else start_y
+        text_y = max(min(text_y, start_y + 420), caption_floor)
     if variant == "letter_page" and image_placements:
         text_y = start_y + 68
     if variant == "recipe_memo" and image_placements:
@@ -217,9 +218,9 @@ def build_quiet_story_images(images: list[Any], start_y: float, section_index: i
         placements.append(
             placement(
                 image,
-                320 + (index - 1) * 86,
-                start_y + 300 + (index - 1) * 92,
-                230,
+                330 + (index - 1) * 110,
+                start_y + 430 + (index - 1) * 160,
+                210,
                 section_index + index,
                 rotation=[2.5, -2][(index - 1) % 2],
             )
@@ -262,7 +263,7 @@ def build_timeline_trip_images(images: list[Any], start_y: float, section_index:
             placement(
                 image,
                 SECTION_SIDE_PADDING + column * (width + IMAGE_GAP),
-                start_y + row * 314 + column * 26,
+                start_y + row * 430 + column * 26,
                 width,
                 section_index + index,
                 rotation=[-1.5, 1.2, -0.8, 1.4, -1.1, 0.8][index % 6],
@@ -318,7 +319,7 @@ def build_magazine_note_images(images: list[Any], start_y: float, section_index:
             placement(
                 image,
                 180 + (index - 1) * 280,
-                start_y + 430,
+                start_y + 680,
                 250,
                 section_index + index,
                 rotation=[2.2, -1.8][(index - 1) % 2],
@@ -353,8 +354,8 @@ def build_moodboard_stack_images(images: list[Any], start_y: float, section_inde
         (92, 86, 420, -4.5),
         (424, 0, 360, 3.8),
         (694, 124, 300, -3.2),
-        (168, 268, 270, 2.6),
-        (574, 298, 250, -2.4),
+        (120, 604, 250, 2.6),
+        (610, 454, 230, -2.4),
     ]
     for index, image in enumerate(images[: len(specs)]):
         x, y_offset, width, rotation = specs[index]
@@ -371,7 +372,7 @@ def build_recipe_memo_images(images: list[Any], start_y: float, section_index: i
         if index == 2:
             column_y = placements[0]["y"] + placements[0]["height"] + 34
         elif index == 3:
-            column_y = placements[2]["y"] + placements[2]["height"] + 28
+            column_y = placements[2]["y"] + placements[2]["height"] + IMAGE_GAP
         placements.append(placement(image, x, column_y, width, section_index + index, rotation=[-2, 1.6, -1.2, 2][index]))
         if index == 0:
             column_y += placements[-1]["height"] + 34
@@ -437,14 +438,19 @@ def build_field_notes_images(images: list[Any], start_y: float, section_index: i
 def build_split_scene_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     placements = []
     for index, image in enumerate(images[:4]):
-        side_index = index // 2
-        row_index = index % 2
-        x = 92 if side_index == 0 else 568
+        if len(images) <= 2:
+            x = 92 + index * 476
+            y = start_y + index * 22
+        else:
+            side_index = index // 2
+            row_index = index % 2
+            x = 92 if side_index == 0 else 568
+            y = start_y + row_index * 318 + side_index * 26
         placements.append(
             placement(
                 image,
                 x,
-                start_y + row_index * 318 + side_index * 26,
+                y,
                 390,
                 section_index + index,
                 rotation=[-1.4, 1.2, 1.6, -1.2][index],
@@ -518,7 +524,7 @@ def build_day_dashboard_images(images: list[Any], start_y: float, section_index:
             placement(
                 image,
                 560 + column * 210,
-                start_y + 42 + row * 276,
+                start_y + 42 + row * 298,
                 178,
                 section_index + index,
                 rotation=[1.5, -1.2, 1, -1.5, 0.8][(index - 1) % 5],
@@ -589,8 +595,13 @@ def build_timeline_strip_images(images: list[Any], start_y: float, section_index
     x = SECTION_SIDE_PADDING
     placements = []
     for index, image in enumerate(images):
-        placements.append(placement(image, x, start_y + index * 64, width, section_index + index, rotation=[-1.5, 1.5, -1][index % 3]))
+        row = index // 3
+        column = index % 3
+        y = start_y + column * 64 + row * 430
+        placements.append(placement(image, x, y, width, section_index + index, rotation=[-1.5, 1.5, -1][index % 3]))
         x += width + IMAGE_GAP
+        if column == 2:
+            x = SECTION_SIDE_PADDING
     return placements
 
 
@@ -630,11 +641,12 @@ def placement(image: Any, x: float, y: float, width: float, index: int, rotation
     }
 
 
-def build_caption_placements(image_placements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def build_caption_placements(variant: str, image_placements: list[dict[str, Any]]) -> list[dict[str, Any]]:
     caption_placements = []
-    for image in image_placements:
+    for image in caption_images_for_variant(variant, image_placements):
         caption = {
             "role": "caption",
+            "imageId": image["imageId"],
             "x": image["x"] + SECTION_CAPTION_SIDE_PADDING,
             "y": caption_y_for_image(image, image_placements),
             "width": max(image["width"] - SECTION_CAPTION_SIDE_PADDING * 2, 120),
@@ -642,6 +654,12 @@ def build_caption_placements(image_placements: list[dict[str, Any]]) -> list[dic
         }
         caption_placements.append(caption)
     return caption_placements
+
+
+def caption_images_for_variant(variant: str, image_placements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if variant in {"detail_index", "field_notes", "letter_page", "moodboard_stack", "quiet_story", "ticket_day"} and len(image_placements) >= 3:
+        return []
+    return [image for image in image_placements if caption_y_for_image(image, image_placements) >= image["y"] + image["height"] - 72]
 
 
 def caption_y_for_image(image: dict[str, Any], image_placements: list[dict[str, Any]]) -> float:
@@ -668,7 +686,7 @@ def caption_y_for_image(image: dict[str, Any], image_placements: list[dict[str, 
     above_rect = (caption_rect[0], above_y, caption_rect[2], caption_height)
     if not any(caption_conflicts_with_image(above_rect, rect) for rect in other_image_rects):
         return above_y
-    return below_y
+    return image["y"] + image["height"] - min(SECTION_CAPTION_BORDER_OFFSET - 8, caption_height)
 
 
 def caption_conflicts_with_image(
@@ -762,6 +780,8 @@ def photo_height_for_width(image: Any, width: float) -> float:
 
 
 def text_x_for_variant(variant: str, image_count: int = 0) -> float:
+    if variant == "quiet_story":
+        return 690
     if variant in {"magazine_whitespace", "magazine_note", "quiet_story"}:
         return 642
     if variant == "recipe_memo":
@@ -790,6 +810,8 @@ def text_x_for_variant(variant: str, image_count: int = 0) -> float:
 
 
 def text_width_for_variant(variant: str, image_count: int = 0) -> float:
+    if variant == "quiet_story":
+        return 300
     if variant in {"magazine_whitespace", "magazine_note", "quiet_story"}:
         return 350
     if variant == "recipe_memo":

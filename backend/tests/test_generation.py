@@ -225,6 +225,27 @@ def test_fallback_map_journey_keeps_route_photos_spaced():
     assert not any(issue["type"] == "imageSpacing" for issue in issues)
 
 
+def test_fallback_dense_story_templates_use_sparse_captions_without_overlap():
+    generator = JournalGenerator(FailingClient(GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")))
+    request = JournalGenerationRequest(
+        description="这几张没有严格顺序，就是今天几个开心的小碎片。",
+        images=[
+            JournalImageInput(id=f"img_{index}", width=900 if index % 2 else 640, height=1200 if index % 2 else 480)
+            for index in range(1, 6)
+        ],
+        assets=load_assets(),
+        template_id="moodboard_stack",
+    )
+
+    layout = generator.generate(request)
+    section = layout.layout.sections[0]
+    issues = check_layout_rules(layout, request)
+
+    assert len([text for text in section.texts if text.role == "caption"]) < len(section.images)
+    assert not any(issue["severity"] == "high" for issue in issues)
+    assert not any(issue["type"] == "captionCoverage" for issue in issues)
+
+
 @pytest.mark.parametrize(
     ("template_id", "expected_section_variant"),
     [

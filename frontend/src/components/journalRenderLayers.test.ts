@@ -87,6 +87,29 @@ assertDeepEqual(visualOrderCaptionLayers.captionTexts.map((text) => text.paragra
   "窗边这杯咖啡"
 ]);
 
+const explicitCaptionImageLayout = makeLayout({
+  sections: [
+    {
+      sectionId: "section_1",
+      variant: "staggered_collage",
+      y: 180,
+      height: 760,
+      images: [
+        { imageId: "img_1", x: 92, y: 220, width: 420, height: 320, rotation: 0 },
+        { imageId: "img_2", x: 568, y: 260, width: 420, height: 320, rotation: 0 }
+      ],
+      texts: [
+        { role: "caption", imageId: "img_2", x: 588, y: 590, width: 360, fontSize: 24 },
+        { role: "body", x: 112, y: 700, width: 820, fontSize: 32 }
+      ],
+      decorations: []
+    }
+  ]
+});
+const explicitCaptionImageLayers = getJournalRenderLayers(explicitCaptionImageLayout);
+assertDeepEqual(explicitCaptionImageLayers.captionTexts.map((text) => text.paragraph), ["回程路上的云"]);
+assertDeepEqual(explicitCaptionImageLayers.captionTexts.map((text) => text.key), ["section_1-caption-img_2"]);
+
 const legacyLayout = makeLayout({ sections: [] });
 const legacyLayers = getJournalRenderLayers(legacyLayout);
 assertEqual(legacyLayers.usesSections, false);

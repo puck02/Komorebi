@@ -21,6 +21,30 @@ DECORATION_CATEGORY_LIMITS = {
     "tape": 8,
     "texture": 2,
 }
+DENSE_STORY_VARIANTS = {
+    "before_after",
+    "detail_index",
+    "field_notes",
+    "hero_memory",
+    "letter_page",
+    "magazine_note",
+    "moodboard_stack",
+    "quiet_story",
+    "ticket_day",
+}
+COLLAGE_OVERLAP_VARIANTS = {
+    "before_after",
+    "detail_index",
+    "field_notes",
+    "hero_memory",
+    "letter_page",
+    "magazine_note",
+    "moodboard_stack",
+    "quiet_story",
+    "split_scene",
+    "ticket_day",
+}
+MAX_COLLAGE_OVERLAP_RATIO = 0.55
 PLACEHOLDER_COPY = {
     "今天的照片",
     "照片说明",
@@ -258,11 +282,22 @@ def check_section_caption_coverage(
         for image_id in content_image_ids
         if image_id in caption_image_ids and image_id in image_by_id
     ]
-    if len(caption_placements) < len(expected_caption_images):
+    if len(caption_placements) < len(expected_caption_images) and section.variant not in DENSE_STORY_VARIANTS:
         return [rule_issue("captionCoverage", "medium", [section.section_id], "章节照片说明没有完整渲染")]
-    for image, caption in zip(expected_caption_images, caption_placements):
-        if not caption_attached_to_image(caption, image):
+    unmatched_images = expected_caption_images.copy()
+    ordered_fallback_images = expected_caption_images[: len(caption_placements)]
+    for index, caption in enumerate(caption_placements):
+        caption_image_id = getattr(caption, "image_id", None)
+        if caption_image_id:
+            matched_image = image_by_id.get(caption_image_id)
+            if matched_image not in unmatched_images or not caption_attached_to_image(caption, matched_image):
+                return [rule_issue("captionPlacement", "medium", [section.section_id], "照片说明没有贴近对应照片")]
+            unmatched_images.remove(matched_image)
+            continue
+        matched_image = ordered_fallback_images[index] if index < len(ordered_fallback_images) else None
+        if matched_image is None or not caption_attached_to_image(caption, matched_image):
             return [rule_issue("captionPlacement", "medium", [section.section_id], "照片说明没有贴近对应照片")]
+        unmatched_images.remove(matched_image)
     return []
 
 
@@ -513,6 +548,14 @@ def check_section_image_spacing(section: Any) -> list[dict[str, Any]]:
         first_rect = (first.x, first.y, first.width, first.height)
         for second in images[index + 1 :]:
             second_rect = (second.x, second.y, second.width, second.height)
+            if section.variant in COLLAGE_OVERLAP_VARIANTS:
+                overlap_area = rect_intersection_area(first_rect, second_rect)
+                if overlap_area <= 0:
+                    continue
+                smallest_area = min(first.width * first.height, second.width * second.height)
+                if smallest_area > 0 and overlap_area / smallest_area > MAX_COLLAGE_OVERLAP_RATIO:
+                    return [rule_issue("imageSpacing", "medium", [section.section_id], "章节内图片间距不足")]
+                continue
             if rects_overlap(expand_rect(first_rect, MIN_IMAGE_GAP / 2), expand_rect(second_rect, MIN_IMAGE_GAP / 2)):
                 return [rule_issue("imageSpacing", "medium", [section.section_id], "章节内图片间距不足")]
     return []
