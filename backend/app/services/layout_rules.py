@@ -193,7 +193,7 @@ def check_sections(layout: JournalLayout) -> list[dict[str, Any]]:
             issues.append(rule_issue("sectionCopyAlignment", "medium", [section.section_id], "章节正文描述了其他照片"))
         elif (section_copy_issue := check_section_copy_alignment(section.section_id, body_by_section_id[section.section_id])) is not None:
             issues.append(section_copy_issue)
-        issues.extend(check_section_caption_coverage(section, caption_image_ids))
+        issues.extend(check_section_caption_coverage(section, caption_image_ids, image_ids_by_section_id.get(section.section_id, [])))
         section_bottom = section.y + section.height
         content_bottom = max(
             [
@@ -244,14 +244,19 @@ def understanding_keywords(understanding: Any) -> list[str]:
     return [keyword for keyword in keywords if len(keyword) >= MIN_CAPTION_SIGNAL_CHARS]
 
 
-def check_section_caption_coverage(section: Any, caption_image_ids: set[str]) -> list[dict[str, Any]]:
+def check_section_caption_coverage(
+    section: Any,
+    caption_image_ids: set[str],
+    content_image_ids: list[str],
+) -> list[dict[str, Any]]:
     caption_placements = [text for text in section.texts if text.role == "caption"]
     if not caption_placements:
         return []
+    image_by_id = {image.image_id: image for image in section.images}
     expected_caption_images = [
-        image
-        for image in sorted(section.images, key=lambda item: (item.y, item.x))
-        if image.image_id in caption_image_ids
+        image_by_id[image_id]
+        for image_id in content_image_ids
+        if image_id in caption_image_ids and image_id in image_by_id
     ]
     if len(caption_placements) < len(expected_caption_images):
         return [rule_issue("captionCoverage", "medium", [section.section_id], "章节照片说明没有完整渲染")]

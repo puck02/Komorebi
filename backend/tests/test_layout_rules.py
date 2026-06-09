@@ -515,6 +515,40 @@ def test_layout_rules_report_caption_far_from_matching_photo():
     assert has_issue(issues, "captionPlacement", "medium", "照片说明没有贴近对应照片")
 
 
+def test_layout_rules_match_section_captions_by_story_order_not_visual_position():
+    payload = layout_payload(image_ids=["img_1", "img_2"])
+    payload["content"]["captions"] = [
+        {"imageId": "img_1", "text": "先拍到窗边咖啡"},
+        {"imageId": "img_2", "text": "后来走到路口"},
+    ]
+    payload["content"]["sections"] = [
+        {"id": "section_1", "title": "两张照片", "imageIds": ["img_1", "img_2"], "body": "咖啡喝完后，走到路口。", "mood": []}
+    ]
+    payload["layout"]["sections"] = [
+        {
+            "sectionId": "section_1",
+            "variant": "moodboard_stack",
+            "y": 220,
+            "height": 820,
+            "images": [
+                {"imageId": "img_1", "x": 424, "y": 360, "width": 360, "height": 270, "rotation": 4},
+                {"imageId": "img_2", "x": 92, "y": 260, "width": 420, "height": 320, "rotation": -4},
+            ],
+            "texts": [
+                {"role": "body", "x": 112, "y": 720, "width": 820, "fontSize": 32},
+                {"role": "caption", "x": 452, "y": 640, "width": 304, "fontSize": 22},
+                {"role": "caption", "x": 120, "y": 590, "width": 364, "fontSize": 22},
+            ],
+            "decorations": [],
+        }
+    ]
+    layout = JournalLayout.model_validate(payload)
+
+    issues = check_layout_rules(layout, generation_request(images=two_images()))
+
+    assert not has_issue(issues, "captionPlacement", "medium", "照片说明没有贴近对应照片")
+
+
 def test_layout_rules_use_actual_section_text_height_for_bounds():
     payload = layout_payload()
     long_body = "这是一段很长的正文，" * 30
