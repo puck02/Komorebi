@@ -17,7 +17,7 @@ from app.services.diary_copy import (
     split_sentences,
 )
 from app.services.layout_variants import ALLOWED_SECTION_VARIANTS, build_section_layout
-from app.services.journal_templates import TEMPLATE_SECTION_VARIANTS
+from app.services.journal_templates import SECTION_VARIANT_IMAGE_LIMITS, TEMPLATE_SECTION_VARIANTS
 from app.services.style_recipes import choose_asset_id, recipe_tags_for_section
 from app.services.story_planner import plan_content_sections, split_evenly
 
@@ -285,18 +285,18 @@ def fallback_title(request: JournalGenerationRequest) -> str:
 
 def fallback_sections(request: JournalGenerationRequest, body: str) -> list[dict[str, Any]]:
     mood_tags = normalized_mood_tags(request) or ["日常"]
-    section_bodies = fallback_section_bodies(body, max(ceil(len(request.images) / 3), 1))
+    image_groups = fallback_image_groups(request)
+    section_bodies = fallback_section_bodies(body, max(len(image_groups), 1))
     if not request.images:
         return [{"id": "section_1", "title": fallback_title(request), "imageIds": ["img_1"], "body": section_bodies[0], "mood": mood_tags}]
 
     sections: list[dict[str, Any]] = []
-    for start in range(0, len(request.images), 3):
-        group = request.images[start : start + 3]
+    for group in image_groups:
         section_index = len(sections)
         sections.append(
             {
                 "id": f"section_{section_index + 1}",
-                "title": fallback_title(request) if start == 0 else fallback_title_from_body(section_bodies[section_index]),
+                "title": fallback_title(request) if section_index == 0 else fallback_title_from_body(section_bodies[section_index]),
                 "imageIds": [image.id for image in group],
                 "body": section_bodies[section_index],
                 "mood": mood_tags,
@@ -304,6 +304,19 @@ def fallback_sections(request: JournalGenerationRequest, body: str) -> list[dict
             }
         )
     return sections
+
+
+def fallback_image_groups(request: JournalGenerationRequest) -> list[list[JournalImageInput]]:
+    if not request.images:
+        return []
+    variant = section_variant_for_template(request.template_id, len(request.images))
+    if variant == "split_scene" and len(request.images) >= 2:
+        return [group for group in split_evenly(request.images, 2) if group]
+    if variant == "chapter_scroll":
+        return [request.images[start : start + 3] for start in range(0, len(request.images), 3)]
+    group_size = SECTION_VARIANT_IMAGE_LIMITS.get(variant or "", 3)
+    group_size = max(min(group_size, len(request.images)), 1)
+    return [request.images[start : start + group_size] for start in range(0, len(request.images), group_size)]
 
 
 def normalized_template_id(request: JournalGenerationRequest) -> str | None:

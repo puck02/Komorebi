@@ -69,6 +69,37 @@ def test_fallback_layout_uses_selected_template_variant():
     assert layout.layout.sections[0].variant == "timeline_trip"
 
 
+def test_fallback_pocket_grid_keeps_many_photos_in_one_story_section():
+    request = generation_request(images=[JournalImageInput(id=f"img_{index}", width=640, height=480) for index in range(1, 7)], template_id="pocket_grid")
+
+    layout = JournalLayout.model_validate(sanitize_model_layout(build_fallback_layout(request), request))
+
+    assert [section.image_ids for section in layout.content.sections] == [[f"img_{index}" for index in range(1, 7)]]
+    assert layout.layout.sections[0].variant == "pocket_grid"
+
+
+def test_fallback_split_scene_creates_two_story_sections():
+    request = generation_request(images=[JournalImageInput(id=f"img_{index}", width=640, height=480) for index in range(1, 5)], template_id="split_scene")
+
+    layout = JournalLayout.model_validate(sanitize_model_layout(build_fallback_layout(request), request))
+
+    assert [section.image_ids for section in layout.content.sections] == [["img_1", "img_2"], ["img_3", "img_4"]]
+    assert [section.variant for section in layout.layout.sections] == ["split_scene", "split_scene"]
+
+
+def test_fallback_chapter_scroll_keeps_long_story_as_readable_chapters():
+    request = generation_request(images=[JournalImageInput(id=f"img_{index}", width=640, height=480) for index in range(1, 8)], template_id="chapter_scroll")
+
+    layout = JournalLayout.model_validate(sanitize_model_layout(build_fallback_layout(request), request))
+
+    assert [section.image_ids for section in layout.content.sections] == [
+        ["img_1", "img_2", "img_3"],
+        ["img_4", "img_5", "img_6"],
+        ["img_7"],
+    ]
+    assert [section.variant for section in layout.layout.sections] == ["chapter_scroll", "chapter_scroll", "chapter_scroll"]
+
+
 @pytest.mark.parametrize(
     ("template_id", "expected_section_variant"),
     [
