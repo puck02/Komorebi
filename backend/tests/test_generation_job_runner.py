@@ -15,7 +15,7 @@ from app.models.image import Image
 from app.models.journal import Journal
 from app.models.user import User
 from app.schemas.journal import JournalLayout
-from app.services.generation_jobs import recover_incomplete_generation_jobs, run_generation_job
+from app.services.generation_jobs import claim_generation_job, recover_incomplete_generation_jobs, run_generation_job
 from app.services.journal_agent import JournalAgentResult
 from app.services.journal_generator import GenerationError
 from app.services.openai_client import OpenAIConfigurationError
@@ -38,6 +38,36 @@ def test_runner_saves_completed_journal_and_progress(tmp_path):
         assert job.error_message is None
         assert agent.request.images[0].data_url.startswith("data:image/webp;base64,")
         assert [stage for stage, _round, _score in agent.progress_events] == ["generating_draft", "reviewing", "reviewed"]
+
+
+def test_runner_does_not_recreate_journal_for_completed_job(tmp_path):
+    session_factory = make_session_factory()
+    job_id = seed_job(session_factory, tmp_path)
+    run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: FakeAgent())
+    with session_factory() as db:
+        completed_job = db.get(GenerationJob, job_id)
+        first_journal_id = completed_job.journal_id
+        journal_count = db.query(Journal).count()
+
+    run_generation_job(job_id, session_factory=session_factory, agent_factory=lambda: FakeAgent())
+
+    with session_factory() as db:
+        rerun_job = db.get(GenerationJob, job_id)
+        assert rerun_job.status == "completed"
+        assert rerun_job.journal_id == first_journal_id
+        assert db.query(Journal).count() == journal_count
+
+
+def test_runner_claims_queued_job_only_once(tmp_path):
+    session_factory = make_session_factory()
+    job_id = seed_job(session_factory, tmp_path)
+
+    with session_factory() as db:
+        assert claim_generation_job(db, job_id) is True
+        assert claim_generation_job(db, job_id) is False
+        job = db.get(GenerationJob, job_id)
+        assert job.status == "running"
+        assert job.stage == "understanding_photos"
 
 
 def test_runner_passes_user_context_to_agent(tmp_path):

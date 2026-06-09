@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Callable
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.session import SessionLocal
@@ -56,6 +56,9 @@ def run_generation_job(
         job = db.get(GenerationJob, job_id)
         if job is None:
             return
+        if not claim_generation_job(db, job_id):
+            return
+        db.refresh(job)
         try:
             payload = JournalGenerateRequest.model_validate(job.payload_json)
             images = get_job_images(db, job.user_id, payload.image_ids)
@@ -69,9 +72,6 @@ def run_generation_job(
                 mood_tags=payload.mood_tags,
                 template_id=payload.template_id,
             )
-            job.status = "running"
-            job.stage = "understanding_photos"
-            db.commit()
             log_agent_event(
                 "agent.job_started",
                 job_id=job.id,
@@ -122,6 +122,16 @@ def run_generation_job(
                     error_type=exc.__class__.__name__,
                     error_message=str(exc) or exc.__class__.__name__,
                 )
+
+
+def claim_generation_job(db: Session, job_id: str) -> bool:
+    result = db.execute(
+        update(GenerationJob)
+        .where(GenerationJob.id == job_id, GenerationJob.status == "queued")
+        .values(status="running", stage="understanding_photos")
+    )
+    db.commit()
+    return result.rowcount == 1
 
 
 def update_job_progress(
