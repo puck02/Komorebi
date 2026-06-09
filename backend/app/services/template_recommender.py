@@ -3,7 +3,13 @@ from typing import Any, Protocol
 
 import httpx
 
-from app.services.openai_client import OPENAI_TIMEOUT_SECONDS, parse_model_json_content, source_image_parts
+from app.services.openai_client import (
+    OPENAI_TIMEOUT_SECONDS,
+    build_chat_completion_payload,
+    is_response_format_unsupported_response,
+    parse_model_json_content,
+    source_image_parts,
+)
 
 
 @dataclass(frozen=True)
@@ -91,20 +97,7 @@ class OpenAITemplateVisionClient:
             *source_image_parts(request),
         ]
         try:
-            response = httpx.post(
-                f"{self.base_url.rstrip('/')}/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": self.model,
-                    "messages": [{"role": "user", "content": content}],
-                    "response_format": {"type": "json_object"},
-                },
-                timeout=min(OPENAI_TIMEOUT_SECONDS, 45),
-                trust_env=True,
-            )
+            response = self._post_understanding(content, use_response_format=True)
             response.raise_for_status()
             payload = response.json()
             model_content = payload["choices"][0]["message"]["content"]
@@ -116,6 +109,21 @@ class OpenAITemplateVisionClient:
         if not isinstance(raw_items, list):
             raise TemplateRecommendationError("Template image understanding missing")
         return [item for item in raw_items if isinstance(item, dict)]
+
+    def _post_understanding(self, content: list[dict[str, Any]], *, use_response_format: bool) -> httpx.Response:
+        response = httpx.post(
+            f"{self.base_url.rstrip('/')}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            json=build_chat_completion_payload(self.model, content, use_response_format=use_response_format),
+            timeout=min(OPENAI_TIMEOUT_SECONDS, 45),
+            trust_env=True,
+        )
+        if use_response_format and is_response_format_unsupported_response(response):
+            return self._post_understanding(content, use_response_format=False)
+        return response
 
 
 def recommend_templates(

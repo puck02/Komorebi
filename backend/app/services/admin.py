@@ -9,7 +9,12 @@ from app.core.config import get_settings
 from app.models.ai_settings import AiSettings
 from app.models.user import User
 from app.schemas.admin import AiConnectionTestRead
-from app.services.openai_client import DEFAULT_OPENAI_BASE_URL, OPENAI_TIMEOUT_SECONDS
+from app.services.openai_client import (
+    DEFAULT_OPENAI_BASE_URL,
+    OPENAI_TIMEOUT_SECONDS,
+    build_chat_completion_payload,
+    is_response_format_unsupported_response,
+)
 
 DEFAULT_AI_SETTINGS_ID = "default"
 AI_CONNECTION_TEST_MAX_TIMEOUT = min(OPENAI_TIMEOUT_SECONDS, 30)
@@ -81,19 +86,11 @@ def test_ai_service_connection(db: Session) -> AiConnectionTestRead:
 
     base_url = settings.base_url or DEFAULT_OPENAI_BASE_URL
     try:
-        response = httpx.post(
-            f"{base_url.rstrip('/')}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {settings.api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": settings.model,
-                "messages": [{"role": "user", "content": "Return only this JSON object: {\"ok\": true}"}],
-                "response_format": {"type": "json_object"},
-            },
-            timeout=AI_CONNECTION_TEST_MAX_TIMEOUT,
-            trust_env=True,
+        response = post_ai_connection_test(
+            base_url=base_url,
+            api_key=settings.api_key,
+            model=settings.model,
+            use_response_format=True,
         )
     except httpx.RequestError:
         return AiConnectionTestRead(
@@ -143,6 +140,37 @@ def test_ai_service_connection(db: Session) -> AiConnectionTestRead:
         model=settings.model,
         statusCode=response.status_code,
     )
+
+
+def post_ai_connection_test(
+    *,
+    base_url: str,
+    api_key: str,
+    model: str,
+    use_response_format: bool,
+) -> httpx.Response:
+    response = httpx.post(
+        f"{base_url.rstrip('/')}/chat/completions",
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        json=build_chat_completion_payload(
+            model,
+            "Return only this JSON object: {\"ok\": true}",
+            use_response_format=use_response_format,
+        ),
+        timeout=AI_CONNECTION_TEST_MAX_TIMEOUT,
+        trust_env=True,
+    )
+    if use_response_format and is_response_format_unsupported_response(response):
+        return post_ai_connection_test(
+            base_url=base_url,
+            api_key=api_key,
+            model=model,
+            use_response_format=False,
+        )
+    return response
 
 
 def is_chat_completion_json_response(response: httpx.Response) -> bool:

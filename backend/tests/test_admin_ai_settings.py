@@ -154,6 +154,46 @@ def test_admin_can_test_ai_connection_success(session_factory, monkeypatch):
     assert captured["json"]["model"] == "gpt-5.5"
 
 
+def test_ai_connection_test_retries_without_response_format_for_compatible_provider(session_factory, monkeypatch):
+    captured_payloads = []
+
+    def fake_post(url, **kwargs):
+        request = httpx.Request("POST", url)
+        captured_payloads.append(kwargs["json"])
+        if len(captured_payloads) == 1:
+            return httpx.Response(
+                400,
+                request=request,
+                json={"error": {"message": "response_format is not supported"}},
+            )
+        return httpx.Response(
+            200,
+            request=request,
+            json={"choices": [{"message": {"content": '{"ok":true}'}}]},
+        )
+
+    monkeypatch.setattr("app.services.admin.httpx.post", fake_post)
+    with session_factory() as db:
+        admin, _other = seed_users(db)
+        update_ai_settings(
+            AiSettingsUpdate(
+                baseUrl="https://example.test/v1",
+                apiKey="dummy-admin-api-key",
+                model="gpt-5.5",
+                reviewModel="gpt-5.4-mini",
+            ),
+            current_user=admin,
+            db=db,
+        )
+
+        response = call_test_ai_connection(current_user=admin, db=db)
+
+    assert response.ok is True
+    assert response.status == "ok"
+    assert captured_payloads[0]["response_format"] == {"type": "json_object"}
+    assert "response_format" not in captured_payloads[1]
+
+
 def test_ai_connection_test_reports_missing_key_without_requesting_provider(session_factory, monkeypatch):
     requested = False
 

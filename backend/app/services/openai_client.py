@@ -91,7 +91,9 @@ class OpenAIJournalClient:
         return self._post_json(self.model, content)
 
     def _post_json(self, model: str, content: str | list[dict[str, Any]]) -> dict[str, Any]:
-        for attempt in range(1, OPENAI_MAX_ATTEMPTS + 1):
+        attempt = 1
+        use_response_format = True
+        while attempt <= OPENAI_MAX_ATTEMPTS:
             try:
                 response = httpx.post(
                     f"{self.base_url.rstrip('/')}/chat/completions",
@@ -99,17 +101,22 @@ class OpenAIJournalClient:
                         "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json",
                     },
-                    json={
-                        "model": model,
-                        "messages": [{"role": "user", "content": content}],
-                        "response_format": {"type": "json_object"},
-                    },
+                    json=build_chat_completion_payload(model, content, use_response_format=use_response_format),
                     timeout=OPENAI_TIMEOUT_SECONDS,
                     trust_env=True,
                 )
                 response.raise_for_status()
                 break
             except httpx.HTTPStatusError as exc:
+                if use_response_format and is_response_format_unsupported_response(exc.response):
+                    log_agent_event(
+                        "openai.response_format_fallback",
+                        attempt=attempt,
+                        model=model,
+                        status_code=exc.response.status_code,
+                    )
+                    use_response_format = False
+                    continue
                 if is_transient_status_error(exc) and attempt < OPENAI_MAX_ATTEMPTS:
                     log_agent_event(
                         "openai.status_retry",
@@ -118,6 +125,7 @@ class OpenAIJournalClient:
                         model=model,
                         status_code=exc.response.status_code,
                     )
+                    attempt += 1
                     continue
                 raise GenerationError(f"AI 服务返回 {exc.response.status_code}，请检查模型、Key 或第三方渠道配置") from exc
             except httpx.RequestError as exc:
@@ -131,6 +139,7 @@ class OpenAIJournalClient:
                 )
                 if attempt == OPENAI_MAX_ATTEMPTS:
                     raise GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置") from exc
+                attempt += 1
 
         try:
             payload = response.json()
@@ -142,6 +151,42 @@ class OpenAIJournalClient:
 
 def is_transient_status_error(error: httpx.HTTPStatusError) -> bool:
     return 500 <= error.response.status_code < 600
+
+
+def build_chat_completion_payload(
+    model: str,
+    content: str | list[dict[str, Any]],
+    *,
+    use_response_format: bool = True,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "model": model,
+        "messages": [{"role": "user", "content": content}],
+    }
+    if use_response_format:
+        payload["response_format"] = {"type": "json_object"}
+    return payload
+
+
+def is_response_format_unsupported_response(response: httpx.Response) -> bool:
+    if response.status_code != 400:
+        return False
+    text = response.text.lower()
+    if "response_format" not in text:
+        return False
+    return any(
+        marker in text
+        for marker in (
+            "unsupported",
+            "not support",
+            "not supported",
+            "unknown",
+            "unrecognized",
+            "not allowed",
+            "extra",
+            "invalid",
+        )
+    )
 
 
 def parse_model_json_content(content: Any) -> dict[str, Any]:

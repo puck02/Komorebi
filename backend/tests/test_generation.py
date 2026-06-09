@@ -2265,6 +2265,34 @@ def test_openai_client_uses_configured_base_url(monkeypatch):
     assert captured["trust_env"] is True
 
 
+def test_openai_client_retries_without_response_format_for_compatible_provider(monkeypatch):
+    captured_payloads = []
+
+    def fake_post(url, **kwargs):
+        request = httpx.Request("POST", url)
+        captured_payloads.append(kwargs["json"])
+        if len(captured_payloads) == 1:
+            return httpx.Response(
+                400,
+                request=request,
+                json={"error": {"message": "response_format is not supported"}},
+            )
+        return httpx.Response(
+            200,
+            request=request,
+            json={"choices": [{"message": {"content": json.dumps(valid_model_json())}}]},
+        )
+
+    monkeypatch.setattr("app.services.openai_client.httpx.post", fake_post)
+    client = OpenAIJournalClient(api_key="test-key", base_url="https://provider.example/v1")
+
+    layout = client.generate_layout(generation_request())
+
+    assert layout["content"]["title"] == "慢下来的周末"
+    assert captured_payloads[0]["response_format"] == {"type": "json_object"}
+    assert "response_format" not in captured_payloads[1]
+
+
 def test_generation_prompt_requests_section_structure():
     prompt = build_generation_prompt(generation_request(images=three_images()))
 

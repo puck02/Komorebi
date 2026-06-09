@@ -1,4 +1,7 @@
+import json
 from pathlib import Path
+
+import httpx
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -12,6 +15,7 @@ from app.models.image import Image
 from app.models.user import User
 from app.schemas.journal import JournalTemplateRecommendRequest
 from app.services.template_recommender import (
+    OpenAITemplateVisionClient,
     TEMPLATE_PROFILES,
     TemplateRecommendationImage,
     TemplateRecommendationRequest,
@@ -190,6 +194,64 @@ def test_recommend_journal_templates_route_returns_local_fallback_without_testcl
     finally:
         Base.metadata.drop_all(bind=engine)
         get_settings.cache_clear()
+
+
+def test_openai_template_vision_client_retries_without_response_format(monkeypatch):
+    captured_payloads = []
+
+    def fake_post(url, **kwargs):
+        request = httpx.Request("POST", url)
+        captured_payloads.append(kwargs["json"])
+        if len(captured_payloads) == 1:
+            return httpx.Response(
+                400,
+                request=request,
+                json={"error": {"message": "response_format is not supported"}},
+            )
+        return httpx.Response(
+            200,
+            request=request,
+            json={
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "imageUnderstanding": [
+                                        {
+                                            "imageId": "img_1",
+                                            "summary": "桌上有咖啡和小票",
+                                            "scene": "咖啡店",
+                                            "subjects": ["咖啡", "小票"],
+                                            "mood": ["安静"],
+                                        }
+                                    ]
+                                }
+                            )
+                        }
+                    }
+                ]
+            },
+        )
+
+    monkeypatch.setattr("app.services.template_recommender.httpx.post", fake_post)
+    client = OpenAITemplateVisionClient(
+        api_key="test-key",
+        base_url="https://provider.example/v1",
+        model="gpt-5.5",
+    )
+
+    result = client.understand_images(
+        TemplateRecommendationRequest(
+            description="咖啡店小记",
+            images=[TemplateRecommendationImage(id="img_1", width=640, height=480)],
+            mood_tags=[],
+        )
+    )
+
+    assert result[0]["scene"] == "咖啡店"
+    assert captured_payloads[0]["response_format"] == {"type": "json_object"}
+    assert "response_format" not in captured_payloads[1]
 
 
 class FakeVisionClient:
