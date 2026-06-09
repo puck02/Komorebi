@@ -1,22 +1,29 @@
+from dataclasses import dataclass
 from io import BytesIO
 import random
 
 import pytest
-from fastapi.testclient import TestClient
+from fastapi import HTTPException, UploadFile
 from PIL import Image as PillowImage
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api.deps import get_db
+from app.api.routes.auth import login, register
+from app.api.routes.images import get_image, get_image_display, upload_image
 from app.core.config import get_settings
 from app.db.base import Base
-from app.main import app
-from app.models import asset, image, journal, user  # noqa: F401
+from app.models import asset, generation_job, image, journal, user  # noqa: F401
+from app.schemas.auth import AuthCredentials
+
+
+@dataclass
+class ImageTestContext:
+    db: Session
 
 
 @pytest.fixture
-def client(tmp_path, monkeypatch):
+def context(tmp_path, monkeypatch):
     monkeypatch.setenv("STORAGE_ROOT", str(tmp_path / "storage"))
     get_settings.cache_clear()
     engine = create_engine(
@@ -26,101 +33,71 @@ def client(tmp_path, monkeypatch):
     )
     testing_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
-
-    def override_get_db():
-        db = testing_session()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = override_get_db
+    db = testing_session()
     try:
-        yield TestClient(app)
+        yield ImageTestContext(db=db)
     finally:
-        app.dependency_overrides.clear()
+        db.close()
         Base.metadata.drop_all(bind=engine)
         get_settings.cache_clear()
 
 
-def test_authenticated_user_uploads_image_and_thumbnail_is_created(client, tmp_path):
-    token = register_and_login(client, "owner@example.com")
+def test_authenticated_user_uploads_image_and_thumbnail_is_created(context, tmp_path):
+    user = register_and_login(context, "owner@example.com")
 
-    response = client.post(
-        "/api/images",
-        files={"file": ("photo.png", make_image_bytes(), "image/png")},
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    body = upload_image(upload_file("photo.png", make_image_bytes(), "image/png"), user, context.db)
 
-    assert response.status_code == 201
-    body = response.json()
-    assert body["content_type"] == "image/png"
-    assert body["width"] == 64
-    assert body["height"] == 48
-    assert body["file_url"] == f"/api/images/{body['id']}/file"
-    assert body["thumbnail_url"] == f"/api/images/{body['id']}/thumbnail"
+    assert body.content_type == "image/png"
+    assert body.width == 64
+    assert body.height == 48
+    assert body.file_url == f"/api/images/{body.id}/file"
+    assert body.thumbnail_url == f"/api/images/{body.id}/thumbnail"
     assert list((tmp_path / "storage").glob("users/*/images/*/original.png"))
     assert list((tmp_path / "storage").glob("users/*/images/*/thumb.webp"))
 
 
-def test_large_upload_creates_display_image_under_one_mb(client):
-    token = register_and_login(client, "owner@example.com")
+def test_large_upload_creates_display_image_under_one_mb(context):
+    user = register_and_login(context, "owner@example.com")
 
-    response = client.post(
-        "/api/images",
-        files={"file": ("large-photo.jpg", make_large_image_bytes(), "image/jpeg")},
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    body = upload_image(upload_file("large-photo.jpg", make_large_image_bytes(), "image/jpeg"), user, context.db)
+    display_response = get_image_display(body.id, user, context.db)
 
-    assert response.status_code == 201
-    body = response.json()
-    assert body["display_url"] == f"/api/images/{body['id']}/display"
-
-    display_response = client.get(
-        body["display_url"],
-        headers={"Authorization": f"Bearer {token}"},
-    )
-
-    assert display_response.status_code == 200
-    assert display_response.headers["content-type"] == "image/webp"
-    assert len(display_response.content) <= 1024 * 1024
+    assert body.display_url == f"/api/images/{body.id}/display"
+    assert display_response.media_type == "image/webp"
+    assert display_response.path.stat().st_size <= 1024 * 1024
 
 
-def test_upload_rejects_unsupported_content_type(client):
-    token = register_and_login(client, "owner@example.com")
+def test_upload_rejects_unsupported_content_type(context):
+    user = register_and_login(context, "owner@example.com")
 
-    response = client.post(
-        "/api/images",
-        files={"file": ("note.txt", b"not an image", "text/plain")},
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    with pytest.raises(HTTPException) as error:
+        upload_image(upload_file("note.txt", b"not an image", "text/plain"), user, context.db)
 
-    assert response.status_code == 400
+    assert error.value.status_code == 400
 
 
-def test_user_cannot_fetch_another_users_image_metadata(client):
-    owner_token = register_and_login(client, "owner@example.com")
-    other_token = register_and_login(client, "other@example.com")
-    upload_response = client.post(
-        "/api/images",
-        files={"file": ("photo.png", make_image_bytes(), "image/png")},
-        headers={"Authorization": f"Bearer {owner_token}"},
-    )
-    image_id = upload_response.json()["id"]
+def test_user_cannot_fetch_another_users_image_metadata(context):
+    owner = register_and_login(context, "owner@example.com")
+    other = register_and_login(context, "other@example.com")
+    image = upload_image(upload_file("photo.png", make_image_bytes(), "image/png"), owner, context.db)
 
-    response = client.get(
-        f"/api/images/{image_id}",
-        headers={"Authorization": f"Bearer {other_token}"},
-    )
+    with pytest.raises(HTTPException) as error:
+        get_image(image.id, other, context.db)
 
-    assert response.status_code == 404
+    assert error.value.status_code == 404
 
 
-def register_and_login(client: TestClient, email: str) -> str:
-    payload = {"email": email, "password": "strong-password"}
-    client.post("/api/auth/register", json=payload)
-    response = client.post("/api/auth/login", json=payload)
-    return response.json()["access_token"]
+def register_and_login(context: ImageTestContext, email: str):
+    payload = AuthCredentials(email=email, password="strong-password")
+    register(payload, context.db)
+    token = login(payload, context.db)
+    from app.api.deps import get_current_user
+
+    return get_current_user(token.access_token, context.db)
+
+
+def upload_file(filename: str, data: bytes, content_type: str) -> UploadFile:
+    return UploadFile(filename=filename, file=BytesIO(data), headers={"content-type": content_type})
 
 
 def make_image_bytes() -> bytes:

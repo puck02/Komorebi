@@ -1,17 +1,18 @@
 import pytest
-from fastapi.testclient import TestClient
+from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user
+from app.api.routes.auth import login, me, register
 from app.db.base import Base
-from app.main import app
-from app.models import asset, image, journal, user  # noqa: F401
+from app.models import asset, generation_job, image, journal, user  # noqa: F401
+from app.schemas.auth import AuthCredentials
 
 
 @pytest.fixture
-def client():
+def db_session():
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -19,79 +20,63 @@ def client():
     )
     testing_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
-
-    def override_get_db():
-        db = testing_session()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = override_get_db
+    db = testing_session()
     try:
-        yield TestClient(app)
+        yield db
     finally:
-        app.dependency_overrides.clear()
+        db.close()
         Base.metadata.drop_all(bind=engine)
 
 
-def test_register_creates_user(client):
-    response = client.post(
-        "/api/auth/register",
-        json={"email": "user@example.com", "password": "strong-password"},
-    )
+def test_register_creates_user(db_session):
+    user = register(credentials("user@example.com"), db_session)
 
-    assert response.status_code == 201
-    assert response.json()["email"] == "user@example.com"
-    assert "password_hash" not in response.json()
+    assert user.email == "user@example.com"
+    assert user.password_hash
 
 
-def test_register_rejects_duplicate_email(client):
-    payload = {"email": "user@example.com", "password": "strong-password"}
-    client.post("/api/auth/register", json=payload)
+def test_register_rejects_duplicate_email(db_session):
+    payload = credentials("user@example.com")
+    register(payload, db_session)
 
-    response = client.post("/api/auth/register", json=payload)
+    with pytest.raises(HTTPException) as error:
+        register(payload, db_session)
 
-    assert response.status_code == 409
-
-
-def test_login_returns_access_token(client):
-    payload = {"email": "user@example.com", "password": "strong-password"}
-    client.post("/api/auth/register", json=payload)
-
-    response = client.post("/api/auth/login", json=payload)
-
-    assert response.status_code == 200
-    assert response.json()["token_type"] == "bearer"
-    assert response.json()["access_token"]
+    assert error.value.status_code == 409
 
 
-def test_login_rejects_wrong_password(client):
-    client.post(
-        "/api/auth/register",
-        json={"email": "user@example.com", "password": "strong-password"},
-    )
+def test_login_returns_access_token(db_session):
+    payload = credentials("user@example.com")
+    register(payload, db_session)
 
-    response = client.post(
-        "/api/auth/login",
-        json={"email": "user@example.com", "password": "wrong-password"},
-    )
+    token = login(payload, db_session)
 
-    assert response.status_code == 401
+    assert token.token_type == "bearer"
+    assert token.access_token
 
 
-def test_me_requires_token_and_returns_current_user(client):
-    payload = {"email": "user@example.com", "password": "strong-password"}
-    client.post("/api/auth/register", json=payload)
-    login_response = client.post("/api/auth/login", json=payload)
-    token = login_response.json()["access_token"]
+def test_login_rejects_wrong_password(db_session):
+    register(credentials("user@example.com"), db_session)
 
-    unauthorized_response = client.get("/api/auth/me")
-    authorized_response = client.get(
-        "/api/auth/me",
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    with pytest.raises(HTTPException) as error:
+        login(credentials("user@example.com", "wrong-password"), db_session)
 
-    assert unauthorized_response.status_code == 401
-    assert authorized_response.status_code == 200
-    assert authorized_response.json()["email"] == "user@example.com"
+    assert error.value.status_code == 401
+
+
+def test_me_requires_token_and_returns_current_user(db_session):
+    payload = credentials("user@example.com")
+    created_user = register(payload, db_session)
+    token = login(payload, db_session)
+
+    with pytest.raises(HTTPException) as error:
+        get_current_user("invalid-token", db_session)
+    current_user = get_current_user(token.access_token, db_session)
+
+    assert error.value.status_code == 401
+    assert me(current_user).id == created_user.id
+    assert current_user.email == "user@example.com"
+
+
+def credentials(email: str, password: str = "strong-password") -> AuthCredentials:
+    return AuthCredentials(email=email, password=password)

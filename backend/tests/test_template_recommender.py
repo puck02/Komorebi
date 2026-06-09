@@ -30,7 +30,7 @@ def test_recommender_uses_image_understanding_for_template_match():
     assert result["source"] == "ai"
     assert result["imageUnderstanding"]
     assert [item["templateId"] for item in result["recommendations"]][:1] == ["ticket_day"]
-    assert "咖啡" in result["recommendations"][0]["reason"] or "小票" in result["recommendations"][0]["reason"]
+    assert "票据" in result["recommendations"][0]["reason"] or "小票" in result["recommendations"][0]["reason"]
 
 
 def test_recommender_falls_back_to_local_rules_when_ai_fails():
@@ -46,6 +46,35 @@ def test_recommender_falls_back_to_local_rules_when_ai_fails():
     assert result["message"]
     assert len(result["recommendations"]) == 3
     assert "chapter_scroll" in [item["templateId"] for item in result["recommendations"]]
+
+
+def test_recommender_keeps_recommended_templates_narratively_distinct():
+    request = TemplateRecommendationRequest(
+        description="从早到晚的一整天，有路上、咖啡、展览和后来回家的片段",
+        images=[image(f"img_{index}", 640, 480) for index in range(1, 8)],
+        mood_tags=[],
+    )
+
+    result = recommend_templates(request)
+    template_ids = [item["templateId"] for item in result["recommendations"]]
+
+    assert len(template_ids) == 3
+    assert "chapter_scroll" in template_ids
+    assert len(template_ids) == len(set(template_ids))
+    assert not {"chapter_scroll", "timeline_trip"}.issubset(set(template_ids))
+
+
+def test_recommender_detects_two_scene_story_from_image_understanding():
+    request = TemplateRecommendationRequest(
+        description="上午和下午像两个状态",
+        images=[image("img_1", 640, 480), image("img_2", 640, 480)],
+        mood_tags=[],
+    )
+
+    result = recommend_templates(request, TwoSceneVisionClient())
+
+    assert "split_scene" in [item["templateId"] for item in result["recommendations"]]
+    assert any("两个场景" in item["reason"] for item in result["recommendations"])
 
 
 def test_recommend_journal_templates_route_returns_local_fallback_without_testclient(tmp_path, monkeypatch):
@@ -130,6 +159,26 @@ class FailingVisionClient:
         from app.services.template_recommender import TemplateRecommendationError
 
         raise TemplateRecommendationError("failed")
+
+
+class TwoSceneVisionClient:
+    def understand_images(self, request):
+        return [
+            {
+                "imageId": "img_1",
+                "summary": "室内桌边有笔记本和茶杯",
+                "scene": "室内",
+                "subjects": ["笔记本", "茶杯"],
+                "mood": ["安静"],
+            },
+            {
+                "imageId": "img_2",
+                "summary": "室外路边有路灯和街景",
+                "scene": "室外",
+                "subjects": ["路灯", "街景"],
+                "mood": ["松快"],
+            },
+        ]
 
 
 def image(image_id: str, width: int, height: int) -> TemplateRecommendationImage:

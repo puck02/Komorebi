@@ -321,22 +321,30 @@ def section_variant_for_template(template_id: str | None, image_count: int) -> s
 def fallback_section_bodies(body: str, section_count: int) -> list[str]:
     units = fallback_text_units(body)
     if len(units) >= section_count:
+        needs_contextual_note = len(units) < section_count * 2
         return [
-            fallback_section_note(group, fallback=body, index=index)
+            fallback_section_note(group, fallback=body, index=index, needs_contextual_note=needs_contextual_note)
             for index, group in enumerate(split_evenly(units, section_count))
             if group
         ]
     return [body for _ in range(section_count)]
 
 
-def fallback_section_note(units: list[str], fallback: str, index: int = 0) -> str:
+def fallback_section_note(
+    units: list[str],
+    fallback: str,
+    index: int = 0,
+    needs_contextual_note: bool = False,
+) -> str:
     cleaned_units = [unit.strip(" 。！？!?；;，,、") for unit in units if unit.strip(" 。！？!?；;，,、")]
     text = normalize_diary_text("，".join(cleaned_units) + "。", fallback=fallback)
     if len(cleaned_units) == 1:
         prefix = FALLBACK_SINGLE_SECTION_NOTE_PREFIXES[index % len(FALLBACK_SINGLE_SECTION_NOTE_PREFIXES)]
         return normalize_diary_text(f"{prefix}{cleaned_units[0]}。", fallback=text)
     if len(cleaned_units) == 2:
-        return normalize_diary_text(f"{cleaned_units[0]}，{cleaned_units[1]}。", fallback=text)
+        if not needs_contextual_note:
+            return text
+        return normalize_diary_text(f"这一段先记{cleaned_units[0]}，也记一下{cleaned_units[1]}。", fallback=text)
     if len(cleaned_units) >= 3:
         prefix = FALLBACK_SECTION_NOTE_PREFIXES[index % len(FALLBACK_SECTION_NOTE_PREFIXES)]
         return normalize_diary_text(f"{prefix}{'、'.join(cleaned_units)}。", fallback=text)

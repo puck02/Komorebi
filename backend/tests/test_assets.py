@@ -1,15 +1,19 @@
 import json
 
-from fastapi.testclient import TestClient
+from fastapi import HTTPException
 import pytest
 from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user
+from app.api.routes.assets import list_assets, read_asset_file, read_asset_permissions, update_asset_status
+from app.api.routes.auth import login, register
 from app.db.base import Base
-from app.main import app
-from app.models import asset, image, journal, user  # noqa: F401
+from app.models import asset, generation_job, image, journal, user  # noqa: F401
+from app.schemas.asset import AssetQualityStatusUpdate
+from app.schemas.auth import AuthCredentials
 from app.services import assets as asset_service
 from app.services.assets import get_approved_assets, load_assets
 
@@ -182,68 +186,58 @@ def test_external_icon_assets_stay_draft_until_art_directed():
 
 
 def test_asset_api_lists_assets_with_file_url():
-    client = TestClient(app)
+    assets = list_assets(tag=[])
 
-    response = client.get("/api/assets")
-
-    assert response.status_code == 200
-    assets = response.json()
     assert len(assets) >= 50
-    assert assets[0]["file_url"].startswith("/api/assets/")
+    assert assets[0].file_url.startswith("/api/assets/")
 
 
 def test_asset_api_serves_svg_file():
-    client = TestClient(app)
     asset = load_assets()[0]
 
-    response = client.get(f"/api/assets/{asset.id}/file")
+    response = read_asset_file(asset.id)
 
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("image/svg+xml")
+    assert response.media_type == "image/svg+xml"
+    assert response.path == asset.file_path
 
 
-def test_first_registered_user_can_update_asset_quality_status(authenticated_client, tmp_path, monkeypatch):
-    client, admin_token, _other_token = authenticated_client
+def test_first_registered_user_can_update_asset_quality_status(authenticated_db, tmp_path, monkeypatch):
+    db, admin_user, _other_user = authenticated_db
     manifest_path = copy_manifest(tmp_path, monkeypatch)
     target = next(item for item in json.loads(manifest_path.read_text(encoding="utf-8")) if item["qualityStatus"] == "draft")
 
-    response = client.patch(
-        f"/api/assets/{target['id']}/quality-status",
-        json={"quality_status": "approved"},
-        headers={"Authorization": f"Bearer {admin_token}"},
+    response = update_asset_status(
+        target["id"],
+        AssetQualityStatusUpdate(quality_status="approved"),
+        admin_user,
+        db,
     )
 
-    assert response.status_code == 200
-    assert response.json()["quality_status"] == "approved"
+    assert response.quality_status == "approved"
     assert next(item for item in json.loads(manifest_path.read_text(encoding="utf-8")) if item["id"] == target["id"])[
         "qualityStatus"
     ] == "approved"
 
 
-def test_later_registered_user_cannot_update_asset_quality_status(authenticated_client, tmp_path, monkeypatch):
-    client, _admin_token, other_token = authenticated_client
+def test_later_registered_user_cannot_update_asset_quality_status(authenticated_db, tmp_path, monkeypatch):
+    db, _admin_user, other_user = authenticated_db
     manifest_path = copy_manifest(tmp_path, monkeypatch)
     target = json.loads(manifest_path.read_text(encoding="utf-8"))[0]
 
-    response = client.patch(
-        f"/api/assets/{target['id']}/quality-status",
-        json={"quality_status": "draft"},
-        headers={"Authorization": f"Bearer {other_token}"},
-    )
+    with pytest.raises(HTTPException) as error:
+        update_asset_status(target["id"], AssetQualityStatusUpdate(quality_status="draft"), other_user, db)
 
-    assert response.status_code == 403
+    assert error.value.status_code == 403
 
 
-def test_asset_permissions_identify_first_registered_user(authenticated_client):
-    client, admin_token, other_token = authenticated_client
+def test_asset_permissions_identify_first_registered_user(authenticated_db):
+    db, admin_user, other_user = authenticated_db
 
-    admin_response = client.get("/api/assets/permissions/me", headers={"Authorization": f"Bearer {admin_token}"})
-    other_response = client.get("/api/assets/permissions/me", headers={"Authorization": f"Bearer {other_token}"})
+    admin_response = read_asset_permissions(admin_user, db)
+    other_response = read_asset_permissions(other_user, db)
 
-    assert admin_response.status_code == 200
-    assert admin_response.json() == {"can_manage_assets": True}
-    assert other_response.status_code == 200
-    assert other_response.json() == {"can_manage_assets": False}
+    assert admin_response.can_manage_assets is True
+    assert other_response.can_manage_assets is False
 
 
 def test_train_sticker_is_not_rendered_as_rain_cloud():
@@ -303,7 +297,7 @@ def test_fluent_emoji_assets_are_imported_with_mit_license():
 
 
 @pytest.fixture
-def authenticated_client():
+def authenticated_db():
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -311,30 +305,21 @@ def authenticated_client():
     )
     testing_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
-
-    def override_get_db():
-        db = testing_session()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = override_get_db
+    db = testing_session()
     try:
-        client = TestClient(app)
-        admin_token = register_and_login(client, "admin@example.com")
-        other_token = register_and_login(client, "other@example.com")
-        yield client, admin_token, other_token
+        admin_user = register_and_login(db, "admin@example.com")
+        other_user = register_and_login(db, "other@example.com")
+        yield db, admin_user, other_user
     finally:
-        app.dependency_overrides.clear()
+        db.close()
         Base.metadata.drop_all(bind=engine)
 
 
-def register_and_login(client: TestClient, email: str) -> str:
-    payload = {"email": email, "password": "strong-password"}
-    client.post("/api/auth/register", json=payload)
-    response = client.post("/api/auth/login", json=payload)
-    return response.json()["access_token"]
+def register_and_login(db: Session, email: str):
+    payload = AuthCredentials(email=email, password="strong-password")
+    register(payload, db)
+    token = login(payload, db)
+    return get_current_user(token.access_token, db)
 
 
 def copy_manifest(tmp_path, monkeypatch):

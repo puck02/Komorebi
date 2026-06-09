@@ -26,6 +26,7 @@ export type JournalTemplate = {
   minImages: number;
   maxImages: number;
   keywords: string[];
+  family: string;
 };
 
 export type JournalTemplateRecommendation = JournalTemplate & {
@@ -42,6 +43,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-quiet-story",
     minImages: 1,
     maxImages: 2,
+    family: "reflective",
     keywords: ["安静", "慢", "窗边", "独处", "光", "平静"]
   },
   {
@@ -53,6 +55,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-hero-memory",
     minImages: 1,
     maxImages: 2,
+    family: "focus",
     keywords: ["重要", "纪念", "今天", "周末", "散步"]
   },
   {
@@ -64,6 +67,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-timeline-trip",
     minImages: 2,
     maxImages: 6,
+    family: "sequence",
     keywords: ["旅行", "路上", "出发", "抵达", "车站", "路线", "沿途"]
   },
   {
@@ -75,6 +79,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-pocket-grid",
     minImages: 4,
     maxImages: 9,
+    family: "collection",
     keywords: ["很多", "合集", "一天", "碎片", "相册", "photo dump"]
   },
   {
@@ -86,6 +91,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-ticket-day",
     minImages: 1,
     maxImages: 4,
+    family: "ephemera",
     keywords: ["咖啡", "展览", "博物馆", "电影", "票", "小票", "餐厅"]
   },
   {
@@ -97,6 +103,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-magazine-note",
     minImages: 1,
     maxImages: 3,
+    family: "editorial",
     keywords: ["留白", "杂志", "简洁", "光线", "下午"]
   },
   {
@@ -108,6 +115,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-before-after",
     minImages: 2,
     maxImages: 3,
+    family: "contrast",
     keywords: ["之前", "之后", "变化", "开始", "后来", "完成"]
   },
   {
@@ -119,6 +127,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-moodboard-stack",
     minImages: 2,
     maxImages: 5,
+    family: "mood",
     keywords: ["开心", "松快", "热闹", "日常", "朋友"]
   },
   {
@@ -130,6 +139,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-recipe-memo",
     minImages: 1,
     maxImages: 4,
+    family: "food",
     keywords: ["吃", "餐", "咖啡", "甜品", "饭", "茶", "面包"]
   },
   {
@@ -141,6 +151,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-letter-page",
     minImages: 1,
     maxImages: 3,
+    family: "letter",
     keywords: ["想说", "记录", "心情", "纪念", "给"]
   },
   {
@@ -152,6 +163,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-chapter-scroll",
     minImages: 3,
     maxImages: 9,
+    family: "sequence",
     keywords: ["一整天", "完整", "连续", "过程", "故事", "章节", "从早到晚"]
   },
   {
@@ -163,6 +175,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-field-notes",
     minImages: 1,
     maxImages: 5,
+    family: "observation",
     keywords: ["细节", "观察", "发现", "植物", "书", "物件", "角落"]
   },
   {
@@ -174,6 +187,7 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-split-scene",
     minImages: 2,
     maxImages: 4,
+    family: "contrast",
     keywords: ["上午", "下午", "室内", "室外", "转场", "两个地方", "换了"]
   },
   {
@@ -185,9 +199,20 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     previewClassName: "is-detail-index",
     minImages: 3,
     maxImages: 8,
+    family: "observation",
     keywords: ["细节", "索引", "清单", "编号", "几样", "小东西", "主题"]
   }
 ];
+
+const FOOD_TERMS = ["咖啡", "茶", "甜品", "餐厅", "餐桌", "饭", "面包", "蛋糕", "饮料", "食物"];
+const EPHEMERA_TERMS = ["票", "票根", "小票", "展览", "展厅", "博物馆", "电影", "标签", "收据", "车票"];
+const JOURNEY_TERMS = ["旅行", "旅程", "出门", "路上", "出发", "抵达", "车站", "地铁", "公交", "路线", "沿途", "散步"];
+const CHRONOLOGY_TERMS = ["早上", "上午", "中午", "下午", "傍晚", "晚上", "后来", "最后", "从早到晚", "过程", "连续"];
+const CONTRAST_TERMS = ["之前", "之后", "前后", "变化", "完成", "开始", "后来", "对比", "两个地方", "室内", "室外", "转场"];
+const DETAIL_TERMS = ["细节", "观察", "发现", "植物", "书", "物件", "角落", "编号", "索引", "清单", "小东西"];
+const REFLECTIVE_TERMS = ["想说", "心情", "写给", "独处", "平静", "安静", "慢", "纪念", "记下来"];
+const SOCIAL_TERMS = ["朋友", "一起", "家人", "聚会", "热闹", "约会", "同事", "陪"];
+const FRAGMENT_TERMS = ["很多", "合集", "碎片", "相册", "photo dump", "几张", "几样", "一天"];
 
 export function recommendJournalTemplates(
   images: UploadedImage[],
@@ -204,6 +229,7 @@ export function recommendLocalJournalTemplates(
 ): JournalTemplateRecommendation[] {
   const query = `${text} ${mood}`.toLowerCase();
   const imageProfile = describeImages(images);
+  const storySignals = detectStorySignals(images, query, imageProfile);
   const scored = JOURNAL_TEMPLATES.map((template, index) => {
     const keywordHits = template.keywords.filter((keyword) => query.includes(keyword.toLowerCase()));
     let score = 0;
@@ -217,42 +243,117 @@ export function recommendLocalJournalTemplates(
       score -= 3;
     }
     score += keywordHits.length * 5;
-    if (template.id === "pocket_grid" && images.length >= 5) {
-      score += 6;
-    }
-    if (template.id === "chapter_scroll" && images.length >= 5) {
-      score += 5;
-    }
-    if (template.id === "detail_index" && images.length >= 4 && imageProfile.hasMixedOrientation) {
-      score += 4;
-    }
-    if (template.id === "timeline_trip" && images.length >= 3) {
-      score += 3;
-    }
-    if (template.id === "quiet_story" && imageProfile.hasPortraitDominance) {
-      score += 2;
-    }
-    if (template.id === "split_scene" && images.length >= 2 && images.length <= 4 && query.includes("转场")) {
-      score += 4;
-    }
+    score += bonusScore(template, images, imageProfile, storySignals);
     return { index, keywordHits, score, template };
   });
 
-  return scored
-    .sort((first, second) => second.score - first.score || first.index - second.index)
-    .slice(0, 3)
-    .map((item) => ({
-      ...item.template,
-      recommendationReason: recommendationReason(item.template, images, item.keywordHits, imageProfile)
-    }));
+  scored.sort((first, second) => second.score - first.score || first.index - second.index);
+  return selectDiverseTemplates(scored).map((item) => ({
+    ...item.template,
+    recommendationReason: recommendationReason(item.template, images, item.keywordHits, imageProfile, storySignals)
+  }));
+}
+
+function bonusScore(
+  template: JournalTemplate,
+  images: UploadedImage[],
+  imageProfile: ReturnType<typeof describeImages>,
+  storySignals: ReturnType<typeof detectStorySignals>
+) {
+  let score = 0;
+  if (template.id === "pocket_grid") {
+    score += images.length >= 5 ? 6 : 0;
+    score += storySignals.fragments ? 4 : 0;
+  }
+  if (template.id === "chapter_scroll") {
+    score += images.length >= 5 ? 5 : 0;
+    score += storySignals.chronology ? 5 : 0;
+    score += storySignals.journey ? 3 : 0;
+  }
+  if (template.id === "detail_index") {
+    score += images.length >= 4 && imageProfile.hasMixedOrientation ? 4 : 0;
+    score += storySignals.detail ? 5 : 0;
+  }
+  if (template.id === "timeline_trip") {
+    score += images.length >= 3 ? 3 : 0;
+    score += storySignals.journey ? 6 : 0;
+    score += storySignals.chronology ? 3 : 0;
+  }
+  if (template.id === "quiet_story") {
+    score += imageProfile.hasPortraitDominance ? 2 : 0;
+    score += storySignals.reflective ? 4 : 0;
+  }
+  if (template.id === "split_scene") {
+    score += images.length >= 2 && images.length <= 4 && storySignals.twoScene ? 6 : 0;
+  }
+  if (template.id === "before_after") {
+    score += storySignals.contrast ? 7 : 0;
+  }
+  if (template.id === "ticket_day") {
+    score += storySignals.ephemera ? 7 : 0;
+    score += storySignals.food ? 2 : 0;
+  }
+  if (template.id === "recipe_memo") {
+    score += storySignals.food ? 7 : 0;
+  }
+  if (template.id === "letter_page") {
+    score += storySignals.reflective ? 6 : 0;
+  }
+  if (template.id === "field_notes") {
+    score += storySignals.detail ? 6 : 0;
+  }
+  if (template.id === "moodboard_stack") {
+    score += storySignals.social ? 5 : 0;
+    score += storySignals.fragments && images.length <= 5 ? 3 : 0;
+  }
+  if (template.id === "hero_memory") {
+    score += images.length === 1 ? 4 : 0;
+  }
+  if (template.id === "magazine_note") {
+    score += storySignals.reflective && images.length <= 3 ? 3 : 0;
+  }
+  return score;
+}
+
+type ScoredTemplate = {
+  index: number;
+  keywordHits: string[];
+  score: number;
+  template: JournalTemplate;
+};
+
+function selectDiverseTemplates(scored: ScoredTemplate[]) {
+  const selected: ScoredTemplate[] = [];
+  const usedFamilies = new Set<string>();
+  for (const item of scored) {
+    if (usedFamilies.has(item.template.family) && hasUnusedFamilyCandidate(scored, selected, usedFamilies)) {
+      continue;
+    }
+    selected.push(item);
+    usedFamilies.add(item.template.family);
+    if (selected.length === 3) {
+      return selected;
+    }
+  }
+  return selected.slice(0, 3);
+}
+
+function hasUnusedFamilyCandidate(scored: ScoredTemplate[], selected: ScoredTemplate[], usedFamilies: Set<string>) {
+  const selectedIds = new Set(selected.map((item) => item.template.id));
+  return scored.some((item) => !selectedIds.has(item.template.id) && !usedFamilies.has(item.template.family));
 }
 
 function recommendationReason(
   template: JournalTemplate,
   images: UploadedImage[],
   keywordHits: string[],
-  imageProfile: ReturnType<typeof describeImages>
+  imageProfile: ReturnType<typeof describeImages>,
+  storySignals: ReturnType<typeof detectStorySignals>
 ) {
+  const signalReason = storySignalReason(template, storySignals, images.length);
+  if (signalReason) {
+    return signalReason;
+  }
   if (keywordHits.length > 0) {
     return `匹配到「${keywordHits.slice(0, 2).join("、")}」，适合用这个结构讲。`;
   }
@@ -268,6 +369,47 @@ function recommendationReason(
   return "作为不同叙事节奏的备选。";
 }
 
+function storySignalReason(
+  template: JournalTemplate,
+  storySignals: ReturnType<typeof detectStorySignals>,
+  imageCount: number
+) {
+  if (template.id === "chapter_scroll" && imageCount >= 5) {
+    return "照片数量多，适合拆成开头、转场和结尾来读。";
+  }
+  if (template.id === "timeline_trip" && (storySignals.journey || storySignals.chronology)) {
+    return "有路上或时间顺序线索，适合按经历推进。";
+  }
+  if (template.id === "ticket_day" && storySignals.ephemera) {
+    return "有票据、展览或地点凭证线索，适合做票根备忘。";
+  }
+  if (template.id === "recipe_memo" && storySignals.food) {
+    return "食物或咖啡线索明显，适合写成餐桌小记。";
+  }
+  if (template.id === "field_notes" && storySignals.detail) {
+    return "细节主体比较明确，适合写成观察手记。";
+  }
+  if (template.id === "detail_index" && storySignals.detail) {
+    return "有可编号的小细节，适合用主图带出索引。";
+  }
+  if (template.id === "split_scene" && storySignals.twoScene) {
+    return "出现两个场景或状态，适合分成两段讲。";
+  }
+  if (template.id === "before_after" && storySignals.contrast) {
+    return "有前后变化线索，适合把变化本身讲清楚。";
+  }
+  if (template.id === "pocket_grid" && storySignals.fragments) {
+    return "片段感强，适合用口袋卡片收纳照片和短句。";
+  }
+  if (template.id === "letter_page" && storySignals.reflective) {
+    return "描述更像一段想说的话，适合让文字成为主角。";
+  }
+  if (template.id === "moodboard_stack" && storySignals.social) {
+    return "有人物或相处线索，适合把同一种心情贴成一页。";
+  }
+  return null;
+}
+
 function describeImages(images: UploadedImage[]) {
   const portraitCount = images.filter((image) => image.height > image.width).length;
   const landscapeCount = images.filter((image) => image.width >= image.height).length;
@@ -275,4 +417,28 @@ function describeImages(images: UploadedImage[]) {
     hasMixedOrientation: portraitCount > 0 && landscapeCount > 0,
     hasPortraitDominance: images.length > 0 && portraitCount >= Math.ceil(images.length / 2)
   };
+}
+
+function detectStorySignals(
+  images: UploadedImage[],
+  query: string,
+  imageProfile: ReturnType<typeof describeImages>
+) {
+  return {
+    food: containsAny(query, FOOD_TERMS),
+    ephemera: containsAny(query, EPHEMERA_TERMS),
+    journey: containsAny(query, JOURNEY_TERMS),
+    chronology: containsAny(query, CHRONOLOGY_TERMS),
+    contrast: containsAny(query, CONTRAST_TERMS),
+    detail: containsAny(query, DETAIL_TERMS),
+    reflective: containsAny(query, REFLECTIVE_TERMS),
+    social: containsAny(query, SOCIAL_TERMS),
+    fragments: containsAny(query, FRAGMENT_TERMS) || images.length >= 5,
+    twoScene: containsAny(query, CONTRAST_TERMS),
+    mixedOrientation: imageProfile.hasMixedOrientation
+  };
+}
+
+function containsAny(query: string, terms: string[]) {
+  return terms.some((term) => query.includes(term.toLowerCase()));
 }

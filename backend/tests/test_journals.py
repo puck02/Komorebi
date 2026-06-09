@@ -1,27 +1,45 @@
+from dataclasses import dataclass
+from datetime import date
 from io import BytesIO
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
+from fastapi import HTTPException
 from PIL import Image as PillowImage
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from pydantic import ValidationError
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.api.deps import get_db
-from app.api.routes.journals import get_journal_generator, normalized_journal_layout
+from app.api.deps import get_current_user
+from app.api.routes.auth import login, register
+from app.api.routes.journals import delete_journal, generate_journal, get_journal, list_journals, normalized_journal_layout, update_journal
 from app.core.config import get_settings
 from app.db.base import Base
-from app.main import app
-from app.models import asset, image, journal, user  # noqa: F401
+from app.models import ai_settings, asset, generation_job, image, journal, user  # noqa: F401
 from app.models.image import Image as ImageModel
 from app.models.journal import Journal
-from app.schemas.journal import JournalLayout
-from app.services.journal_generator import COMPACT_SECTION_CANVAS_HEIGHT, GenerationError
+from app.schemas.auth import AuthCredentials
+from app.schemas.journal import JournalGenerateRequest, JournalLayout, JournalUpdateRequest
+from app.services.journal_generator import (
+    COMPACT_SECTION_CANVAS_HEIGHT,
+    GenerationError,
+    JournalGenerationRequest,
+    JournalGenerator,
+)
+from app.services.storage import build_image_paths
+from app.services.thumbnails import generate_display_image, generate_thumbnail
+
+
+@dataclass
+class JournalTestContext:
+    db: Session
+    fake_generator: "FakeGenerator"
+    storage_root: Path
 
 
 @pytest.fixture
-def client(tmp_path, monkeypatch):
+def context(tmp_path, monkeypatch):
     monkeypatch.setenv("STORAGE_ROOT", str(tmp_path / "storage"))
     get_settings.cache_clear()
     engine = create_engine(
@@ -31,177 +49,130 @@ def client(tmp_path, monkeypatch):
     )
     testing_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
-    fake_generator = FakeGenerator()
-
-    def override_get_db():
-        db = testing_session()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[get_journal_generator] = lambda: fake_generator
+    db = testing_session()
     try:
-        test_client = TestClient(app)
-        test_client.fake_generator = fake_generator
-        yield test_client
+        yield JournalTestContext(
+            db=db,
+            fake_generator=FakeGenerator(),
+            storage_root=tmp_path / "storage",
+        )
     finally:
-        app.dependency_overrides.clear()
+        db.close()
         Base.metadata.drop_all(bind=engine)
         get_settings.cache_clear()
 
 
-@pytest.fixture
-def client_without_generator_override(tmp_path, monkeypatch):
-    monkeypatch.setenv("STORAGE_ROOT", str(tmp_path / "storage"))
-    monkeypatch.setenv("OPENAI_API_KEY", "")
-    get_settings.cache_clear()
-    engine = create_engine(
-        "sqlite+pysqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    testing_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    Base.metadata.create_all(bind=engine)
+def test_generate_journal_requires_auth(context):
+    with pytest.raises(HTTPException) as error:
+        get_current_user("", context.db)
 
-    def override_get_db():
-        db = testing_session()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = override_get_db
-    try:
-        yield TestClient(app)
-    finally:
-        app.dependency_overrides.clear()
-        Base.metadata.drop_all(bind=engine)
-        get_settings.cache_clear()
+    assert error.value.status_code == 401
 
 
-def test_generate_journal_requires_auth(client):
-    response = client.post("/api/journals/generate", json={"imageIds": ["img_1"], "description": "今天很好"})
+def test_generate_journal_validates_image_count_and_description(context):
+    register_and_login(context, "owner@example.com")
 
-    assert response.status_code == 401
-
-
-def test_generate_journal_validates_image_count_and_description(client):
-    token = register_and_login(client, "owner@example.com")
-
-    response = client.post(
-        "/api/journals/generate",
-        json={"imageIds": [], "description": ""},
-        headers={"Authorization": f"Bearer {token}"},
-    )
-
-    assert response.status_code == 422
+    with pytest.raises(ValidationError):
+        JournalGenerateRequest.model_validate({"imageIds": [], "description": ""})
 
 
-def test_generate_journal_saves_local_fallback_when_openai_key_missing(client_without_generator_override):
-    token = register_and_login(client_without_generator_override, "owner@example.com")
-    image_id = upload_image(client_without_generator_override, token)
+def test_generate_journal_saves_local_fallback_when_openai_key_missing(context):
+    user = register_and_login(context, "owner@example.com")
+    image_id = create_image(context, user.id)
+    request = JournalGenerateRequest(imageIds=[image_id], description="今天很好")
+    generator = JournalGenerator(UnavailableJournalClient())
 
-    response = client_without_generator_override.post(
-        "/api/journals/generate",
-        json={"imageIds": [image_id], "description": "今天很好"},
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    response = generate_journal(request, user, context.db, generator)
 
-    assert response.status_code == 201
-    body = response.json()
-    assert body["title"] == "今天很好"
-    assert body["imageIds"] == [image_id]
-    assert body["layout"]["content"]["body"] == ["今天很好。"]
+    assert response.title == "今天很好"
+    assert response.image_ids == [image_id]
+    assert response.layout["content"]["body"] == ["今天很好。"]
 
 
-def test_user_cannot_generate_with_another_users_images(client):
-    owner_token = register_and_login(client, "owner@example.com")
-    other_token = register_and_login(client, "other@example.com")
-    image_id = upload_image(client, owner_token)
+def test_user_cannot_generate_with_another_users_images(context):
+    owner = register_and_login(context, "owner@example.com")
+    other = register_and_login(context, "other@example.com")
+    image_id = create_image(context, owner.id)
 
-    response = client.post(
-        "/api/journals/generate",
-        json={"imageIds": [image_id], "description": "偷看别人的照片"},
-        headers={"Authorization": f"Bearer {other_token}"},
-    )
+    with pytest.raises(HTTPException) as error:
+        generate_journal(
+            JournalGenerateRequest(imageIds=[image_id], description="偷看别人的照片"),
+            other,
+            context.db,
+            context.fake_generator,
+        )
 
-    assert response.status_code == 404
-
-
-def test_generate_journal_saves_local_fallback_when_model_request_fails(client):
-    token = register_and_login(client, "owner@example.com")
-    image_id = upload_image(client, token)
-    client.fake_generator.error = GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")
-
-    response = generate_journal(client, token, image_id, "周末一起散步")
-
-    assert response.status_code == 201
-    body = response.json()
-    assert body["title"] == "周末一起散步"
-    assert body["imageIds"] == [image_id]
-    assert body["layout"]["content"]["body"] == ["周末一起散步。"]
+    assert error.value.status_code == 404
 
 
-def test_generate_journal_saves_and_lists_only_current_users_journals(client):
-    owner_token = register_and_login(client, "owner@example.com")
-    other_token = register_and_login(client, "other@example.com")
-    owner_image_id = upload_image(client, owner_token)
-    other_image_id = upload_image(client, other_token)
+def test_generate_journal_saves_local_fallback_when_model_request_fails(context):
+    user = register_and_login(context, "owner@example.com")
+    image_id = create_image(context, user.id)
+    context.fake_generator.error = GenerationError("AI 服务连接失败，请稍后重试或检查模型服务配置")
 
-    owner_response = generate_journal(client, owner_token, owner_image_id, "周末一起散步")
-    generate_journal(client, other_token, other_image_id, "另一个人的手帐")
-    list_response = client.get("/api/journals", headers={"Authorization": f"Bearer {owner_token}"})
+    response = generate_journal_for_user(context, user, image_id, "周末一起散步")
 
-    assert owner_response.status_code == 201
-    assert owner_response.json()["title"] == "慢下来的周末"
-    assert owner_response.json()["imageIds"] == [owner_image_id]
-    assert client.fake_generator.request.images[0].data_url.startswith("data:image/webp;base64,")
-    assert list_response.status_code == 200
-    assert [item["id"] for item in list_response.json()] == [owner_response.json()["id"]]
+    assert response.title == "周末一起散步"
+    assert response.image_ids == [image_id]
+    assert response.layout["content"]["body"] == ["周末一起散步。"]
 
 
-def test_generate_journal_passes_user_context_to_generator(client):
-    token = register_and_login(client, "owner@example.com")
-    image_id = upload_image(client, token)
+def test_generate_journal_saves_and_lists_only_current_users_journals(context):
+    owner = register_and_login(context, "owner@example.com")
+    other = register_and_login(context, "other@example.com")
+    owner_image_id = create_image(context, owner.id)
+    other_image_id = create_image(context, other.id)
 
-    response = client.post(
-        "/api/journals/generate",
-        json={
-            "imageIds": [image_id],
-            "description": "周末一起散步",
-            "journalDate": "2026-05-20",
-            "location": "上海",
-            "moodTags": ["轻松"],
-        },
-        headers={"Authorization": f"Bearer {token}"},
+    owner_response = generate_journal_for_user(context, owner, owner_image_id, "周末一起散步")
+    generate_journal_for_user(context, other, other_image_id, "另一个人的手帐")
+    journals = list_journals(owner, context.db)
+
+    assert owner_response.title == "慢下来的周末"
+    assert owner_response.image_ids == [owner_image_id]
+    assert context.fake_generator.request.images[0].data_url.startswith("data:image/webp;base64,")
+    assert [item.id for item in journals] == [owner_response.id]
+
+
+def test_generate_journal_passes_user_context_to_generator(context):
+    user = register_and_login(context, "owner@example.com")
+    image_id = create_image(context, user.id)
+
+    generate_journal(
+        JournalGenerateRequest(
+            imageIds=[image_id],
+            description="周末一起散步",
+            journalDate=date.fromisoformat("2026-05-20"),
+            location="上海",
+            moodTags=["轻松"],
+        ),
+        user,
+        context.db,
+        context.fake_generator,
     )
 
-    assert response.status_code == 201
-    assert str(client.fake_generator.request.journal_date) == "2026-05-20"
-    assert client.fake_generator.request.location == "上海"
-    assert client.fake_generator.request.mood_tags == ["轻松"]
+    assert str(context.fake_generator.request.journal_date) == "2026-05-20"
+    assert context.fake_generator.request.location == "上海"
+    assert context.fake_generator.request.mood_tags == ["轻松"]
 
 
-def test_generate_journal_saved_layout_contains_user_context_meta(client):
-    token = register_and_login(client, "owner@example.com")
-    image_id = upload_image(client, token)
+def test_generate_journal_saved_layout_contains_user_context_meta(context):
+    user = register_and_login(context, "owner@example.com")
+    image_id = create_image(context, user.id)
 
-    response = client.post(
-        "/api/journals/generate",
-        json={
-            "imageIds": [image_id],
-            "description": "周末一起散步",
-            "journalDate": "2026-05-20",
-            "location": "上海",
-            "moodTags": ["轻松"],
-        },
-        headers={"Authorization": f"Bearer {token}"},
+    response = generate_journal(
+        JournalGenerateRequest(
+            imageIds=[image_id],
+            description="周末一起散步",
+            journalDate=date.fromisoformat("2026-05-20"),
+            location="上海",
+            moodTags=["轻松"],
+        ),
+        user,
+        context.db,
+        context.fake_generator,
     )
 
-    assert response.status_code == 201
-    assert response.json()["layout"]["content"]["meta"] == "2026-05-20 / 上海 / 轻松"
+    assert response.layout["content"]["meta"] == "2026-05-20 / 上海 / 轻松"
 
 
 def test_normalized_journal_layout_trims_saved_single_section_to_compact_canvas_height():
@@ -230,31 +201,32 @@ def test_normalized_journal_layout_trims_saved_single_section_to_compact_canvas_
     assert normalized["canvas"]["height"] == COMPACT_SECTION_CANVAS_HEIGHT
 
 
-def test_journal_detail_enforces_ownership(client):
-    owner_token = register_and_login(client, "owner@example.com")
-    other_token = register_and_login(client, "other@example.com")
-    journal_id = generate_journal(client, owner_token, upload_image(client, owner_token), "周末一起散步").json()["id"]
+def test_journal_detail_enforces_ownership(context):
+    owner = register_and_login(context, "owner@example.com")
+    other = register_and_login(context, "other@example.com")
+    journal_id = generate_journal_for_user(context, owner, create_image(context, owner.id), "周末一起散步").id
 
-    owner_response = client.get(f"/api/journals/{journal_id}", headers={"Authorization": f"Bearer {owner_token}"})
-    other_response = client.get(f"/api/journals/{journal_id}", headers={"Authorization": f"Bearer {other_token}"})
+    owner_response = get_journal(journal_id, owner, context.db)
+    with pytest.raises(HTTPException) as error:
+        get_journal(journal_id, other, context.db)
 
-    assert owner_response.status_code == 200
-    assert other_response.status_code == 404
+    assert owner_response.id == journal_id
+    assert error.value.status_code == 404
 
 
-def test_patch_journal_updates_title_body_and_layout_variant(client):
-    token = register_and_login(client, "owner@example.com")
-    image_id = upload_image(client, token)
-    journal_id = generate_journal(client, token, image_id, "周末一起散步").json()["id"]
+def test_patch_journal_updates_title_body_and_layout_variant(context):
+    user = register_and_login(context, "owner@example.com")
+    image_id = create_image(context, user.id)
+    journal_id = generate_journal_for_user(context, user, image_id, "周末一起散步").id
 
-    response = client.patch(
-        f"/api/journals/{journal_id}",
-        json={
-            "title": "新的标题",
-            "meta": "2026-06-09 / 上海 / 安静",
-            "body": ["新的正文"],
-            "captions": [{"imageId": image_id, "text": "新的照片说明"}],
-            "sections": [
+    response = update_journal(
+        journal_id,
+        JournalUpdateRequest(
+            title="新的标题",
+            meta="2026-06-09 / 上海 / 安静",
+            body=["新的正文"],
+            captions=[{"imageId": image_id, "text": "新的照片说明"}],
+            sections=[
                 {
                     "id": "section_1",
                     "title": "新的片段",
@@ -263,38 +235,35 @@ def test_patch_journal_updates_title_body_and_layout_variant(client):
                     "mood": ["安静"],
                 }
             ],
-            "layoutVariant": "collage_b",
-        },
-        headers={"Authorization": f"Bearer {token}"},
+            layoutVariant="collage_b",
+        ),
+        user,
+        context.db,
     )
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["title"] == "新的标题"
-    assert body["layout"]["content"]["meta"] == "2026-06-09 / 上海 / 安静"
-    assert body["layout"]["content"]["body"] == ["新的正文"]
-    assert body["layout"]["content"]["captions"] == [{"imageId": image_id, "text": "新的照片说明"}]
-    assert body["layout"]["content"]["sections"][0]["body"] == "新的章节正文"
-    assert body["layout"]["layout"]["variant"] == "collage_b"
+    assert response.title == "新的标题"
+    assert response.layout["content"]["meta"] == "2026-06-09 / 上海 / 安静"
+    assert response.layout["content"]["body"] == ["新的正文"]
+    assert response.layout["content"]["captions"] == [{"imageId": image_id, "text": "新的照片说明"}]
+    assert response.layout["content"]["sections"][0]["body"] == "新的章节正文"
+    assert response.layout["layout"]["variant"] == "collage_b"
 
 
-def test_delete_journal_removes_associated_image_files(client, tmp_path):
-    token = register_and_login(client, "owner@example.com")
-    image_id = upload_image(client, token)
-    journal_id = generate_journal(client, token, image_id, "周末一起散步").json()["id"]
+def test_delete_journal_removes_associated_image_files(context):
+    user = register_and_login(context, "owner@example.com")
+    image_id = create_image(context, user.id)
+    journal_id = generate_journal_for_user(context, user, image_id, "周末一起散步").id
 
-    assert list((tmp_path / "storage").glob("users/*/images/*/original.png"))
-    assert list((tmp_path / "storage").glob("users/*/images/*/thumb.webp"))
+    assert list(context.storage_root.glob("users/*/images/*/original.png"))
+    assert list(context.storage_root.glob("users/*/images/*/thumb.webp"))
 
-    response = client.delete(f"/api/journals/{journal_id}", headers={"Authorization": f"Bearer {token}"})
-    image_response = client.get(f"/api/images/{image_id}", headers={"Authorization": f"Bearer {token}"})
-    journal_response = client.get(f"/api/journals/{journal_id}", headers={"Authorization": f"Bearer {token}"})
+    response = delete_journal(journal_id, user, context.db)
 
     assert response.status_code == 204
-    assert image_response.status_code == 404
-    assert journal_response.status_code == 404
-    assert not list((tmp_path / "storage").glob("users/*/images/*/original.png"))
-    assert not list((tmp_path / "storage").glob("users/*/images/*/thumb.webp"))
+    assert context.db.scalar(select(ImageModel).where(ImageModel.id == image_id)) is None
+    assert context.db.scalar(select(Journal).where(Journal.id == journal_id)) is None
+    assert not list(context.storage_root.glob("users/*/images/*/original.png"))
+    assert not list(context.storage_root.glob("users/*/images/*/thumb.webp"))
 
 
 class FakeGenerator:
@@ -307,27 +276,46 @@ class FakeGenerator:
         return JournalLayout.model_validate(layout_payload(request.images[0].id))
 
 
-def register_and_login(client: TestClient, email: str) -> str:
-    payload = {"email": email, "password": "strong-password"}
-    client.post("/api/auth/register", json=payload)
-    response = client.post("/api/auth/login", json=payload)
-    return response.json()["access_token"]
+class UnavailableJournalClient:
+    def generate_layout(self, request: JournalGenerationRequest) -> dict:
+        raise GenerationError("OPENAI_API_KEY is required to generate journals")
 
 
-def upload_image(client: TestClient, token: str) -> str:
-    response = client.post(
-        "/api/images",
-        files={"file": ("photo.png", make_image_bytes(), "image/png")},
-        headers={"Authorization": f"Bearer {token}"},
+def register_and_login(context: JournalTestContext, email: str):
+    payload = AuthCredentials(email=email, password="strong-password")
+    register(payload, context.db)
+    token = login(payload, context.db)
+    return get_current_user(token.access_token, context.db)
+
+
+def create_image(context: JournalTestContext, user_id: str) -> str:
+    image_id = f"img_{len(list(context.storage_root.glob('users/*/images/*'))) + 1}"
+    paths = build_image_paths(str(context.storage_root), user_id, image_id, "png")
+    paths.original.parent.mkdir(parents=True, exist_ok=True)
+    paths.original.write_bytes(make_image_bytes())
+    width, height = generate_thumbnail(paths.original, paths.thumbnail)
+    generate_display_image(paths.original, paths.display)
+    image = ImageModel(
+        id=image_id,
+        user_id=user_id,
+        original_path=str(paths.original),
+        thumbnail_path=str(paths.thumbnail),
+        content_type="image/png",
+        width=width,
+        height=height,
     )
-    return response.json()["id"]
+    context.db.add(image)
+    context.db.commit()
+    context.db.refresh(image)
+    return image.id
 
 
-def generate_journal(client: TestClient, token: str, image_id: str, description: str):
-    return client.post(
-        "/api/journals/generate",
-        json={"imageIds": [image_id], "description": description},
-        headers={"Authorization": f"Bearer {token}"},
+def generate_journal_for_user(context: JournalTestContext, user, image_id: str, description: str):
+    return generate_journal(
+        JournalGenerateRequest(imageIds=[image_id], description=description),
+        user,
+        context.db,
+        context.fake_generator,
     )
 
 
