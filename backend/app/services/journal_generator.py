@@ -786,6 +786,7 @@ def normalize_layout_sections(
             section_texts,
             asset_by_id,
             index,
+            template_id,
             used_decoration_asset_ids,
         )
         used_decoration_asset_ids.update(str(decoration.get("assetId")) for decoration in section_decorations)
@@ -839,8 +840,10 @@ def normalize_section_decorations(
     section_texts: list[dict[str, Any]],
     asset_by_id: dict[str, AssetItem],
     section_index: int,
+    template_id: str | None = None,
     used_decoration_asset_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
+    recipe_tags = recipe_tags_for_section(content_section, image_understanding, template_id)
     if isinstance(source_decorations, list):
         decorations = [decoration for decoration in source_decorations if isinstance(decoration, dict)]
         if decorations:
@@ -850,7 +853,7 @@ def normalize_section_decorations(
                     section_texts,
                     asset_by_id,
                     section_index,
-                    preferred_tags=recipe_tags_for_section(content_section, image_understanding),
+                    preferred_tags=recipe_tags,
                     preferred_asset_ids=decoration_asset_ids(decorations, asset_by_id),
                 ),
                 section_images,
@@ -874,7 +877,7 @@ def normalize_section_decorations(
             section_texts,
             asset_by_id,
             section_index,
-            preferred_tags=recipe_tags_for_section(content_section, image_understanding),
+            preferred_tags=recipe_tags,
             avoided_asset_ids=used_decoration_asset_ids,
         ),
         section_images,

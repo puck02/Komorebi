@@ -243,6 +243,48 @@ def test_recipe_tags_for_section_detects_houseplant_home():
     assert tags[:4] == ["plant", "home", "calm", "nature"]
 
 
+def test_recipe_tags_for_section_uses_ticket_template_when_content_is_plain():
+    section = {"title": "今天这一页", "body": "把这几张留下来。", "imageIds": ["img_1"]}
+
+    tags = recipe_tags_for_section(section, [], template_id="ticket_day")
+
+    assert tags[:5] == ["ticket", "receipt", "date", "memory", "travel"]
+
+
+def test_recipe_tags_for_section_uses_letter_template_when_content_is_plain():
+    section = {"title": "写给今天", "body": "这一天想慢慢记住。", "imageIds": ["img_1"]}
+
+    tags = recipe_tags_for_section(section, [], template_id="letter_page")
+
+    assert tags[:5] == ["letter", "seal", "tag", "note", "memory"]
+
+
+def test_recipe_tags_for_section_uses_field_notes_template_when_content_is_plain():
+    section = {"title": "观察", "body": "在角落里看见了一点变化。", "imageIds": ["img_1"]}
+
+    tags = recipe_tags_for_section(section, [], template_id="field_notes")
+
+    assert tags[:5] == ["date", "stamp", "pen", "note", "daily"]
+
+
+def test_recipe_tags_for_section_uses_pocket_grid_template_for_photo_cards():
+    section = {"title": "今天几格", "body": "一格一件小事。", "imageIds": ["img_1", "img_2", "img_3"]}
+
+    tags = recipe_tags_for_section(section, [], template_id="pocket_grid")
+
+    assert tags[:6] == ["photo", "corner", "note", "collage", "memory", "daily"]
+
+
+def test_recipe_tags_for_section_keeps_specific_content_before_template_tags():
+    section = {"title": "读到这里", "body": "书页摊开，旁边夹着书签和几行笔记。", "imageIds": ["img_1"]}
+    understanding = [{"imageId": "img_1", "summary": "摊开的书和书签", "scene": "书桌", "subjects": ["书", "书签"], "mood": ["安静"]}]
+
+    tags = recipe_tags_for_section(section, understanding, template_id="ticket_day")
+
+    assert tags[:4] == ["book", "quiet", "note", "home"]
+    assert "ticket" in tags[4:]
+
+
 def test_choose_asset_id_prefers_category_asset_with_matching_recipe_tag():
     assets = {
         "sticker_leaf_05": asset("sticker_leaf_05", "sticker", ["nature", "travel"]),

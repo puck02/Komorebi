@@ -32,13 +32,52 @@ PRESSED_NATURE_KEYWORDS = {"压叶", "压花", "干花", "植物标本", "叶片
 DATE_STAMP_KEYWORDS = {"日期章", "日期", "日历", "盖章", "手帐章", "手账章"}
 STAMP_FILM_KEYWORDS = {"邮票", "胶片", "底片", "冲印", "相纸", "旧照片"}
 LETTER_TAG_KEYWORDS = {"信封", "信纸", "封蜡", "标签", "吊牌", "牛皮纸"}
+DEFAULT_RECIPE_TAGS = ["daily", "warm", "collage"]
+WEAK_CONTENT_RECIPE_TAGS = {
+    tuple(DEFAULT_RECIPE_TAGS),
+    ("note", "daily", "collage"),
+    ("calm", "daily", "warm"),
+    ("photo", "memory", "collage"),
+}
+TEMPLATE_RECIPE_TAGS = {
+    "quiet_story": ["calm", "note", "daily", "warm"],
+    "hero_memory": ["photo", "memory", "date", "daily"],
+    "timeline_trip": ["travel", "date", "memory", "daily"],
+    "pocket_grid": ["photo", "corner", "note", "collage", "memory", "daily"],
+    "ticket_day": ["ticket", "receipt", "date", "memory", "travel"],
+    "magazine_note": ["photo", "note", "calm", "memory"],
+    "before_after": ["date", "photo", "memory", "note"],
+    "moodboard_stack": ["collage", "photo", "warm", "daily"],
+    "recipe_memo": ["food", "table", "warm", "daily"],
+    "letter_page": ["letter", "seal", "tag", "note", "memory"],
+    "chapter_scroll": ["date", "travel", "memory", "note"],
+    "field_notes": ["date", "stamp", "pen", "note", "daily"],
+    "split_scene": ["travel", "date", "memory", "daily"],
+    "detail_index": ["date", "stamp", "note", "photo", "memory"],
+    "hero_note": ["note", "daily", "warm"],
+    "magazine_whitespace": ["calm", "photo", "note"],
+    "timeline_strip": ["date", "travel", "memory"],
+    "photo_wall": ["photo", "corner", "collage", "memory"],
+    "ticket_memo": ["ticket", "date", "memory"],
+}
 
 
 def recipe_tags_for_section(
     section: dict[str, Any],
     image_understanding: list[dict[str, Any]],
+    template_id: str | None = None,
 ) -> list[str]:
     text = section_keyword_text(section, image_understanding)
+    content_tags = content_recipe_tags(text)
+    template_tags = TEMPLATE_RECIPE_TAGS.get(str(template_id or "").strip(), [])
+    if not template_tags:
+        return content_tags
+    if tuple(content_tags) in WEAK_CONTENT_RECIPE_TAGS:
+        return unique_tags([*template_tags, *content_tags])
+    return unique_tags([*content_tags, *template_tags])
+
+
+def content_recipe_tags(text: str) -> list[str]:
     if any(keyword in text for keyword in EXHIBITION_KEYWORDS):
         return ["exhibition", "art", "ticket", "memory"]
     if any(keyword in text for keyword in MOVIE_KEYWORDS) and any(keyword in text for keyword in TICKET_KEYWORDS):
@@ -99,7 +138,15 @@ def recipe_tags_for_section(
         return ["travel", "walk", "memory", "daily"]
     if any(keyword in text for keyword in CALM_KEYWORDS):
         return ["calm", "daily", "warm"]
-    return ["daily", "warm", "collage"]
+    return DEFAULT_RECIPE_TAGS
+
+
+def unique_tags(tags: list[str]) -> list[str]:
+    unique: list[str] = []
+    for tag in tags:
+        if tag not in unique:
+            unique.append(tag)
+    return unique
 
 
 def choose_asset_id(
