@@ -12,10 +12,24 @@ from app.models.image import Image
 from app.models.user import User
 from app.schemas.journal import JournalTemplateRecommendRequest
 from app.services.template_recommender import (
+    TEMPLATE_PROFILES,
     TemplateRecommendationImage,
     TemplateRecommendationRequest,
     recommend_templates,
 )
+from app.services.journal_templates import SECTION_VARIANT_IMAGE_LIMITS, TEMPLATE_SECTION_VARIANTS
+from app.services.openai_client import TEMPLATE_STORY_GUIDES
+from app.services.style_recipes import TEMPLATE_RECIPE_TAGS
+
+
+def test_template_profiles_are_wired_to_generation_and_assets():
+    template_ids = {profile.id for profile in TEMPLATE_PROFILES}
+
+    assert template_ids
+    assert template_ids.issubset(TEMPLATE_SECTION_VARIANTS)
+    assert template_ids.issubset(SECTION_VARIANT_IMAGE_LIMITS)
+    assert template_ids.issubset(TEMPLATE_RECIPE_TAGS)
+    assert template_ids.issubset(TEMPLATE_STORY_GUIDES)
 
 
 def test_recommender_uses_image_understanding_for_template_match():
