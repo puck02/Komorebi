@@ -1792,7 +1792,7 @@ def test_fallback_layout_uses_location_and_mood_context():
     [
         ("今天把冲印照片、胶片和旧邮票夹在这一页。", {"sticker_film_strip_30", "sticker_postage_stamp_29"}),
         ("信封、封蜡和牛皮纸标签都贴在便签旁边。", {"sticker_tiny_envelope_33", "sticker_wax_seal_31", "sticker_kraft_tag_32"}),
-        ("今天去看展览，装置作品旁边留着门票和导览图。", {"paper_exhibition_ticket_19", "sticker_gallery_map_50"}),
+        ("今天去看展览，装置作品旁边留着门票和导览图。", {"sticker_gallery_map_50", "sticker_gallery_label_51"}),
     ],
 )
 def test_fallback_layout_uses_theme_recipe_stickers_when_ai_is_unavailable(description, expected_asset_ids):
@@ -1851,6 +1851,18 @@ def test_fallback_multisection_theme_decorations_avoid_repeating_asset_ids():
     issues = check_layout_rules(layout, request)
     assert repeated_decoration_ids == set()
     assert not any(issue["type"] == "decorationVariety" for issue in issues)
+    first_section_paper_ids = [
+        decoration.asset_id
+        for decoration in layout.layout.sections[0].decorations
+        if decoration.asset_id.startswith("paper_")
+    ]
+    second_section_paper_ids = [
+        decoration.asset_id
+        for decoration in layout.layout.sections[1].decorations
+        if decoration.asset_id.startswith("paper_")
+    ]
+    assert "paper_exhibition_ticket_19" not in first_section_paper_ids
+    assert "paper_exhibition_ticket_19" in second_section_paper_ids
 
 
 def test_sanitize_model_layout_preserves_theme_sticker_combo_on_second_pass():

@@ -815,12 +815,20 @@ def build_template_section_decorations(
 
     decorations: list[dict[str, Any]] = []
     recipe_tags = preferred_tags or ["daily", "warm", "collage"]
-    paper_id = first_body_paper_asset_id(asset_by_id, section_index, recipe_tags, preferred_asset_ids, avoided_asset_ids)
+    body_text = next((text for text in section_texts if text.get("role") == "body"), section_texts[0] if section_texts else None)
+    body_width = positive_number(body_text.get("width"), BODY_WIDTH) if body_text is not None else BODY_WIDTH
+    paper_id = first_body_paper_asset_id(
+        asset_by_id,
+        section_index,
+        recipe_tags,
+        preferred_asset_ids,
+        avoided_asset_ids,
+        allow_ticket_paper=body_width <= 520,
+    )
     tape_id = first_asset_id(asset_by_id, "tape", section_index, recipe_tags, preferred_asset_ids, avoided_asset_ids)
     sticker_id = first_asset_id(asset_by_id, "sticker", section_index, recipe_tags, preferred_asset_ids, avoided_asset_ids)
     secondary_sticker_id = complementary_sticker_asset_id(asset_by_id, sticker_id, recipe_tags, preferred_asset_ids)
     texture_id = first_asset_id(asset_by_id, "texture", section_index, recipe_tags, preferred_asset_ids, avoided_asset_ids)
-    body_text = next((text for text in section_texts if text.get("role") == "body"), section_texts[0] if section_texts else None)
     first_image = section_images[0] if section_images else None
 
     if texture_id is not None and section_index < 2:
@@ -926,12 +934,15 @@ def first_body_paper_asset_id(
     preferred_tags: list[str] | None = None,
     preferred_asset_ids: list[str] | None = None,
     avoided_asset_ids: set[str] | None = None,
+    allow_ticket_paper: bool = True,
 ) -> str | None:
     recipe_tags = preferred_tags or ["daily"]
     writable_papers = {
         asset_id: asset
         for asset_id, asset in asset_by_id.items()
-        if asset.category == "paper" and asset.quality_status == "approved" and is_writable_body_paper(asset)
+        if asset.category == "paper"
+        and asset.quality_status == "approved"
+        and is_writable_body_paper(asset, allow_ticket=allow_ticket_paper)
     }
     if writable_papers:
         return choose_asset_id(
@@ -1016,14 +1027,17 @@ def complementary_sticker_asset_id(
 
 def should_add_complementary_sticker(preferred_tags: list[str]) -> bool:
     material_tags = {"film", "stamp", "letter", "seal", "tag", "ticket", "photo"}
+    if {"exhibition", "art"}.issubset(preferred_tags):
+        return True
     if {"ticket", "coffee"}.issubset(preferred_tags):
         return True
     return len(material_tags.intersection(preferred_tags)) >= 2
 
 
-def is_writable_body_paper(asset: AssetItem) -> bool:
+def is_writable_body_paper(asset: AssetItem, *, allow_ticket: bool = True) -> bool:
     text = " ".join([asset.id, asset.name, *asset.tags]).lower()
-    return any(keyword in text for keyword in ("note", "label", "receipt", "ticket"))
+    keywords = ("note", "label", "receipt", "ticket") if allow_ticket else ("note", "label", "receipt")
+    return any(keyword in text for keyword in keywords)
 
 
 def section_y(
