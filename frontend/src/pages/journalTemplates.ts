@@ -194,6 +194,14 @@ export function recommendJournalTemplates(
   text: string,
   mood: string
 ): JournalTemplateRecommendation[] {
+  return recommendLocalJournalTemplates(images, text, mood);
+}
+
+export function recommendLocalJournalTemplates(
+  images: UploadedImage[],
+  text: string,
+  mood: string
+): JournalTemplateRecommendation[] {
   const query = `${text} ${mood}`.toLowerCase();
   const imageProfile = describeImages(images);
   const scored = JOURNAL_TEMPLATES.map((template, index) => {

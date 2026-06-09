@@ -128,6 +128,30 @@ class JournalGenerateRequest(BaseModel):
     template_id: str | None = Field(default=None, alias="templateId")
 
 
+class JournalTemplateRecommendRequest(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    image_ids: list[str] = Field(alias="imageIds", min_length=1, max_length=9)
+    description: str = ""
+    mood_tags: list[str] = Field(default_factory=list, alias="moodTags")
+
+
+class JournalTemplateRecommendation(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    template_id: str = Field(alias="templateId")
+    name: str
+    reason: str
+    story_arc: str = Field(alias="storyArc")
+
+
+class JournalTemplateRecommendRead(BaseModel):
+    recommendations: list[JournalTemplateRecommendation]
+    source: Literal["ai", "local"]
+    image_understanding: list[JournalImageUnderstanding] = Field(default_factory=list, alias="imageUnderstanding")
+    message: str | None = None
+
+
 class JournalUpdateRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 

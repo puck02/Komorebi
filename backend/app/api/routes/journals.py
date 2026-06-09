@@ -10,7 +10,14 @@ from app.api.deps import get_current_user, get_db
 from app.models.image import Image as ImageModel
 from app.models.journal import Journal
 from app.models.user import User
-from app.schemas.journal import JournalGenerateRequest, JournalLayout, JournalRead, JournalUpdateRequest
+from app.schemas.journal import (
+    JournalGenerateRequest,
+    JournalLayout,
+    JournalRead,
+    JournalTemplateRecommendRead,
+    JournalTemplateRecommendRequest,
+    JournalUpdateRequest,
+)
 from app.services.admin import get_effective_ai_settings
 from app.services.assets import get_approved_assets
 from app.services.journal_generator import (
@@ -22,6 +29,12 @@ from app.services.journal_generator import (
     sanitize_model_layout,
 )
 from app.services.openai_client import OpenAIConfigurationError, OpenAIJournalClient
+from app.services.template_recommender import (
+    OpenAITemplateVisionClient,
+    TemplateRecommendationImage,
+    TemplateRecommendationRequest,
+    recommend_templates,
+)
 from app.services.thumbnails import generate_display_image
 
 router = APIRouter(prefix="/api/journals", tags=["journals"])
@@ -87,6 +100,30 @@ class UnavailableJournalClient:
 
     def generate_layout(self, request: JournalGenerationRequest) -> dict:
         raise self.error
+
+
+@router.post("/template-recommendations", response_model=JournalTemplateRecommendRead)
+def recommend_journal_templates(
+    payload: JournalTemplateRecommendRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> JournalTemplateRecommendRead:
+    images = get_owned_images(db, current_user.id, payload.image_ids)
+    recommendation_request = TemplateRecommendationRequest(
+        description=payload.description,
+        images=[image_to_template_recommendation_input(image) for image in images],
+        mood_tags=payload.mood_tags,
+    )
+    ai_settings = get_effective_ai_settings(db)
+    client = None
+    if ai_settings.api_key:
+        client = OpenAITemplateVisionClient(
+            api_key=ai_settings.api_key,
+            base_url=ai_settings.base_url,
+            model=ai_settings.model,
+        )
+    result = recommend_templates(recommendation_request, client)
+    return JournalTemplateRecommendRead.model_validate(result)
 
 
 @router.get("", response_model=list[JournalRead])
@@ -185,6 +222,18 @@ def image_to_generation_input(image: ImageModel) -> JournalImageInput:
     if not display_path.exists():
         generate_display_image(Path(image.original_path), display_path)
     return JournalImageInput(
+        id=image.id,
+        width=image.width,
+        height=image.height,
+        data_url=f"data:image/webp;base64,{b64encode(display_path.read_bytes()).decode('ascii')}",
+    )
+
+
+def image_to_template_recommendation_input(image: ImageModel) -> TemplateRecommendationImage:
+    display_path = Path(image.original_path).parent / "display.webp"
+    if not display_path.exists():
+        generate_display_image(Path(image.original_path), display_path)
+    return TemplateRecommendationImage(
         id=image.id,
         width=image.width,
         height=image.height,

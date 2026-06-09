@@ -23,6 +23,20 @@ export type GenerateJournalPayload = {
   templateId?: string | null;
 };
 
+export type TemplateRecommendation = {
+  templateId: string;
+  name: string;
+  reason: string;
+  storyArc: string;
+};
+
+export type TemplateRecommendationResponse = {
+  recommendations: TemplateRecommendation[];
+  source: "ai" | "local";
+  imageUnderstanding: unknown[];
+  message: string | null;
+};
+
 export type UpdateJournalPayload = {
   title?: string;
   meta?: string | null;
@@ -34,6 +48,14 @@ export type UpdateJournalPayload = {
 
 export function generateJournal(payload: GenerateJournalPayload) {
   return apiRequest<Journal>("/journals/generate", {
+    auth: true,
+    body: JSON.stringify(payload),
+    method: "POST"
+  });
+}
+
+export function recommendJournalTemplates(payload: Omit<GenerateJournalPayload, "journalDate" | "location" | "templateId">) {
+  return apiRequest<TemplateRecommendationResponse>("/journals/template-recommendations", {
     auth: true,
     body: JSON.stringify(payload),
     method: "POST"

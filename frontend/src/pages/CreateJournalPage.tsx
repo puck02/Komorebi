@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { CalendarDays, LayoutTemplate, MapPin, Sparkles, Tags } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -7,12 +8,13 @@ import { z } from "zod";
 
 import { createGenerationJob } from "../api/generationJobs";
 import type { UploadedImage } from "../api/images";
+import { recommendJournalTemplates as recommendJournalTemplatesFromServer } from "../api/journals";
 import ImageUploader from "../components/ImageUploader";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { CREATE_JOURNAL_MOOD_OPTIONS } from "./createJournalOptions";
 import { generationJobErrorMessage, generationJobRouteAfterCreate } from "./generationJobStatus";
-import { JOURNAL_TEMPLATES, recommendJournalTemplates } from "./journalTemplates";
+import { JOURNAL_TEMPLATES, recommendLocalJournalTemplates, type JournalTemplateRecommendation } from "./journalTemplates";
 
 const createJournalSchema = z.object({
   description: z.string().trim().min(1, "请写一点今天的内容。"),
@@ -29,6 +31,9 @@ export default function CreateJournalPage() {
   const [isMoodPickerOpen, setIsMoodPickerOpen] = useState(false);
   const [selectedMood, setSelectedMood] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState(JOURNAL_TEMPLATES[0].id);
+  const [serverRecommendedTemplates, setServerRecommendedTemplates] = useState<JournalTemplateRecommendation[] | null>(null);
+  const [recommendationSource, setRecommendationSource] = useState<"ai" | "local" | null>(null);
+  const [recommendationMessage, setRecommendationMessage] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState("");
   const {
     formState: { errors, isSubmitting },
@@ -44,16 +49,61 @@ export default function CreateJournalPage() {
     resolver: zodResolver(createJournalSchema)
   });
   const descriptionValue = watch("description");
-  const recommendedTemplates = useMemo(
-    () => recommendJournalTemplates(images, descriptionValue, selectedMood),
+  const localRecommendedTemplates = useMemo(
+    () => recommendLocalJournalTemplates(images, descriptionValue, selectedMood),
     [descriptionValue, images, selectedMood]
   );
+  const recommendedTemplates = serverRecommendedTemplates ?? localRecommendedTemplates;
+  const recommendTemplatesMutation = useMutation({
+    mutationFn: recommendJournalTemplatesFromServer,
+    onSuccess: (result) => {
+      const mergedRecommendations = result.recommendations
+        .map((recommendation) => {
+          const template = JOURNAL_TEMPLATES.find((item) => item.id === recommendation.templateId);
+          if (!template) {
+            return null;
+          }
+          return {
+            ...template,
+            recommendationReason: recommendation.reason,
+            storyArc: recommendation.storyArc
+          };
+        })
+        .filter((template): template is JournalTemplateRecommendation => template !== null);
+      setServerRecommendedTemplates(mergedRecommendations.length ? mergedRecommendations : null);
+      setRecommendationSource(result.source);
+      setRecommendationMessage(result.message);
+    },
+    onError: () => {
+      setServerRecommendedTemplates(null);
+      setRecommendationSource("local");
+      setRecommendationMessage("模板推荐服务暂不可用，已按本地规则推荐。");
+    }
+  });
+  const { mutate: recommendTemplates } = recommendTemplatesMutation;
 
   useEffect(() => {
     if (!recommendedTemplates.some((template) => template.id === selectedTemplateId)) {
       setSelectedTemplateId(recommendedTemplates[0]?.id ?? JOURNAL_TEMPLATES[0].id);
     }
   }, [recommendedTemplates, selectedTemplateId]);
+
+  useEffect(() => {
+    setServerRecommendedTemplates(null);
+    setRecommendationSource(null);
+    setRecommendationMessage(null);
+    if (images.length === 0) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      recommendTemplates({
+        description: descriptionValue || "",
+        imageIds: images.map((image) => image.id),
+        moodTags: selectedMood ? [selectedMood] : []
+      });
+    }, 420);
+    return () => window.clearTimeout(timeoutId);
+  }, [descriptionValue, images, recommendTemplates, selectedMood]);
 
   async function onSubmit(values: CreateJournalValues) {
     setImageError("");
@@ -192,6 +242,13 @@ export default function CreateJournalPage() {
               <LayoutTemplate size={15} />
               推荐模板
             </span>
+            <div className="template-recommendation-status">
+              {recommendTemplatesMutation.isPending
+                ? "正在结合图片内容推荐..."
+                : recommendationSource === "ai"
+                  ? "已根据图片内容推荐"
+                  : recommendationMessage || "先按照片数量和描述推荐，上传后会结合图片内容更新。"}
+            </div>
             <div className="template-picker" role="radiogroup" aria-label="选择手帐模板">
               {recommendedTemplates.map((template) => (
                 <button

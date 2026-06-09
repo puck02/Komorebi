@@ -645,6 +645,13 @@ body {
   gap: 10px;
 }
 
+.template-recommendation-status {
+  color: var(--color-tertiary);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
 .template-picker {
   display: grid;
   gap: 10px;
