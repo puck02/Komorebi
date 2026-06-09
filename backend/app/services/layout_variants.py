@@ -231,8 +231,14 @@ def build_quiet_story_images(images: list[Any], start_y: float, section_index: i
 def build_hero_memory_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     if not images:
         return []
+    pattern = layout_pattern_index("hero_memory", images, section_index)
     primary_width = 760 if aspect_ratio(images[0]) >= 1 else 620
-    placements = [placement(images[0], (CANVAS_WIDTH - primary_width) / 2, start_y, primary_width, section_index, rotation=0)]
+    primary_x = (CANVAS_WIDTH - primary_width) / 2
+    if pattern == 1:
+        primary_x = SECTION_SIDE_PADDING
+    elif pattern == 2:
+        primary_x = CANVAS_WIDTH - SECTION_SIDE_PADDING - primary_width
+    placements = [placement(images[0], primary_x, start_y, primary_width, section_index, rotation=[0, -1.1, 1.1][pattern])]
     primary = placements[0]
     for index, image in enumerate(images[1:3], start=1):
         width = 250
@@ -251,25 +257,30 @@ def build_hero_memory_images(images: list[Any], start_y: float, section_index: i
 
 def build_timeline_trip_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     if len(images) <= 3:
-        return build_timeline_strip_images(images, start_y, section_index)
+        placements = build_timeline_strip_images(images, start_y, section_index)
+        if layout_pattern_index("timeline_trip", images, section_index, count=2) == 1:
+            return mirror_placements(placements)
+        return placements
 
     placements = []
-    width = 260
+    pattern = layout_pattern_index("timeline_trip", images, section_index)
+    width = [260, 286, 242][pattern]
     columns = 3
     for index, image in enumerate(images):
         column = index % columns
         row = index // columns
+        y_offset = column * [26, 12, 38][pattern] + (24 if pattern == 2 and row % 2 else 0)
         placements.append(
             placement(
                 image,
                 SECTION_SIDE_PADDING + column * (width + IMAGE_GAP),
-                start_y + row * 430 + column * 26,
+                start_y + row * 430 + y_offset,
                 width,
                 section_index + index,
                 rotation=[-1.5, 1.2, -0.8, 1.4, -1.1, 0.8][index % 6],
             )
         )
-    return placements
+    return mirror_placements(placements) if pattern == 1 else placements
 
 
 def build_pocket_grid_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
@@ -296,13 +307,14 @@ def build_pocket_grid_images(images: list[Any], start_y: float, section_index: i
 
 def build_ticket_day_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     placements = build_ticket_memo_images(images[:2], start_y, section_index)
+    pattern = layout_pattern_index("ticket_day", images, section_index)
     for index, image in enumerate(images[2:4], start=2):
         placements.append(
             placement(
                 image,
-                628,
-                start_y + 330 + (index - 2) * 190,
-                240,
+                628 + [0, -44, 36][pattern],
+                start_y + 330 + (index - 2) * [190, 214, 176][pattern],
+                [240, 220, 252][pattern],
                 section_index + index,
                 rotation=[2.5, -2][(index - 2) % 2],
             )
@@ -350,13 +362,31 @@ def build_before_after_images(images: list[Any], start_y: float, section_index: 
 
 def build_moodboard_stack_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     placements = []
-    specs = [
-        (92, 86, 420, -4.5),
-        (424, 0, 360, 3.8),
-        (694, 124, 300, -3.2),
-        (120, 604, 250, 2.6),
-        (610, 454, 230, -2.4),
+    pattern = layout_pattern_index("moodboard_stack", images, section_index)
+    specs_by_pattern = [
+        [
+            (92, 86, 420, -4.5),
+            (424, 0, 360, 3.8),
+            (694, 124, 300, -3.2),
+            (120, 604, 250, 2.6),
+            (610, 454, 230, -2.4),
+        ],
+        [
+            (118, 0, 330, 4.2),
+            (438, 90, 430, -4.6),
+            (232, 258, 284, 2.8),
+            (664, 462, 238, 3.2),
+            (96, 524, 280, -2.6),
+        ],
+        [
+            (116, 126, 360, -3.2),
+            (520, 18, 336, 4.8),
+            (360, 288, 420, -5.2),
+            (112, 560, 250, 2.4),
+            (690, 602, 230, -3.4),
+        ],
     ]
+    specs = specs_by_pattern[pattern]
     for index, image in enumerate(images[: len(specs)]):
         x, y_offset, width, rotation = specs[index]
         placements.append(placement(image, x, start_y + y_offset, width, section_index + index, rotation=rotation))
@@ -399,10 +429,13 @@ def build_letter_page_images(images: list[Any], start_y: float, section_index: i
 
 def build_chapter_scroll_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     placements = []
+    pattern = layout_pattern_index("chapter_scroll", images, section_index)
     y = start_y
     for index, image in enumerate(images[:9]):
-        x = [92, 462, 168][index % 3]
-        width = [500, 430, 470][index % 3]
+        x_sets = ([92, 462, 168], [292, 92, 538], [118, 398, 214])
+        width_sets = ([500, 430, 470], [470, 430, 382], [430, 500, 454])
+        x = x_sets[pattern][index % 3]
+        width = width_sets[pattern][index % 3]
         image_placement = placement(
             image,
             x,
@@ -479,14 +512,34 @@ def build_detail_index_images(images: list[Any], start_y: float, section_index: 
 
 def build_map_journey_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     placements = []
-    specs = [
-        (112, 40, 330, -2.2),
-        (586, 214, 300, 2),
-        (156, 568, 340, 1.2),
-        (610, 868, 286, -1.6),
-        (132, 1184, 310, -2.4),
-        (558, 1448, 318, 1.8),
+    pattern = layout_pattern_index("map_journey", images, section_index)
+    specs_by_pattern = [
+        [
+            (112, 40, 330, -2.2),
+            (586, 214, 300, 2),
+            (156, 568, 340, 1.2),
+            (610, 868, 286, -1.6),
+            (132, 1184, 310, -2.4),
+            (558, 1448, 318, 1.8),
+        ],
+        [
+            (568, 20, 334, 2.2),
+            (148, 252, 306, -2),
+            (614, 548, 324, -1.4),
+            (186, 858, 288, 1.8),
+            (552, 1192, 310, 2.4),
+            (154, 1450, 318, -1.8),
+        ],
+        [
+            (166, 42, 292, -1.6),
+            (596, 178, 348, 2.4),
+            (120, 512, 320, 2),
+            (522, 802, 328, -1.4),
+            (224, 1124, 286, -2.2),
+            (618, 1426, 302, 1.6),
+        ],
     ]
+    specs = specs_by_pattern[pattern]
     for index, image in enumerate(images[: len(specs)]):
         x, y_offset, width, rotation = specs[index]
         placements.append(placement(image, x, start_y + y_offset, width, section_index + index, rotation=rotation))
@@ -495,8 +548,9 @@ def build_map_journey_images(images: list[Any], start_y: float, section_index: i
 
 def build_weekly_spread_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     placements = []
-    width = 250
-    x_positions = [92, 390, 688]
+    pattern = layout_pattern_index("weekly_spread", images, section_index)
+    width = [250, 236, 264][pattern]
+    x_positions = ([92, 390, 688], [108, 392, 676], [88, 392, 704])[pattern]
     for index, image in enumerate(images[:9]):
         column = index % 3
         row = index // 3
@@ -504,7 +558,7 @@ def build_weekly_spread_images(images: list[Any], start_y: float, section_index:
             placement(
                 image,
                 x_positions[column],
-                start_y + 44 + row * 410 + column * 18,
+                start_y + 44 + row * [410, 386, 424][pattern] + column * [18, 8, 24][pattern],
                 width,
                 section_index + index,
                 rotation=[-1.2, 1, -0.8, 1.4, -1, 0.8][index % 6],
@@ -516,16 +570,18 @@ def build_weekly_spread_images(images: list[Any], start_y: float, section_index:
 def build_day_dashboard_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     if not images:
         return []
-    placements = [placement(images[0], SECTION_SIDE_PADDING, start_y + 28, 420, section_index, rotation=-1)]
+    pattern = layout_pattern_index("day_dashboard", images, section_index)
+    placements = [placement(images[0], SECTION_SIDE_PADDING, start_y + 28, [420, 390, 440][pattern], section_index, rotation=[-1, 1, -1.4][pattern])]
     for index, image in enumerate(images[1:6], start=1):
         column = (index - 1) % 2
         row = (index - 1) // 2
+        width = [178, 190, 166][pattern]
         placements.append(
             placement(
                 image,
-                560 + column * 210,
-                start_y + 42 + row * 298,
-                178,
+                560 + column * (width + 32),
+                start_y + 42 + row * [298, 280, 314][pattern] + column * [0, 12, -8][pattern],
+                width,
                 section_index + index,
                 rotation=[1.5, -1.2, 1, -1.5, 0.8][(index - 1) % 5],
             )
@@ -535,16 +591,40 @@ def build_day_dashboard_images(images: list[Any], start_y: float, section_index:
 
 def build_scrapbook_story_images(images: list[Any], start_y: float, section_index: int) -> list[dict[str, Any]]:
     placements = []
-    specs = [
-        (92, 24, 390, -3.2),
-        (560, 88, 310, 3.5),
-        (150, 612, 270, 2.2),
-        (520, 640, 342, -2.1),
-        (112, 1008, 320, 1.4),
-        (584, 1088, 260, -3),
-        (214, 1418, 340, 2),
-        (640, 1514, 230, -2.2),
+    pattern = layout_pattern_index("scrapbook_story", images, section_index)
+    specs_by_pattern = [
+        [
+            (92, 24, 390, -3.2),
+            (560, 88, 310, 3.5),
+            (150, 612, 270, 2.2),
+            (520, 640, 342, -2.1),
+            (112, 1008, 320, 1.4),
+            (584, 1088, 260, -3),
+            (214, 1418, 340, 2),
+            (640, 1514, 230, -2.2),
+        ],
+        [
+            (520, 28, 380, 3.2),
+            (126, 108, 328, -3.6),
+            (614, 572, 282, -2.4),
+            (132, 684, 342, 2.2),
+            (566, 980, 318, -1.8),
+            (184, 1114, 264, 3),
+            (490, 1408, 344, -2),
+            (122, 1540, 232, 2.2),
+        ],
+        [
+            (118, 38, 346, -2.6),
+            (510, 62, 354, 4),
+            (284, 512, 286, 2.4),
+            (626, 664, 300, -3),
+            (104, 928, 340, 1.8),
+            (540, 1086, 306, -2.8),
+            (210, 1390, 310, 2.2),
+            (620, 1500, 248, -2),
+        ],
     ]
+    specs = specs_by_pattern[pattern]
     for index, image in enumerate(images[: len(specs)]):
         x, y_offset, width, rotation = specs[index]
         placements.append(placement(image, x, start_y + y_offset, width, section_index + index, rotation=rotation))
@@ -639,6 +719,30 @@ def placement(image: Any, x: float, y: float, width: float, index: int, rotation
         "height": photo_height_for_width(image, width),
         "rotation": rotation if rotation is not None else [-2, 2.5, -1.5, 1.5][index % 4],
     }
+
+
+def layout_pattern_index(variant: str, images: list[Any], section_index: int, count: int = 3) -> int:
+    signal_parts = [variant, str(section_index)]
+    signal_parts.extend(image_id(image) for image in images)
+    signal = "|".join(signal_parts)
+    return stable_text_hash(signal) % max(count, 1)
+
+
+def stable_text_hash(value: str) -> int:
+    hash_value = 0
+    for character in value:
+        hash_value = (hash_value * 131 + ord(character)) % 1_000_003
+    return hash_value
+
+
+def mirror_placements(placements: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    mirrored = []
+    for item in placements:
+        next_item = dict(item)
+        next_item["x"] = CANVAS_WIDTH - float(item["x"]) - float(item["width"])
+        next_item["rotation"] = -float(item.get("rotation") or 0)
+        mirrored.append(next_item)
+    return mirrored
 
 
 def build_caption_placements(variant: str, image_placements: list[dict[str, Any]]) -> list[dict[str, Any]]:

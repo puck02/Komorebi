@@ -2304,7 +2304,27 @@ def test_generation_prompt_requests_section_structure():
     assert "普通章节绑定 1 到 3 张图片" in prompt
     assert "可以按模板容量保留更多相邻图片" in prompt
     assert "hero_note、staggered_collage、timeline_strip、photo_wall、magazine_whitespace、ticket_memo" in prompt
-    assert "quiet_story、hero_memory、timeline_trip、pocket_grid、ticket_day、magazine_note、before_after、moodboard_stack、recipe_memo、letter_page、chapter_scroll、field_notes、split_scene、detail_index" in prompt
+    for template_name in (
+        "quiet_story",
+        "hero_memory",
+        "timeline_trip",
+        "pocket_grid",
+        "ticket_day",
+        "magazine_note",
+        "before_after",
+        "moodboard_stack",
+        "recipe_memo",
+        "letter_page",
+        "chapter_scroll",
+        "field_notes",
+        "split_scene",
+        "detail_index",
+        "map_journey 路线地图",
+        "weekly_spread 周记分栏",
+        "day_dashboard 日程看板",
+        "scrapbook_story 剪贴故事",
+    ):
+        assert template_name in prompt
     assert "templateId" in prompt
 
 

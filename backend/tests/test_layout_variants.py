@@ -314,7 +314,8 @@ def test_moodboard_stack_layout_overlaps_story_fragments_without_becoming_grid()
     assert len({item["x"] for item in layout["images"]}) == 3
     assert any(abs(item["rotation"]) >= 3 for item in layout["images"])
     y_positions = [item["y"] for item in layout["images"]]
-    assert max(y_positions) - min(y_positions) < 260
+    assert max(y_positions) - min(y_positions) < 320
+    assert len({round(item["y"] / 40) for item in layout["images"]}) >= 3
 
 
 def test_recipe_memo_layout_uses_compact_photo_and_text_column():
@@ -523,6 +524,47 @@ def test_detail_index_layout_uses_primary_photo_and_small_detail_strip():
     areas = [item["width"] * item["height"] for item in layout["images"]]
     assert areas[0] == max(areas)
     assert all(item["x"] > layout["images"][0]["x"] + layout["images"][0]["width"] for item in layout["images"][1:])
+
+
+def test_story_templates_use_stable_content_based_layout_variants():
+    first_images = [image(f"img_{index}", 640, 480) for index in range(1, 6)]
+    second_images = [image(f"trip_{index}", 640, 480) for index in range(1, 6)]
+    first_section = content_section("section_1", [item.id for item in first_images], body="把这些回忆剪贴成一页。")
+    second_section = content_section("section_1", [item.id for item in second_images], body="把这些回忆剪贴成一页。")
+
+    first_layout = build_section_layout(
+        first_section,
+        request_images=first_images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="scrapbook_story",
+    )
+    repeated_layout = build_section_layout(
+        first_section,
+        request_images=first_images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="scrapbook_story",
+    )
+    second_layout = build_section_layout(
+        second_section,
+        request_images=second_images,
+        image_understanding=[],
+        section_index=0,
+        total_sections=1,
+        start_y=220,
+        suggested_variant="scrapbook_story",
+    )
+
+    first_positions = [(item["x"], item["y"], item["width"], item["rotation"]) for item in first_layout["images"]]
+    repeated_positions = [(item["x"], item["y"], item["width"], item["rotation"]) for item in repeated_layout["images"]]
+    second_positions = [(item["x"], item["y"], item["width"], item["rotation"]) for item in second_layout["images"]]
+    assert first_positions == repeated_positions
+    assert first_positions != second_positions
 
 
 def test_generator_replaces_invalid_section_variant_with_rule_choice():

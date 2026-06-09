@@ -267,10 +267,15 @@ export default function CreateJournalPage() {
                   type="button"
                 >
                   <TemplatePreview template={template} />
+                  <span className="template-source">{template.sourcePattern}</span>
                   <strong>{template.name}</strong>
                   <small>{template.shortDescription}</small>
-                  <em>{template.bestFor}</em>
-                  <span className="template-story">{template.storyArc}</span>
+                  <span className="template-structure">{template.structureLabel}</span>
+                  <span className="template-beats">
+                    {template.storyBeats.map((beat) => (
+                      <i key={beat}>{beat}</i>
+                    ))}
+                  </span>
                   <span className="template-reason">{template.recommendationReason}</span>
                 </button>
               ))}

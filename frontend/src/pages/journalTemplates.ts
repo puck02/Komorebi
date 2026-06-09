@@ -21,7 +21,7 @@ export type JournalTemplateId =
   | "scrapbook_story";
 
 export type JournalTemplatePreviewItem = {
-  kind: "photo" | "note" | "line" | "pin" | "rail";
+  kind: "photo" | "note" | "line" | "pin" | "rail" | "route" | "check" | "stamp";
   x: number;
   y: number;
   width: number;
@@ -35,6 +35,9 @@ export type JournalTemplate = {
   shortDescription: string;
   bestFor: string;
   storyArc: string;
+  sourcePattern: string;
+  structureLabel: string;
+  storyBeats: string[];
   previewClassName: string;
   previewItems: JournalTemplatePreviewItem[];
   minImages: number;
@@ -47,7 +50,9 @@ export type JournalTemplateRecommendation = JournalTemplate & {
   recommendationReason: string;
 };
 
-export const JOURNAL_TEMPLATES: JournalTemplate[] = [
+type JournalTemplateBase = Omit<JournalTemplate, "sourcePattern" | "storyBeats" | "structureLabel">;
+
+const JOURNAL_TEMPLATE_BASES: JournalTemplateBase[] = [
   {
     id: "quiet_story",
     name: "留白独白",
@@ -376,6 +381,104 @@ export const JOURNAL_TEMPLATES: JournalTemplate[] = [
     keywords: ["拼贴", "剪贴", "手作", "回忆", "纪念", "相册", "贴纸"]
   }
 ];
+
+const TEMPLATE_STORY_METADATA = {
+  quiet_story: {
+    sourcePattern: "留白日记页",
+    structureLabel: "一个瞬间 -> 一段心情",
+    storyBeats: ["定格", "补充感受", "留白收住"]
+  },
+  hero_memory: {
+    sourcePattern: "主图 memory keeping",
+    structureLabel: "主照片 -> 旁注 -> 回看句",
+    storyBeats: ["主图开场", "细节旁注", "一句总结"]
+  },
+  timeline_trip: {
+    sourcePattern: "旅行时间线",
+    structureLabel: "出发 -> 途中 -> 停留",
+    storyBeats: ["按顺序读", "保留转场", "落到终点"]
+  },
+  pocket_grid: {
+    sourcePattern: "Project Life 口袋页",
+    structureLabel: "照片卡 + 标题卡 + 记录卡",
+    storyBeats: ["拆成小格", "每格一件事", "整体像一天"]
+  },
+  ticket_day: {
+    sourcePattern: "票根/小票归档",
+    structureLabel: "地点凭证 -> 照片 -> 便签",
+    storyBeats: ["留下凭证", "写清停靠点", "补一句感受"]
+  },
+  magazine_note: {
+    sourcePattern: "杂志内页",
+    structureLabel: "照片留白 -> 短标题 -> 专栏文字",
+    storyBeats: ["先给画面呼吸", "再写观察", "保持清爽"]
+  },
+  before_after: {
+    sourcePattern: "对照 spread",
+    structureLabel: "之前 -> 变化 -> 后来",
+    storyBeats: ["先放起点", "并列变化", "解释差异"]
+  },
+  moodboard_stack: {
+    sourcePattern: "情绪板拼贴",
+    structureLabel: "主情绪 -> 碎片 -> 短句",
+    storyBeats: ["定一种心情", "错落贴图", "短句串联"]
+  },
+  recipe_memo: {
+    sourcePattern: "餐桌配方卡",
+    structureLabel: "菜单/味道 -> 照片 -> 小动作",
+    storyBeats: ["写味道", "记器皿", "留下当时动作"]
+  },
+  letter_page: {
+    sourcePattern: "信纸/便笺页",
+    structureLabel: "称呼今天 -> 正文 -> 旁证照片",
+    storyBeats: ["把文字放前面", "照片做旁证", "像写给今天"]
+  },
+  chapter_scroll: {
+    sourcePattern: "长卷章节",
+    structureLabel: "开头 -> 转场 -> 结尾",
+    storyBeats: ["拆章节", "从上往下读", "收成完整故事"]
+  },
+  field_notes: {
+    sourcePattern: "观察手记",
+    structureLabel: "观察对象 -> 标注 -> 小结论",
+    storyBeats: ["看见细节", "做小标注", "写下发现"]
+  },
+  split_scene: {
+    sourcePattern: "双场景 spread",
+    structureLabel: "场景 A -> 转场 -> 场景 B",
+    storyBeats: ["左右分区", "保留切换", "比较两个状态"]
+  },
+  detail_index: {
+    sourcePattern: "细节索引页",
+    structureLabel: "主图 -> 编号细节 -> 为什么留下",
+    storyBeats: ["主图定调", "细节编号", "解释意义"]
+  },
+  map_journey: {
+    sourcePattern: "路线地图页",
+    structureLabel: "起点 -> 停靠点 -> 终点",
+    storyBeats: ["画出路线", "标记坐标", "写沿途变化"]
+  },
+  weekly_spread: {
+    sourcePattern: "Bullet journal 周记",
+    structureLabel: "分栏日期 -> 小照片 -> 当日记录",
+    storyBeats: ["按天分栏", "记录连续性", "最后复盘"]
+  },
+  day_dashboard: {
+    sourcePattern: "Bullet journal dashboard",
+    structureLabel: "今日照片 -> 清单 -> 小结",
+    storyBeats: ["先看当天", "整理待办", "写完成感"]
+  },
+  scrapbook_story: {
+    sourcePattern: "Scrapbook 剪贴本",
+    structureLabel: "主图 -> 素材碎片 -> 回忆句",
+    storyBeats: ["主图抓人", "边角素材补气氛", "短句讲回忆"]
+  }
+} satisfies Record<JournalTemplateId, Pick<JournalTemplate, "sourcePattern" | "storyBeats" | "structureLabel">>;
+
+export const JOURNAL_TEMPLATES: JournalTemplate[] = JOURNAL_TEMPLATE_BASES.map((template) => ({
+  ...template,
+  ...TEMPLATE_STORY_METADATA[template.id]
+}));
 
 const FOOD_TERMS = ["咖啡", "茶", "甜品", "餐厅", "餐桌", "饭", "面包", "蛋糕", "饮料", "食物"];
 const EPHEMERA_TERMS = ["票", "票根", "小票", "展览", "展厅", "博物馆", "电影", "标签", "收据", "车票"];

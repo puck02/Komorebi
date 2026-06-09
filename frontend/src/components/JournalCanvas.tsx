@@ -1,6 +1,6 @@
 import type { Asset } from "../types/asset";
 import type { JournalLayout, JournalTextPlacement } from "../types/journal";
-import type { Ref } from "react";
+import type { KeyboardEvent, Ref } from "react";
 
 import { getJournalRenderLayers } from "./journalRenderLayers";
 
@@ -252,7 +252,9 @@ function JournalTextBlock({
         <span className="journal-text-edit-shell">
           <textarea
             aria-label="编辑手帐文字"
+            autoFocus
             onChange={(event) => onEditableTextChange?.(event.target.value)}
+            onKeyDown={(event) => handleEditKeyDown(event, onEditableTextCancel, onEditableTextSave)}
             value={editableTextValue}
           />
           <span className="journal-text-edit-actions">
@@ -265,12 +267,34 @@ function JournalTextBlock({
           </span>
         </span>
       ) : className === "journal-body" ? (
-        <p>{paragraph}</p>
+        <>
+          <p>{paragraph}</p>
+          {canEdit ? <span className="journal-edit-marker">编辑</span> : null}
+        </>
       ) : (
-        paragraph
+        <>
+          {paragraph}
+          {canEdit ? <span className="journal-edit-marker">编辑</span> : null}
+        </>
       )}
     </Component>
   );
+}
+
+function handleEditKeyDown(
+  event: KeyboardEvent<HTMLTextAreaElement>,
+  onCancel?: () => void,
+  onSave?: () => void
+) {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    onCancel?.();
+    return;
+  }
+  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+    event.preventDefault();
+    onSave?.();
+  }
 }
 
 type JournalDecorationImageProps = {

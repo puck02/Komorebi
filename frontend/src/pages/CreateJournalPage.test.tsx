@@ -10,6 +10,7 @@ assertIncludes(CREATE_JOURNAL_MOOD_OPTIONS, "满足");
 assertAtLeast(JOURNAL_TEMPLATES.length, 10);
 assertEqual(new Set(JOURNAL_TEMPLATES.map((template) => template.id)).size, JOURNAL_TEMPLATES.length);
 assertEveryTemplateHasPreviewItems(JOURNAL_TEMPLATES);
+assertEveryTemplateHasStoryMetadata(JOURNAL_TEMPLATES);
 
 const pocketRecommendations = recommendJournalTemplates(makeImages(6), "一天里的碎片很多，像一个小合集", "");
 assertEqual(pocketRecommendations.length, 3);
@@ -74,6 +75,12 @@ function assertHasRecommendationReason(values: ReturnType<typeof recommendJourna
 function assertEveryTemplateHasPreviewItems(values: typeof JOURNAL_TEMPLATES) {
   if (values.some((template) => template.previewItems.length < 3)) {
     throw new Error("Expected every template to have at least three preview items");
+  }
+}
+
+function assertEveryTemplateHasStoryMetadata(values: typeof JOURNAL_TEMPLATES) {
+  if (values.some((template) => !template.sourcePattern || !template.structureLabel || template.storyBeats.length !== 3)) {
+    throw new Error("Expected every template to expose story metadata");
   }
 }
 

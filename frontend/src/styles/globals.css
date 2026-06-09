@@ -661,8 +661,8 @@ body {
   display: grid;
   grid-template-columns: 86px minmax(0, 1fr);
   gap: 8px 12px;
-  align-items: center;
-  min-height: 148px;
+  align-items: start;
+  min-height: 176px;
   border: 1px solid rgb(220 199 182 / 82%);
   border-radius: 10px;
   padding: 10px;
@@ -697,7 +697,7 @@ body {
 
 .template-preview {
   position: relative;
-  grid-row: span 3;
+  grid-row: span 6;
   align-self: start;
   width: 86px;
   height: 82px;
@@ -722,6 +722,19 @@ body {
   background: rgb(141 106 86 / 18%);
 }
 
+.template-source {
+  min-width: 0;
+  width: fit-content;
+  border: 1px solid rgb(184 111 91 / 18%);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: rgb(112 82 61 / 78%);
+  background: rgb(255 247 237 / 74%);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
 .template-picker strong {
   min-width: 0;
   color: var(--color-ink);
@@ -730,8 +743,8 @@ body {
 }
 
 .template-picker small,
-.template-picker em,
-.template-story,
+.template-structure,
+.template-beats,
 .template-reason {
   min-width: 0;
   color: var(--color-paragraph);
@@ -740,18 +753,32 @@ body {
   line-height: 1.42;
 }
 
-.template-picker em {
-  color: var(--color-tertiary);
+.template-structure {
+  color: var(--color-ink);
   font-weight: 850;
 }
 
-.template-story,
-.template-reason {
-  grid-column: 2;
+.template-beats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
-.template-story {
-  color: var(--color-ink);
+.template-beats i {
+  border-radius: 999px;
+  padding: 2px 6px;
+  color: rgb(112 82 61 / 82%);
+  background: rgb(185 200 169 / 20%);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.template-structure,
+.template-beats,
+.template-reason {
+  grid-column: 2;
 }
 
 .template-reason {
@@ -1070,6 +1097,53 @@ body {
   top: 54px;
 }
 
+.template-preview.is-map-journey i.is-photo {
+  background: rgb(185 200 169 / 78%);
+}
+
+.template-preview.is-map-journey i.is-rail,
+.template-preview.is-map-journey i.is-route {
+  border-radius: 999px;
+  background: rgb(184 111 91 / 46%);
+}
+
+.template-preview.is-map-journey i.is-pin {
+  box-shadow:
+    0 0 0 4px rgb(184 111 91 / 12%),
+    inset 0 0 0 1px rgb(67 46 31 / 10%);
+}
+
+.template-preview.is-weekly-spread i.is-note {
+  border-radius: 5px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 12px, rgb(117 88 70 / 16%) 12px 13px),
+    rgb(255 250 242 / 78%);
+}
+
+.template-preview.is-weekly-spread i.is-photo {
+  border-radius: 3px;
+  background: rgb(185 200 169 / 78%);
+}
+
+.template-preview.is-day-dashboard i.is-note {
+  background: rgb(255 247 237 / 84%);
+}
+
+.template-preview.is-day-dashboard i.is-line,
+.template-preview.is-day-dashboard i.is-check {
+  border-radius: 999px;
+  background: rgb(117 88 70 / 32%);
+}
+
+.template-preview.is-scrapbook-story i.is-photo {
+  background: rgb(185 200 169 / 78%);
+}
+
+.template-preview.is-scrapbook-story i.is-pin,
+.template-preview.is-scrapbook-story i.is-stamp {
+  background: rgb(184 111 91 / 58%);
+}
+
 .template-preview i.is-photo {
   background: rgb(185 200 169 / 74%);
 }
@@ -1088,10 +1162,21 @@ body {
   background: rgb(184 111 91 / 64%);
 }
 
-.template-preview i.is-rail {
+.template-preview i.is-rail,
+.template-preview i.is-route {
   border-radius: 999px;
   background: rgb(184 111 91 / 42%);
   transform-origin: center;
+}
+
+.template-preview i.is-check {
+  border-radius: 999px;
+  background: rgb(117 88 70 / 30%);
+}
+
+.template-preview i.is-stamp {
+  border-radius: 3px;
+  background: rgb(184 111 91 / 54%);
 }
 
 .create-submit {
@@ -2021,6 +2106,7 @@ body {
 }
 
 .journal-editable-text {
+  position: absolute;
   border-radius: 8px;
   cursor: text;
   pointer-events: auto;
@@ -2032,6 +2118,29 @@ body {
 .journal-editable-text:hover {
   background: rgb(255 253 248 / 28%);
   box-shadow: 0 0 0 1px rgb(184 111 91 / 14%);
+}
+
+.journal-edit-marker {
+  position: absolute;
+  top: -18px;
+  right: 0;
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: rgb(112 82 61 / 78%);
+  background: rgb(255 253 248 / 82%);
+  font: 800 11px/1.25 ui-sans-serif, system-ui, sans-serif;
+  opacity: 0;
+  transform: translateY(3px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  pointer-events: none;
+}
+
+.journal-editable-text:hover .journal-edit-marker,
+.journal-editable-text:focus-within .journal-edit-marker {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .journal-editable-text.is-editing {
